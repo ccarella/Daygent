@@ -20,6 +20,55 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Code Quality
+
+This project uses automated code quality checks to ensure consistent and error-free code.
+
+### Pre-commit Hooks
+
+We use [Husky](https://typicode.github.io/husky/) and [lint-staged](https://github.com/okonet/lint-staged) to run checks before each commit:
+
+- **TypeScript Type Checking**: Ensures all TypeScript code is properly typed
+- **ESLint**: Checks for code quality issues and automatically fixes them
+- **Prettier**: Formats code consistently
+- **Commitlint**: Enforces [Conventional Commits](https://www.conventionalcommits.org/) format
+
+#### Commit Message Format
+
+All commit messages must follow the Conventional Commits format:
+
+```
+<type>(<scope>): <subject>
+
+<body>
+
+<footer>
+```
+
+Types allowed: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `chore`, `revert`, `ci`, `build`
+
+Examples:
+
+- `feat: add user authentication`
+- `fix(api): resolve database connection issue`
+- `docs: update README with installation steps`
+
+#### Bypassing Hooks
+
+If you need to bypass the pre-commit hooks (not recommended), you can use:
+
+```bash
+git commit --no-verify -m "your message"
+```
+
+### Running Checks Manually
+
+```bash
+npm run lint        # Run ESLint
+npm run format      # Format code with Prettier
+npx tsc --noEmit    # Check TypeScript types
+```
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

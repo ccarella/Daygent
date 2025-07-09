@@ -45,6 +45,8 @@
     "zustand": "^5.0.6"
   },
   "devDependencies": {
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
     "@eslint/eslintrc": "^3",
     "@playwright/test": "^1.53.2",
     "@tailwindcss/postcss": "^4",
@@ -69,7 +71,12 @@
     "vitest": "^3.2.4"
   },
   "lint-staged": {
-    "*.{ts,tsx,js,jsx}": [
+    "*.{ts,tsx}": [
+      "bash -c 'tsc --noEmit'",
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{js,jsx}": [
       "eslint --fix",
       "prettier --write"
     ],
