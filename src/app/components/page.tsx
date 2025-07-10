@@ -44,7 +44,7 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Terminal, AlertCircle, CheckCircle2, Info } from "lucide-react";
 
 export default function ComponentShowcase() {
@@ -52,10 +52,10 @@ export default function ComponentShowcase() {
   const [checked, setChecked] = useState(false);
   const [selectedValue, setSelectedValue] = useState("");
 
-  useState(() => {
+  useEffect(() => {
     const timer = setTimeout(() => setProgress(66), 500);
     return () => clearTimeout(timer);
-  });
+  }, []);
 
   return (
     <div className="container mx-auto p-8 space-y-8">
