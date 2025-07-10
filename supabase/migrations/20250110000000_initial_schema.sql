@@ -148,10 +148,12 @@ CREATE TABLE ai_usage (
 CREATE INDEX idx_issues_status ON issues(status);
 CREATE INDEX idx_issues_repository ON issues(repository_id);
 CREATE INDEX idx_issues_assigned_to ON issues(assigned_to);
+CREATE INDEX idx_issues_project_status ON issues(project_id, status); -- Composite index for project status queries
 CREATE INDEX idx_activities_organization ON activities(organization_id);
 CREATE INDEX idx_activities_created_at ON activities(created_at DESC);
 CREATE INDEX idx_organization_members_user ON organization_members(user_id);
 CREATE INDEX idx_repositories_organization ON repositories(organization_id);
+CREATE INDEX idx_ai_usage_org_created ON ai_usage(organization_id, created_at DESC); -- Index for usage analytics
 
 -- Enable Row Level Security
 ALTER TABLE organizations ENABLE ROW LEVEL SECURITY;
@@ -217,10 +219,10 @@ CREATE POLICY "Admins can invite to organizations"
   ON organization_members FOR INSERT
   WITH CHECK (
     EXISTS (
-      SELECT 1 FROM organization_members
-      WHERE organization_members.organization_id = organization_members.organization_id
-        AND organization_members.user_id = auth.uid()
-        AND organization_members.role IN ('owner', 'admin')
+      SELECT 1 FROM organization_members om
+      WHERE om.organization_id = NEW.organization_id
+        AND om.user_id = auth.uid()
+        AND om.role IN ('owner', 'admin')
     )
   );
 

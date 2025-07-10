@@ -113,6 +113,20 @@ RLS is enabled on all tables with policies ensuring users can only access data w
 - **Rollback Strategy**: Included rollback script for safe migration reversal
 - **Updated Triggers**: Added automatic updated_at triggers for all relevant tables
 
+### Code Review Improvements (2025-01-10)
+
+1. **Performance Indexes**: Added composite indexes for optimized queries:
+   - `idx_issues_project_status` on issues(project_id, status) for project status queries
+   - `idx_ai_usage_org_created` on ai_usage(organization_id, created_at DESC) for usage analytics
+
+2. **RLS Policy Fix**: Fixed self-referential bug in organization_members INSERT policy that was preventing proper permission checks
+
+3. **TypeScript Utilities**: Added comprehensive utility types for database operations:
+   - Insert/Update types with proper field omissions for each table
+   - Date parsing utilities to handle Supabase's ISO string timestamps
+   - Type guards for safe date string conversion
+   - Predefined date field mappings for each table
+
 ## Next Steps
 
 1. Implement Supabase client configuration in the application
