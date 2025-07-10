@@ -37,7 +37,7 @@ export const useAuthStore = create<AuthStore>()(
             id: "1",
             email,
             name: email.split("@")[0],
-            avatar: `https://api.dicebear.com/7.x/lorelei/svg?seed=${email}`,
+            avatar: `https://api.dicebear.com/9.x/lorelei/svg?seed=${encodeURIComponent(email)}`,
           };
 
           set(
