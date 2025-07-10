@@ -1,14 +1,10 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { updateSession } from "@/lib/supabase/middleware";
 
 export async function middleware(request: NextRequest) {
-  const response = NextResponse.next();
-  const supabase = await createClient();
-
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  // Update the session and get the response
+  const { response, user } = await updateSession(request);
 
   const isAuthPage = request.nextUrl.pathname === "/login";
   const isCallbackPage = request.nextUrl.pathname === "/auth/callback";
@@ -18,13 +14,13 @@ export async function middleware(request: NextRequest) {
     request.nextUrl.pathname === "/design-test" ||
     request.nextUrl.pathname === "/components";
 
-  if (!session && !isAuthPage && !isCallbackPage && !isPublicPage) {
+  if (!user && !isAuthPage && !isCallbackPage && !isPublicPage) {
     const redirectUrl = new URL("/login", request.url);
     redirectUrl.searchParams.set("next", request.nextUrl.pathname);
     return NextResponse.redirect(redirectUrl);
   }
 
-  if (session && isAuthPage) {
+  if (user && isAuthPage) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
