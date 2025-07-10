@@ -108,17 +108,39 @@ export const useAuthStore = create<AuthStore>()(
       initialize: async () => {
         set({ isLoading: true }, false, "initialize/start");
 
+        // Add timeout to prevent infinite loading
+        const timeoutId = setTimeout(() => {
+          const state = useAuthStore.getState();
+          if (state.isLoading) {
+            console.warn("Auth initialization timed out after 5 seconds");
+            set(
+              {
+                user: null,
+                isAuthenticated: false,
+                isLoading: false,
+                error: "Authentication initialization timed out",
+              },
+              false,
+              "initialize/timeout",
+            );
+          }
+        }, 5000);
+
         try {
           const {
             data: { user: authUser },
           } = await supabase.auth.getUser();
 
           if (authUser) {
-            const { data: profile } = await supabase
+            const { data: profile, error: profileError } = await supabase
               .from("users")
               .select("*")
               .eq("id", authUser.id)
               .single();
+
+            if (profileError) {
+              console.error("Error fetching user profile:", profileError);
+            }
 
             const user: User = {
               id: authUser.id,
@@ -155,6 +177,7 @@ export const useAuthStore = create<AuthStore>()(
             );
           }
         } catch (error) {
+          console.error("Error initializing auth:", error);
           set(
             {
               user: null,
@@ -168,6 +191,8 @@ export const useAuthStore = create<AuthStore>()(
             false,
             "initialize/error",
           );
+        } finally {
+          clearTimeout(timeoutId);
         }
       },
     }),
@@ -185,24 +210,44 @@ supabase.auth.onAuthStateChange(async (_event, session) => {
   if (session?.user) {
     setLoading(true);
 
-    const { data: profile } = await supabase
-      .from("users")
-      .select("*")
-      .eq("id", session.user.id)
-      .single();
+    try {
+      const { data: profile, error } = await supabase
+        .from("users")
+        .select("*")
+        .eq("id", session.user.id)
+        .single();
 
-    const user: User = {
-      id: session.user.id,
-      email: session.user.email || "",
-      name: profile?.name || null,
-      avatar_url:
-        profile?.avatar_url || session.user.user_metadata?.avatar_url || null,
-      github_id: profile?.github_id || null,
-      github_username: profile?.github_username || null,
-    };
+      if (error) {
+        console.error("Error fetching user profile:", error);
+      }
 
-    setUser(user);
-    setLoading(false);
+      const user: User = {
+        id: session.user.id,
+        email: session.user.email || "",
+        name: profile?.name || null,
+        avatar_url:
+          profile?.avatar_url || session.user.user_metadata?.avatar_url || null,
+        github_id: profile?.github_id || null,
+        github_username: profile?.github_username || null,
+      };
+
+      setUser(user);
+    } catch (error) {
+      console.error("Error in auth state change handler:", error);
+      // Still set the user with basic info even if profile fetch fails
+      const user: User = {
+        id: session.user.id,
+        email: session.user.email || "",
+        name: null,
+        avatar_url: session.user.user_metadata?.avatar_url || null,
+        github_id: null,
+        github_username: null,
+      };
+      setUser(user);
+    } finally {
+      // Always clear loading state
+      setLoading(false);
+    }
   } else {
     setUser(null);
   }
