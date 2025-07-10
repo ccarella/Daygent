@@ -43,6 +43,7 @@ export function AuthStatus() {
       <div className="p-4 space-y-4">
         <div className="flex items-center gap-4">
           {user.avatar && (
+            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={user.avatar}
               alt={user.name}
