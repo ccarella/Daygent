@@ -2,7 +2,6 @@
 
 import { useAuthStore } from "@/stores";
 import { Button } from "@/components/ui/button";
-import Image from "next/image";
 
 export function AuthStatus() {
   const { user, isAuthenticated, isLoading, error, login, logout, clearError } =
@@ -44,7 +43,8 @@ export function AuthStatus() {
       <div className="p-4 space-y-4">
         <div className="flex items-center gap-4">
           {user.avatar && (
-            <Image
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
               src={user.avatar}
               alt={user.name}
               width={40}
