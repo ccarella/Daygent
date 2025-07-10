@@ -1,5 +1,7 @@
 import { Button } from "@/components/ui/button";
 
+// TODO: Remove this page after design system is verified
+// Or consider moving to Storybook/similar tool
 export default function DesignTestPage() {
   return (
     <div className="p-8 space-y-8">
