@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
@@ -39,7 +39,11 @@ export async function GET(request: NextRequest) {
         data.user.user_metadata?.preferred_username;
       const avatarUrl = data.user.user_metadata?.avatar_url;
 
-      const { error: upsertError } = await supabase
+      // Use service role client to bypass RLS for user creation
+      const serviceSupabase = await createServiceRoleClient();
+      console.log("[Auth Callback] Using service role client for user upsert");
+
+      const { error: upsertError } = await serviceSupabase
         .from("users")
         .upsert({
           id: data.user.id,
@@ -67,14 +71,14 @@ export async function GET(request: NextRequest) {
         console.log("[Auth Callback] User profile upserted successfully");
       }
 
-      const defaultOrgResult = await supabase
+      const defaultOrgResult = await serviceSupabase
         .from("organizations")
         .select("id")
         .eq("name", "Default Organization")
         .single();
 
       if (defaultOrgResult.data) {
-        await supabase
+        await serviceSupabase
           .from("organization_members")
           .upsert({
             user_id: data.user.id,

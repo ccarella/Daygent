@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useAuthStore } from "@/stores";
 import { Button } from "@/components/ui/button";
 import { Github } from "lucide-react";
@@ -17,8 +17,14 @@ export function AuthStatus() {
     initialize,
   } = useAuthStore();
 
+  const initializeAttempted = useRef(false);
+
   useEffect(() => {
-    initialize();
+    // Prevent multiple initialization attempts
+    if (!initializeAttempted.current) {
+      initializeAttempted.current = true;
+      initialize();
+    }
   }, [initialize]);
 
   const handleLogin = async () => {
@@ -42,12 +48,28 @@ export function AuthStatus() {
   }
 
   if (error) {
+    const isTimeoutError = error.includes("timed out");
     return (
-      <div className="p-4">
-        <p className="text-red-500 mb-2">Error: {error}</p>
-        <Button onClick={clearError} variant="outline" size="sm">
-          Clear Error
-        </Button>
+      <div className="p-4 space-y-2">
+        <p className="text-red-500">Error: {error}</p>
+        <div className="flex gap-2">
+          {isTimeoutError && (
+            <Button
+              onClick={() => {
+                clearError();
+                initializeAttempted.current = false;
+                initialize();
+              }}
+              variant="outline"
+              size="sm"
+            >
+              Retry
+            </Button>
+          )}
+          <Button onClick={clearError} variant="outline" size="sm">
+            Clear Error
+          </Button>
+        </div>
       </div>
     );
   }

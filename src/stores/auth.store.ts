@@ -108,30 +108,83 @@ export const useAuthStore = create<AuthStore>()(
       initialize: async () => {
         set({ isLoading: true }, false, "initialize/start");
 
-        // Add timeout to prevent infinite loading
+        // Add timeout to prevent infinite loading - increased to 10 seconds
         const timeoutId = setTimeout(() => {
           const state = useAuthStore.getState();
           if (state.isLoading) {
-            console.warn("Auth initialization timed out after 5 seconds");
+            console.warn("Auth initialization timed out after 10 seconds");
             set(
               {
                 user: null,
                 isAuthenticated: false,
                 isLoading: false,
-                error: "Authentication initialization timed out",
+                error:
+                  "Authentication initialization timed out. Please refresh the page or try again.",
               },
               false,
               "initialize/timeout",
             );
           }
-        }, 5000);
+        }, 10000);
 
         try {
+          console.log("Starting auth initialization...");
+
+          // First try to get the session
+          const {
+            data: { session },
+            error: sessionError,
+          } = await supabase.auth.getSession();
+
+          if (sessionError) {
+            console.error("Error getting session:", sessionError);
+            clearTimeout(timeoutId);
+            // Don't throw on session error, just treat as no user
+            set(
+              {
+                user: null,
+                isAuthenticated: false,
+                isLoading: false,
+                error: null,
+              },
+              false,
+              "initialize/no-session",
+            );
+            return;
+          }
+
+          // If no session, no need to get user
+          if (!session) {
+            console.log("No active session found");
+            clearTimeout(timeoutId);
+            set(
+              {
+                user: null,
+                isAuthenticated: false,
+                isLoading: false,
+                error: null,
+              },
+              false,
+              "initialize/no-session",
+            );
+            return;
+          }
+
           const {
             data: { user: authUser },
+            error: getUserError,
           } = await supabase.auth.getUser();
 
+          // Clear timeout immediately after getting response
+          clearTimeout(timeoutId);
+
+          if (getUserError) {
+            console.error("Error getting user:", getUserError);
+            throw getUserError;
+          }
+
           if (authUser) {
+            console.log("User found, fetching profile...");
             const { data: profile, error: profileError } = await supabase
               .from("users")
               .select("*")
@@ -140,6 +193,7 @@ export const useAuthStore = create<AuthStore>()(
 
             if (profileError) {
               console.error("Error fetching user profile:", profileError);
+              // Continue with auth user data even if profile fetch fails
             }
 
             const user: User = {
@@ -154,6 +208,7 @@ export const useAuthStore = create<AuthStore>()(
               github_username: profile?.github_username || null,
             };
 
+            console.log("Auth initialization successful");
             set(
               {
                 user,
@@ -165,6 +220,7 @@ export const useAuthStore = create<AuthStore>()(
               "initialize/success",
             );
           } else {
+            console.log("No authenticated user found");
             set(
               {
                 user: null,
@@ -178,6 +234,7 @@ export const useAuthStore = create<AuthStore>()(
           }
         } catch (error) {
           console.error("Error initializing auth:", error);
+          clearTimeout(timeoutId);
           set(
             {
               user: null,
@@ -191,8 +248,6 @@ export const useAuthStore = create<AuthStore>()(
             false,
             "initialize/error",
           );
-        } finally {
-          clearTimeout(timeoutId);
         }
       },
     }),
