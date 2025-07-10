@@ -1,9 +1,53 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { renderHook, act } from "@testing-library/react";
+
+// Create a mock module first
+vi.mock("@/lib/supabase/client", () => {
+  const mockSignInWithOAuth = vi.fn();
+  const mockSignOut = vi.fn();
+  const mockGetUser = vi.fn();
+  const mockFrom = vi.fn();
+  const mockOnAuthStateChange = vi.fn(() => ({
+    data: {
+      subscription: {
+        unsubscribe: vi.fn(),
+      },
+    },
+  }));
+
+  return {
+    createClient: vi.fn(() => ({
+      auth: {
+        signInWithOAuth: mockSignInWithOAuth,
+        signOut: mockSignOut,
+        getUser: mockGetUser,
+        onAuthStateChange: mockOnAuthStateChange,
+      },
+      from: mockFrom,
+    })),
+    // Export the mocks so we can access them
+    __mocks__: {
+      mockSignInWithOAuth,
+      mockSignOut,
+      mockGetUser,
+      mockFrom,
+      mockOnAuthStateChange,
+    },
+  };
+});
+
+// Import after mocking
 import { useAuthStore } from "../auth.store";
+import { createClient } from "@/lib/supabase/client";
+
+// Get the mocks
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const { __mocks__ } = createClient as any;
+const { mockSignInWithOAuth, mockSignOut, mockGetUser, mockFrom } = __mocks__;
 
 describe("Auth Store", () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     // Reset store state before each test
     useAuthStore.setState({
       user: null,
@@ -22,32 +66,65 @@ describe("Auth Store", () => {
     expect(result.current.error).toBeNull();
   });
 
-  it("should handle successful login", async () => {
+  it("should handle OAuth login", async () => {
+    mockSignInWithOAuth.mockResolvedValue({
+      data: { url: "https://github.com/login", provider: "github" },
+      error: null,
+    });
+
     const { result } = renderHook(() => useAuthStore());
-    const testEmail = "test@example.com";
-    const testPassword = "password123";
 
     await act(async () => {
-      await result.current.login(testEmail, testPassword);
+      await result.current.login();
     });
 
-    expect(result.current.isAuthenticated).toBe(true);
-    expect(result.current.user).toEqual({
-      id: "1",
-      email: testEmail,
-      name: "test",
-      avatar: expect.stringContaining("dicebear.com"),
+    expect(mockSignInWithOAuth).toHaveBeenCalledWith({
+      provider: "github",
+      options: {
+        redirectTo: expect.stringContaining("/auth/callback"),
+        scopes: "read:user user:email",
+      },
     });
-    expect(result.current.error).toBeNull();
-    expect(result.current.isLoading).toBe(false);
+  });
+
+  it("should handle login error", async () => {
+    const mockError = new Error("OAuth failed");
+    mockSignInWithOAuth.mockResolvedValue({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      data: null as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      error: mockError as any,
+    });
+
+    const { result } = renderHook(() => useAuthStore());
+
+    await expect(
+      act(async () => {
+        await result.current.login();
+      }),
+    ).rejects.toThrow("OAuth failed");
+
+    expect(result.current.error).toBe("OAuth failed");
+    expect(result.current.isAuthenticated).toBe(false);
   });
 
   it("should handle logout", async () => {
+    mockSignOut.mockResolvedValue({
+      error: null,
+    });
+
     const { result } = renderHook(() => useAuthStore());
 
-    // First login
-    await act(async () => {
-      await result.current.login("test@example.com", "password");
+    // Set user first
+    act(() => {
+      result.current.setUser({
+        id: "1",
+        email: "test@example.com",
+        name: "Test User",
+        avatar_url: null,
+        github_id: null,
+        github_username: null,
+      });
     });
 
     expect(result.current.isAuthenticated).toBe(true);
@@ -57,6 +134,7 @@ describe("Auth Store", () => {
       await result.current.logout();
     });
 
+    expect(mockSignOut).toHaveBeenCalled();
     expect(result.current.user).toBeNull();
     expect(result.current.isAuthenticated).toBe(false);
     expect(result.current.error).toBeNull();
@@ -71,6 +149,9 @@ describe("Auth Store", () => {
         id: "1",
         email: "test@example.com",
         name: "Test User",
+        avatar_url: null,
+        github_id: null,
+        github_username: null,
       });
     });
 
@@ -78,7 +159,7 @@ describe("Auth Store", () => {
     act(() => {
       result.current.updateUser({
         name: "Updated Name",
-        avatar: "https://example.com/avatar.jpg",
+        avatar_url: "https://example.com/avatar.jpg",
       });
     });
 
@@ -86,8 +167,59 @@ describe("Auth Store", () => {
       id: "1",
       email: "test@example.com",
       name: "Updated Name",
-      avatar: "https://example.com/avatar.jpg",
+      avatar_url: "https://example.com/avatar.jpg",
+      github_id: null,
+      github_username: null,
     });
+  });
+
+  it("should initialize auth state", async () => {
+    const mockUser = {
+      id: "user-123",
+      email: "test@example.com",
+      user_metadata: {
+        avatar_url: "https://example.com/avatar.jpg",
+      },
+    };
+
+    const mockProfile = {
+      id: "user-123",
+      email: "test@example.com",
+      name: "Test User",
+      avatar_url: "https://example.com/avatar.jpg",
+      github_id: 12345,
+      github_username: "testuser",
+    };
+
+    mockGetUser.mockResolvedValue({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      data: { user: mockUser as any },
+      error: null,
+    });
+
+    mockFrom.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({ data: mockProfile, error: null }),
+        }),
+      }),
+    });
+
+    const { result } = renderHook(() => useAuthStore());
+
+    await act(async () => {
+      await result.current.initialize();
+    });
+
+    expect(result.current.user).toEqual({
+      id: "user-123",
+      email: "test@example.com",
+      name: "Test User",
+      avatar_url: "https://example.com/avatar.jpg",
+      github_id: 12345,
+      github_username: "testuser",
+    });
+    expect(result.current.isAuthenticated).toBe(true);
   });
 
   it("should clear errors", () => {
@@ -132,6 +264,9 @@ describe("Auth Store", () => {
       id: "123",
       email: "user@example.com",
       name: "Test User",
+      avatar_url: "https://example.com/avatar.jpg",
+      github_id: 12345,
+      github_username: "testuser",
     };
 
     act(() => {

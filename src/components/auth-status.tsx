@@ -1,15 +1,29 @@
 "use client";
 
+import { useEffect } from "react";
 import { useAuthStore } from "@/stores";
 import { Button } from "@/components/ui/button";
+import { Github } from "lucide-react";
 
 export function AuthStatus() {
-  const { user, isAuthenticated, isLoading, error, login, logout, clearError } =
-    useAuthStore();
+  const {
+    user,
+    isAuthenticated,
+    isLoading,
+    error,
+    login,
+    logout,
+    clearError,
+    initialize,
+  } = useAuthStore();
+
+  useEffect(() => {
+    initialize();
+  }, [initialize]);
 
   const handleLogin = async () => {
     try {
-      await login("demo@example.com", "password");
+      await login();
     } catch (error) {
       console.error("Login failed:", error);
     }
@@ -42,18 +56,20 @@ export function AuthStatus() {
     return (
       <div className="p-4 space-y-4">
         <div className="flex items-center gap-4">
-          {user.avatar && (
+          {user.avatar_url && (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={user.avatar}
-              alt={user.name}
+              src={user.avatar_url}
+              alt={user.name || user.github_username || "User"}
               width={40}
               height={40}
               className="rounded-full"
             />
           )}
           <div>
-            <p className="font-semibold">{user.name}</p>
+            <p className="font-semibold">
+              {user.name || user.github_username || "User"}
+            </p>
             <p className="text-sm text-gray-600">{user.email}</p>
           </div>
         </div>
@@ -68,7 +84,8 @@ export function AuthStatus() {
     <div className="p-4">
       <p className="mb-2">Not logged in</p>
       <Button onClick={handleLogin} size="sm">
-        Login Demo User
+        <Github className="mr-2 h-4 w-4" />
+        Login with GitHub
       </Button>
     </div>
   );

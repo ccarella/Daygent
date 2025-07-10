@@ -1,6 +1,9 @@
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
-import type { AuthStore } from "./types";
+import type { AuthStore, User } from "./types";
+import { createClient } from "@/lib/supabase/client";
+
+const supabase = createClient();
 
 export const useAuthStore = create<AuthStore>()(
   devtools(
@@ -23,34 +26,23 @@ export const useAuthStore = create<AuthStore>()(
           "setUser",
         ),
 
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      login: async (email, _password) => {
+      login: async () => {
         set({ isLoading: true, error: null }, false, "login/start");
 
         try {
-          // TODO: Replace with actual Supabase auth when configured
-          // Simulating async login for now
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-
-          // Mock successful login
-          const mockUser = {
-            id: "1",
-            email,
-            name: email.split("@")[0],
-            // Using email username as seed to avoid encoding issues
-            avatar: `https://api.dicebear.com/9.x/lorelei/svg?seed=${email.split("@")[0]}`,
-          };
-
-          set(
-            {
-              user: mockUser,
-              isAuthenticated: true,
-              isLoading: false,
-              error: null,
+          const { error } = await supabase.auth.signInWithOAuth({
+            provider: "github",
+            options: {
+              redirectTo: `${window.location.origin}/auth/callback`,
+              scopes: "read:user user:email",
             },
-            false,
-            "login/success",
-          );
+          });
+
+          if (error) {
+            throw error;
+          }
+
+          // OAuth flow will redirect, so we don't need to set user here
         } catch (error) {
           set(
             {
@@ -70,8 +62,11 @@ export const useAuthStore = create<AuthStore>()(
         set({ isLoading: true }, false, "logout/start");
 
         try {
-          // TODO: Replace with actual Supabase signOut when configured
-          await new Promise((resolve) => setTimeout(resolve, 500));
+          const { error } = await supabase.auth.signOut();
+
+          if (error) {
+            throw error;
+          }
 
           set(
             {
@@ -108,6 +103,73 @@ export const useAuthStore = create<AuthStore>()(
       clearError: () => set({ error: null }, false, "clearError"),
 
       setLoading: (isLoading) => set({ isLoading }, false, "setLoading"),
+
+      // Initialize auth state
+      initialize: async () => {
+        set({ isLoading: true }, false, "initialize/start");
+
+        try {
+          const {
+            data: { user: authUser },
+          } = await supabase.auth.getUser();
+
+          if (authUser) {
+            const { data: profile } = await supabase
+              .from("users")
+              .select("*")
+              .eq("id", authUser.id)
+              .single();
+
+            const user: User = {
+              id: authUser.id,
+              email: authUser.email || "",
+              name: profile?.name || null,
+              avatar_url:
+                profile?.avatar_url ||
+                authUser.user_metadata?.avatar_url ||
+                null,
+              github_id: profile?.github_id || null,
+              github_username: profile?.github_username || null,
+            };
+
+            set(
+              {
+                user,
+                isAuthenticated: true,
+                isLoading: false,
+                error: null,
+              },
+              false,
+              "initialize/success",
+            );
+          } else {
+            set(
+              {
+                user: null,
+                isAuthenticated: false,
+                isLoading: false,
+                error: null,
+              },
+              false,
+              "initialize/no-user",
+            );
+          }
+        } catch (error) {
+          set(
+            {
+              user: null,
+              isAuthenticated: false,
+              isLoading: false,
+              error:
+                error instanceof Error
+                  ? error.message
+                  : "Failed to initialize auth",
+            },
+            false,
+            "initialize/error",
+          );
+        }
+      },
     }),
     {
       name: "auth-store", // name for devtools
@@ -115,3 +177,33 @@ export const useAuthStore = create<AuthStore>()(
     },
   ),
 );
+
+// Set up auth state listener
+supabase.auth.onAuthStateChange(async (_event, session) => {
+  const { setUser, setLoading } = useAuthStore.getState();
+
+  if (session?.user) {
+    setLoading(true);
+
+    const { data: profile } = await supabase
+      .from("users")
+      .select("*")
+      .eq("id", session.user.id)
+      .single();
+
+    const user: User = {
+      id: session.user.id,
+      email: session.user.email || "",
+      name: profile?.name || null,
+      avatar_url:
+        profile?.avatar_url || session.user.user_metadata?.avatar_url || null,
+      github_id: profile?.github_id || null,
+      github_username: profile?.github_username || null,
+    };
+
+    setUser(user);
+    setLoading(false);
+  } else {
+    setUser(null);
+  }
+});
