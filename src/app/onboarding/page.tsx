@@ -1,8 +1,21 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { Github, ArrowRight, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useOrganization } from "@/hooks/useOrganization";
+import { useEffect } from "react";
 
 export default function OnboardingPage() {
+  const router = useRouter();
+  const { activeOrganization } = useOrganization();
+
+  useEffect(() => {
+    if (!activeOrganization) {
+      router.push("/organizations");
+    }
+  }, [activeOrganization, router]);
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-3xl mx-auto px-4 py-16 space-y-12">
@@ -44,17 +57,13 @@ export default function OnboardingPage() {
                     AI-enhanced development
                   </p>
                 </div>
-                <div className="space-y-2">
-                  <input
-                    type="text"
-                    placeholder="https://github.com/owner/repository"
-                    className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-                  />
-                  <Button className="w-full sm:w-auto">
-                    Connect Repository
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </div>
+                <Button
+                  className="w-full sm:w-auto"
+                  onClick={() => router.push("/repositories")}
+                >
+                  Browse Repositories
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
               </div>
             </div>
           </div>
@@ -64,7 +73,7 @@ export default function OnboardingPage() {
               Want to explore first?
             </p>
             <Button variant="outline" asChild>
-              <Link href="/issues">Skip for now</Link>
+              <Link href="/repositories">Skip for now</Link>
             </Button>
           </div>
         </div>

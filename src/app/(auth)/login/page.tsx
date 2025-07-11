@@ -49,7 +49,7 @@ function LoginForm() {
         provider: "github",
         options: {
           redirectTo: callbackUrl.toString(),
-          scopes: "read:user user:email",
+          scopes: "repo read:user user:email",
         },
       });
 
