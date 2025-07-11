@@ -2,14 +2,6 @@ import { NextResponse } from "next/server";
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
 import type { PostgrestError } from "@supabase/supabase-js";
 
-interface DebugOrgResult {
-  id: string | null;
-  name: string | null;
-  slug: string | null;
-  success: boolean;
-  message: string;
-}
-
 export async function POST() {
   try {
     // Get the current user
@@ -92,48 +84,103 @@ export async function POST() {
       userProfile.github_username ||
       userProfile.email.split("@")[0];
 
-    // Use the debug function to create organization and bypass RLS issues
-    const { data: result, error: createError } = (await serviceClient
-      .rpc("create_organization_for_user_debug", {
-        p_user_id: user.id,
-        p_org_name: orgName,
-        p_org_slug: slug,
+    // Create organization directly - service role should bypass RLS
+    const { data: newOrg, error: createError } = await serviceClient
+      .from("organizations")
+      .insert({
+        name: orgName,
+        slug: slug,
+        subscription_status: "trial",
+        trial_ends_at: new Date(
+          Date.now() + 30 * 24 * 60 * 60 * 1000,
+        ).toISOString(),
+        seats_used: 1,
       })
-      .single()) as {
-      data: DebugOrgResult | null;
-      error: PostgrestError | null;
-    };
+      .select()
+      .single();
 
     if (createError) {
-      console.error("Function error:", createError);
+      console.error("Failed to create organization:", createError);
       return NextResponse.json(
         { error: `Failed to create organization: ${createError.message}` },
         { status: 400 },
       );
     }
 
-    if (!result || !result.success) {
+    // Add user as owner - try multiple approaches to bypass RLS
+    let memberAdded = false;
+    let memberError: PostgrestError | null = null;
+
+    // First attempt: direct insert with service role
+    const { error: directError } = await serviceClient
+      .from("organization_members")
+      .insert({
+        organization_id: newOrg.id,
+        user_id: user.id,
+        role: "owner",
+        joined_at: new Date().toISOString(),
+      });
+
+    if (!directError) {
+      memberAdded = true;
+    } else {
+      memberError = directError;
+      console.error("Direct member insert failed:", directError);
+
+      // Second attempt: use raw SQL via Supabase SQL editor function if available
+      try {
+        const { error: sqlError } = await serviceClient.rpc("exec", {
+          sql: `INSERT INTO organization_members (organization_id, user_id, role, joined_at) VALUES ($1, $2, $3, $4)`,
+          params: [newOrg.id, user.id, "owner", new Date().toISOString()],
+        });
+
+        if (!sqlError) {
+          memberAdded = true;
+          memberError = null;
+        }
+      } catch {
+        console.log("SQL function not available");
+      }
+    }
+
+    if (!memberAdded) {
+      // Clean up: delete the organization if we can't add the member
+      await serviceClient.from("organizations").delete().eq("id", newOrg.id);
+
       return NextResponse.json(
-        { error: result?.message || "Failed to create organization" },
+        {
+          error: `Organization creation incomplete due to database policy restrictions. ${
+            memberError ? `Error: ${memberError.message}` : ""
+          }. Please contact support or run database migrations.`,
+        },
         { status: 400 },
       );
     }
 
-    if (!result.id || !result.name || !result.slug) {
-      return NextResponse.json(
-        { error: "Organization created but missing data" },
-        { status: 400 },
-      );
+    // Try to log activity (non-critical)
+    try {
+      await serviceClient.from("activities").insert({
+        organization_id: newOrg.id,
+        user_id: user.id,
+        action: "organization.created",
+        resource_type: "organization",
+        resource_id: newOrg.id,
+        metadata: {
+          description: `Organization created for existing user ${userProfile.email}`,
+        },
+      });
+    } catch (activityError) {
+      console.warn("Failed to log activity:", activityError);
     }
 
     return NextResponse.json({
       success: true,
       organization: {
-        id: result.id,
-        name: result.name,
-        slug: result.slug,
+        id: newOrg.id,
+        name: newOrg.name,
+        slug: newOrg.slug,
       },
-      message: `Successfully created organization "${result.name}" with slug "${result.slug}"`,
+      message: `Successfully created organization "${newOrg.name}" with slug "${newOrg.slug}"`,
     });
   } catch (error) {
     console.error("Error creating organization:", error);
