@@ -59,7 +59,7 @@ describe("useAuth", () => {
       provider: "github",
       options: {
         redirectTo: expect.stringContaining("/auth/callback"),
-        scopes: "read:user user:email",
+        scopes: "repo read:user user:email",
       },
     });
   });

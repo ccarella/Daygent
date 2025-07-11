@@ -56,7 +56,7 @@ export const useAuthStore = create<AuthStore>()(
             provider: "github",
             options: {
               redirectTo: `${window.location.origin}/auth/callback`,
-              scopes: "read:user user:email",
+              scopes: "repo read:user user:email",
             },
           });
 
