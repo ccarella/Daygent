@@ -69,8 +69,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL(next, request.url));
   }
 
-  // Check if authenticated user has an organization (skip for public/error routes)
-  if (user && !isPublicRoute && !pathname.startsWith("/auth/error")) {
+  // Check if authenticated user has an organization (skip for public/error/onboarding routes)
+  if (
+    user &&
+    !isPublicRoute &&
+    !pathname.startsWith("/auth/error") &&
+    pathname !== "/onboarding"
+  ) {
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -99,13 +104,10 @@ export async function middleware(request: NextRequest) {
           error,
         );
       } else if (!orgs || orgs.length === 0) {
-        console.error(
-          "[Middleware] User has no organization - this should not happen",
+        console.log(
+          "[Middleware] User has no organization, redirecting to onboarding",
         );
-        // The database trigger should prevent this, but if it fails, handle gracefully
-        return NextResponse.redirect(
-          new URL("/auth/error?code=no_organization", request.url),
-        );
+        return NextResponse.redirect(new URL("/onboarding", request.url));
       }
     } catch (error) {
       console.error("[Middleware] Failed to check organization:", error);
