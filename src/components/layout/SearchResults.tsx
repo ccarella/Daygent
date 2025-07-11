@@ -43,6 +43,8 @@ export function SearchResults({
   const resultsRef = useRef<HTMLDivElement>(null);
 
   // Mock search function - replace with actual API call
+  // Note: Error handling is implemented and will properly catch and display
+  // errors when the actual search API is integrated
   const performSearch = async (searchQuery: string) => {
     if (!searchQuery.trim()) {
       setResults([]);
