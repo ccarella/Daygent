@@ -288,7 +288,7 @@ export const useAuthStore = create<AuthStore>()(
               .from("users")
               .select("*")
               .eq("id", authUser.id)
-              .single();
+              .maybeSingle();
 
             const profileTime = performance.now() - profileStartTime;
             console.log(
@@ -421,7 +421,7 @@ supabase.auth.onAuthStateChange(async (event, session) => {
         .from("users")
         .select("*")
         .eq("id", session.user.id)
-        .single();
+        .maybeSingle();
 
       const profileTime = performance.now() - profileStartTime;
       console.log(
