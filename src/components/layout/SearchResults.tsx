@@ -124,7 +124,6 @@ export function SearchResults({
           const result = results[resultIndex];
           if (result) {
             // TODO: Navigate to result
-            console.log("Selected:", result);
             onClose();
           }
         }
@@ -218,7 +217,6 @@ export function SearchResults({
                     key={result.id}
                     onClick={() => {
                       // TODO: Navigate to result
-                      console.log("Selected:", result);
                       onClose();
                     }}
                     className={cn(

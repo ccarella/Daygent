@@ -80,7 +80,6 @@ export function GlobalSearch({ isMobile = false }: GlobalSearchProps) {
     if (query.trim()) {
       saveRecentSearch(query.trim());
       // TODO: Navigate to full search results page
-      console.log("Searching for:", query);
     }
   };
 
