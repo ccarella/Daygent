@@ -1,10 +1,21 @@
-import { LayoutDashboard, FolderGit2, Activity, Settings } from "lucide-react";
+import {
+  LayoutDashboard,
+  ListTodo,
+  FolderGit2,
+  Activity,
+  Settings,
+} from "lucide-react";
 
 export const NAV_ITEMS = [
   {
+    title: "Dashboard",
+    href: "/dashboard",
+    icon: LayoutDashboard,
+  },
+  {
     title: "Issues",
     href: "/issues",
-    icon: LayoutDashboard,
+    icon: ListTodo,
   },
   {
     title: "Projects",
