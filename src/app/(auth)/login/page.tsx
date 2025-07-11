@@ -31,8 +31,8 @@ function LoginForm() {
     console.log("[Login Page] Current URL:", window.location.href);
 
     // Preserve the 'next' parameter through the OAuth flow
-    const next = searchParams.get("next") || "/dashboard";
-    const callbackUrl = new URL("/auth/callback", window.location.origin);
+    const next = searchParams.get("next") || "/issues";
+    const callbackUrl = new URL("/api/auth/callback", window.location.origin);
     callbackUrl.searchParams.set("next", next);
 
     console.log("[Login Page] Redirect URL:", callbackUrl.toString());
@@ -83,65 +83,51 @@ function LoginForm() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="w-full max-w-sm space-y-6 px-4">
-        <div className="text-center space-y-2">
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Welcome to Daygent
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Sign in with your GitHub account to get started
-          </p>
-        </div>
-
-        <div className="space-y-4">
-          {error && (
-            <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-              {error}
-            </div>
-          )}
-
-          <Button
-            onClick={handleGitHubLogin}
-            disabled={isLoading}
-            className="w-full"
-            size="lg"
-          >
-            <Github className="mr-2 h-5 w-5" />
-            {isLoading ? "Connecting..." : "Continue with GitHub"}
-          </Button>
-        </div>
-
-        <p className="text-center text-xs text-muted-foreground">
-          By signing in, you agree to our{" "}
-          <a
-            href="#"
-            className="underline underline-offset-4 hover:text-primary"
-          >
-            Terms of Service
-          </a>{" "}
-          and{" "}
-          <a
-            href="#"
-            className="underline underline-offset-4 hover:text-primary"
-          >
-            Privacy Policy
-          </a>
+    <div className="w-full space-y-6">
+      <div className="text-center space-y-2">
+        <h1 className="text-2xl font-semibold tracking-tight">
+          Welcome to Daygent
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Sign in with your GitHub account to get started
         </p>
       </div>
+
+      <div className="space-y-4">
+        {error && (
+          <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+            {error}
+          </div>
+        )}
+
+        <Button
+          onClick={handleGitHubLogin}
+          disabled={isLoading}
+          className="w-full"
+          size="lg"
+        >
+          <Github className="mr-2 h-5 w-5" />
+          {isLoading ? "Connecting..." : "Continue with GitHub"}
+        </Button>
+      </div>
+
+      <p className="text-center text-xs text-muted-foreground">
+        By signing in, you agree to our{" "}
+        <a href="#" className="underline underline-offset-4 hover:text-primary">
+          Terms of Service
+        </a>{" "}
+        and{" "}
+        <a href="#" className="underline underline-offset-4 hover:text-primary">
+          Privacy Policy
+        </a>
+      </p>
     </div>
   );
 }
 
 export default function LoginPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-screen items-center justify-center">
-          Loading...
-        </div>
-      }
-    >
+    <Suspense fallback={<div className="text-center">Loading...</div>}>
       <LoginForm />
     </Suspense>
   );
