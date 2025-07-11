@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
+import type { PostgrestError } from "@supabase/supabase-js";
 
 interface DebugOrgResult {
   id: string | null;
@@ -92,13 +93,16 @@ export async function POST() {
       userProfile.email.split("@")[0];
 
     // Use the debug function to create organization and bypass RLS issues
-    const { data: result, error: createError } = await serviceClient
-      .rpc('create_organization_for_user_debug', {
+    const { data: result, error: createError } = (await serviceClient
+      .rpc("create_organization_for_user_debug", {
         p_user_id: user.id,
         p_org_name: orgName,
         p_org_slug: slug,
       })
-      .single() as { data: DebugOrgResult | null; error: any };
+      .single()) as {
+      data: DebugOrgResult | null;
+      error: PostgrestError | null;
+    };
 
     if (createError) {
       console.error("Function error:", createError);
