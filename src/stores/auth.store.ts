@@ -10,6 +10,7 @@ export const useAuthStore = create<AuthStore>()(
     (set) => ({
       // State
       user: null,
+      activeOrganization: null,
       isAuthenticated: false,
       isLoading: false,
       error: null,
@@ -25,6 +26,16 @@ export const useAuthStore = create<AuthStore>()(
           false,
           "setUser",
         ),
+
+      setActiveOrganization: (org) => {
+        set({ activeOrganization: org }, false, "setActiveOrganization");
+        // Store in localStorage for persistence
+        if (org) {
+          localStorage.setItem("activeOrganizationId", org.id);
+        } else {
+          localStorage.removeItem("activeOrganizationId");
+        }
+      },
 
       login: async () => {
         console.log("[Auth Store] Starting GitHub OAuth login...");
@@ -98,9 +109,13 @@ export const useAuthStore = create<AuthStore>()(
             throw error;
           }
 
+          // Clear organization data
+          localStorage.removeItem("activeOrganizationId");
+
           set(
             {
               user: null,
+              activeOrganization: null,
               isAuthenticated: false,
               isLoading: false,
               error: null,
@@ -403,9 +418,43 @@ export const useAuthStore = create<AuthStore>()(
               github_username: user.github_username || "Not set",
             });
 
+            // Fetch user's default organization
+            let activeOrg = null;
+            try {
+              console.log(
+                "[Auth Store] Fetching user's default organization...",
+              );
+              const { data: orgData, error: orgError } = await supabase.rpc(
+                "get_user_default_organization",
+                { user_id: user.id },
+              );
+
+              if (orgError) {
+                console.error(
+                  "[Auth Store] Error fetching organization:",
+                  orgError,
+                );
+              } else if (orgData && orgData.length > 0) {
+                activeOrg = orgData[0];
+                console.log(
+                  "[Auth Store] Default organization found:",
+                  activeOrg.slug,
+                );
+                localStorage.setItem("activeOrganizationId", activeOrg.id);
+              } else {
+                console.log("[Auth Store] No organization found for user");
+              }
+            } catch (orgError) {
+              console.error(
+                "[Auth Store] Error in organization fetch:",
+                orgError,
+              );
+            }
+
             set(
               {
                 user,
+                activeOrganization: activeOrg,
                 isAuthenticated: true,
                 isLoading: false,
                 error: null,

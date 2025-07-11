@@ -1,3 +1,5 @@
+import type { Organization } from "@/types/organization";
+
 export interface User {
   id: string;
   email: string;
@@ -9,6 +11,7 @@ export interface User {
 
 export interface AuthState {
   user: User | null;
+  activeOrganization: Organization | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
@@ -16,6 +19,7 @@ export interface AuthState {
 
 export interface AuthActions {
   setUser: (user: User | null) => void;
+  setActiveOrganization: (org: Organization | null) => void;
   login: () => Promise<void>;
   logout: () => Promise<void>;
   updateUser: (updates: Partial<User>) => void;

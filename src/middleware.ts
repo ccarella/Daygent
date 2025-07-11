@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
+import { createServerClient } from "@supabase/ssr";
 
 // Route configuration for better maintainability
 const routeConfig = {
@@ -66,6 +67,49 @@ export async function middleware(request: NextRequest) {
     // Check if there's a 'next' parameter to redirect to
     const next = request.nextUrl.searchParams.get("next") || "/issues";
     return NextResponse.redirect(new URL(next, request.url));
+  }
+
+  // Check if authenticated user has an organization (skip for public/error routes)
+  if (user && !isPublicRoute && !pathname.startsWith("/auth/error")) {
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll();
+          },
+          setAll() {
+            // We don't need to set cookies here
+          },
+        },
+      },
+    );
+
+    try {
+      const { data: orgs, error } = await supabase
+        .from("organization_members")
+        .select("organization_id")
+        .eq("user_id", user.id)
+        .limit(1);
+
+      if (error) {
+        console.error(
+          "[Middleware] Error checking organization membership:",
+          error,
+        );
+      } else if (!orgs || orgs.length === 0) {
+        console.error(
+          "[Middleware] User has no organization - this should not happen",
+        );
+        // The database trigger should prevent this, but if it fails, handle gracefully
+        return NextResponse.redirect(
+          new URL("/auth/error?code=no_organization", request.url),
+        );
+      }
+    } catch (error) {
+      console.error("[Middleware] Failed to check organization:", error);
+    }
   }
 
   return response;
