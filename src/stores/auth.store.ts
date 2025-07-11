@@ -281,19 +281,72 @@ export const useAuthStore = create<AuthStore>()(
               Object.keys(authUser.user_metadata || {}),
             );
 
-            console.log("[Auth Store] Fetching user profile from database...");
-            const profileStartTime = performance.now();
+            let profile = null;
+            let profileError = null;
 
-            const { data: profile, error: profileError } = await supabase
-              .from("users")
-              .select("*")
-              .eq("id", authUser.id)
-              .maybeSingle();
+            // Skip profile query if bypassed
+            if (BYPASS_PROFILE_QUERIES) {
+              console.log(
+                "[Auth Store] Profile query bypassed - using auth metadata",
+              );
+              profileError = {
+                message: "Profile query bypassed",
+                code: "BYPASSED",
+                details: "Using auth metadata instead",
+              };
+            } else {
+              console.log(
+                "[Auth Store] Fetching user profile from database...",
+              );
+              const profileStartTime = performance.now();
 
-            const profileTime = performance.now() - profileStartTime;
-            console.log(
-              `[Auth Store] Profile fetch completed in ${profileTime.toFixed(2)}ms`,
-            );
+              let timedOut = false;
+
+              // Create a timeout that will definitely fire
+              const timeoutId = setTimeout(() => {
+                timedOut = true;
+                console.log(
+                  "[Auth Store] Profile query timeout triggered after 3 seconds",
+                );
+              }, 3000);
+
+              try {
+                // Try to fetch the profile
+                const result = await supabase
+                  .from("users")
+                  .select("*")
+                  .eq("id", authUser.id)
+                  .maybeSingle();
+
+                clearTimeout(timeoutId);
+
+                if (!timedOut) {
+                  profile = result.data;
+                  profileError = result.error;
+                } else {
+                  profileError = {
+                    message: "Profile query timed out after 3 seconds",
+                    code: "TIMEOUT",
+                    details:
+                      "The profile query did not complete within the timeout period",
+                  };
+                }
+              } catch (e) {
+                clearTimeout(timeoutId);
+                console.error("[Auth Store] Profile query threw an error:", e);
+                profileError = {
+                  message:
+                    e instanceof Error ? e.message : "Unknown error occurred",
+                  code: "QUERY_ERROR",
+                  details: e,
+                };
+              }
+
+              const profileTime = performance.now() - profileStartTime;
+              console.log(
+                `[Auth Store] Profile fetch completed in ${profileTime.toFixed(2)}ms`,
+              );
+            }
 
             if (profileError) {
               console.error(
@@ -320,13 +373,24 @@ export const useAuthStore = create<AuthStore>()(
             const user: User = {
               id: authUser.id,
               email: authUser.email || "",
-              name: profile?.name || null,
+              name:
+                profile?.name ||
+                authUser.user_metadata?.name ||
+                authUser.user_metadata?.full_name ||
+                null,
               avatar_url:
                 profile?.avatar_url ||
                 authUser.user_metadata?.avatar_url ||
                 null,
-              github_id: profile?.github_id || null,
-              github_username: profile?.github_username || null,
+              github_id:
+                profile?.github_id ||
+                (authUser.app_metadata?.provider === "github"
+                  ? authUser.user_metadata?.provider_id
+                  : null),
+              github_username:
+                profile?.github_username ||
+                authUser.user_metadata?.user_name ||
+                null,
             };
 
             const totalTime = performance.now() - startTime;
@@ -397,6 +461,12 @@ export const useAuthStore = create<AuthStore>()(
   ),
 );
 
+// Flag to track if profile queries are failing
+let profileQueryFailing = false;
+
+// Emergency bypass - set to true to skip all profile queries
+const BYPASS_PROFILE_QUERIES = true; // TODO: Remove this once RLS issues are resolved
+
 // Set up auth state listener
 supabase.auth.onAuthStateChange(async (event, session) => {
   console.log("[Auth Store] Auth state changed:", event);
@@ -414,14 +484,81 @@ supabase.auth.onAuthStateChange(async (event, session) => {
     setLoading(true);
 
     try {
-      console.log("[Auth Store] Fetching user profile for state change...");
+      let profile = null;
+      let error = null;
       const profileStartTime = performance.now();
 
-      const { data: profile, error } = await supabase
-        .from("users")
-        .select("*")
-        .eq("id", session.user.id)
-        .maybeSingle();
+      // Wrap entire profile fetch in try-catch to ensure we always proceed
+      try {
+        // Skip profile query if bypassed or failing
+        if (BYPASS_PROFILE_QUERIES || profileQueryFailing) {
+          console.log(
+            "[Auth Store] Skipping profile query due to previous failures",
+          );
+          error = {
+            message: "Profile query skipped due to previous failures",
+            code: "SKIPPED",
+            details: "Using auth metadata instead",
+          };
+        } else {
+          console.log("[Auth Store] Fetching user profile for state change...");
+
+          let timedOut = false;
+
+          // Create a timeout that will definitely fire
+          const timeoutId = setTimeout(() => {
+            timedOut = true;
+            profileQueryFailing = true;
+            console.log(
+              "[Auth Store] Profile query timeout triggered after 2 seconds",
+            );
+          }, 2000);
+
+          try {
+            // Try to fetch the profile
+            const result = await supabase
+              .from("users")
+              .select("*")
+              .eq("id", session.user.id)
+              .maybeSingle();
+
+            clearTimeout(timeoutId);
+
+            if (!timedOut) {
+              profile = result.data;
+              error = result.error;
+              profileQueryFailing = false; // Reset flag on success
+            } else {
+              error = {
+                message: "Profile query timed out after 2 seconds",
+                code: "TIMEOUT",
+                details:
+                  "The profile query did not complete within the timeout period",
+              };
+            }
+          } catch (e) {
+            clearTimeout(timeoutId);
+            profileQueryFailing = true;
+            console.error("[Auth Store] Profile query threw an error:", e);
+            error = {
+              message:
+                e instanceof Error ? e.message : "Unknown error occurred",
+              code: "QUERY_ERROR",
+              details: e,
+            };
+          }
+        }
+      } catch (criticalError) {
+        console.error(
+          "[Auth Store] Critical error in profile fetch:",
+          criticalError,
+        );
+        error = {
+          message: "Critical error occurred",
+          code: "CRITICAL_ERROR",
+          details: criticalError,
+        };
+      }
 
       const profileTime = performance.now() - profileStartTime;
       console.log(
@@ -434,10 +571,10 @@ supabase.auth.onAuthStateChange(async (event, session) => {
           error,
         );
         console.error("[Auth Store] Profile error details:", {
-          message: error.message,
-          code: error.code,
-          details: error.details,
-          hint: error.hint,
+          message: error?.message || "Unknown error",
+          code: error?.code || "UNKNOWN",
+          details: error?.details || error,
+          hint: error?.hint,
         });
       } else {
         console.log(
@@ -448,11 +585,22 @@ supabase.auth.onAuthStateChange(async (event, session) => {
       const user: User = {
         id: session.user.id,
         email: session.user.email || "",
-        name: profile?.name || null,
+        name:
+          profile?.name ||
+          session.user.user_metadata?.name ||
+          session.user.user_metadata?.full_name ||
+          null,
         avatar_url:
           profile?.avatar_url || session.user.user_metadata?.avatar_url || null,
-        github_id: profile?.github_id || null,
-        github_username: profile?.github_username || null,
+        github_id:
+          profile?.github_id ||
+          (session.user.app_metadata?.provider === "github"
+            ? session.user.user_metadata?.provider_id
+            : null),
+        github_username:
+          profile?.github_username ||
+          session.user.user_metadata?.user_name ||
+          null,
       };
 
       console.log("[Auth Store] Setting user from state change:", {
