@@ -4,6 +4,14 @@ import { DashboardLayout } from "../DashboardLayout";
 
 vi.mock("next/navigation", () => ({
   usePathname: () => "/issues",
+  useRouter: () => ({
+    push: vi.fn(),
+    back: vi.fn(),
+    forward: vi.fn(),
+    refresh: vi.fn(),
+    replace: vi.fn(),
+    prefetch: vi.fn(),
+  }),
 }));
 
 vi.mock("../Sidebar", () => ({
@@ -22,6 +30,22 @@ vi.mock("../Sidebar", () => ({
 
 vi.mock("../MobileNav", () => ({
   MobileNav: () => <div data-testid="mobile-nav">Mobile Nav</div>,
+}));
+
+vi.mock("@/components/CommandPalette", () => ({
+  CommandPalette: () => null, // Don't render in these tests
+}));
+
+vi.mock("@/hooks/useCommandPalette", () => ({
+  useCommandPalette: () => ({
+    isOpen: false,
+    open: vi.fn(),
+    close: vi.fn(),
+    toggle: vi.fn(),
+    registerCommands: vi.fn(),
+    unregisterCommands: vi.fn(),
+    addRecentCommand: vi.fn(),
+  }),
 }));
 
 describe("DashboardLayout", () => {

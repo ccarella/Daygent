@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Sidebar } from "./Sidebar";
 import { MobileNav } from "./MobileNav";
+import { CommandPalette } from "@/components/CommandPalette";
+import { useCommandPalette } from "@/hooks/useCommandPalette";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -14,6 +16,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
+  useCommandPalette(); // Initialize global keyboard shortcuts
 
   useEffect(() => {
     const savedState = localStorage.getItem("sidebar-open");
@@ -50,6 +53,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <div className="min-h-screen bg-background">
+      <CommandPalette />
+
       {!isMobile && (
         <Sidebar
           isOpen={sidebarOpen}
