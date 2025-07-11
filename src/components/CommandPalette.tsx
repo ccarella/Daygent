@@ -49,7 +49,7 @@ export function CommandPalette() {
         description: "View your project dashboard",
         icon: LayoutDashboard,
         action: () => {
-          router.push("/issues");
+          router.push("/dashboard");
           addRecentCommand("nav-dashboard");
           close();
         },
