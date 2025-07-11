@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth.store";
+import { NAV_ITEMS } from "@/lib/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -13,47 +14,18 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import {
-  Menu,
-  LayoutDashboard,
-  FolderGit2,
-  Activity,
-  Settings,
-  User,
-  LogOut,
-} from "lucide-react";
+import { Menu, User, LogOut } from "lucide-react";
 
 interface MobileNavProps {
   pathname: string;
 }
 
-const navItems = [
-  {
-    title: "Issues",
-    href: "/issues",
-    icon: LayoutDashboard,
-  },
-  {
-    title: "Projects",
-    href: "/projects",
-    icon: FolderGit2,
-  },
-  {
-    title: "Activity",
-    href: "/activity",
-    icon: Activity,
-  },
-  {
-    title: "Settings",
-    href: "/settings",
-    icon: Settings,
-  },
-];
-
 export function MobileNav({ pathname }: MobileNavProps) {
   const router = useRouter();
   const { user, logout } = useAuthStore();
   const [open, setOpen] = useState(false);
+  const [imageLoading, setImageLoading] = useState(true);
+  const [imageError, setImageError] = useState(false);
 
   const handleLogout = async () => {
     await logout();
@@ -79,13 +51,26 @@ export function MobileNav({ pathname }: MobileNavProps) {
           </SheetHeader>
 
           <div className="mb-6 flex items-center gap-3 rounded-lg border p-3">
-            {avatarUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={avatarUrl}
-                alt={displayName}
-                className="h-10 w-10 rounded-full"
-              />
+            {avatarUrl && !imageError ? (
+              <>
+                {imageLoading && (
+                  <div className="h-10 w-10 rounded-full bg-muted animate-pulse" />
+                )}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={avatarUrl}
+                  alt={displayName}
+                  className={cn(
+                    "h-10 w-10 rounded-full",
+                    imageLoading && "hidden",
+                  )}
+                  onLoad={() => setImageLoading(false)}
+                  onError={() => {
+                    setImageError(true);
+                    setImageLoading(false);
+                  }}
+                />
+              </>
             ) : (
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
                 <User className="h-5 w-5" />
@@ -102,7 +87,7 @@ export function MobileNav({ pathname }: MobileNavProps) {
           </div>
 
           <nav className="space-y-1">
-            {navItems.map((item) => {
+            {NAV_ITEMS.map((item) => {
               const Icon = item.icon;
               const isActive = pathname.startsWith(item.href);
 

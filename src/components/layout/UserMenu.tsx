@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth.store";
@@ -21,6 +22,8 @@ interface UserMenuProps {
 export function UserMenu({ isOpen }: UserMenuProps) {
   const router = useRouter();
   const { user, logout } = useAuthStore();
+  const [imageLoading, setImageLoading] = useState(true);
+  const [imageError, setImageError] = useState(false);
 
   const handleLogout = async () => {
     await logout();
@@ -41,13 +44,23 @@ export function UserMenu({ isOpen }: UserMenuProps) {
             !isOpen && "justify-center",
           )}
         >
-          {avatarUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={avatarUrl}
-              alt={displayName}
-              className="h-6 w-6 rounded-full"
-            />
+          {avatarUrl && !imageError ? (
+            <>
+              {imageLoading && (
+                <div className="h-6 w-6 rounded-full bg-muted animate-pulse" />
+              )}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={avatarUrl}
+                alt={displayName}
+                className={cn("h-6 w-6 rounded-full", imageLoading && "hidden")}
+                onLoad={() => setImageLoading(false)}
+                onError={() => {
+                  setImageError(true);
+                  setImageLoading(false);
+                }}
+              />
+            </>
           ) : (
             <User className="h-4 w-4" />
           )}
