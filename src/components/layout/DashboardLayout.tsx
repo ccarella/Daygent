@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { Header } from "./Header";
 import { Sidebar } from "./Sidebar";
-import { MobileNav } from "./MobileNav";
 import { CommandPalette } from "@/components/CommandPalette";
 import { useCommandPalette } from "@/hooks/useCommandPalette";
 
@@ -55,6 +55,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     <div className="min-h-screen bg-background">
       <CommandPalette />
 
+      {/* Header - always visible */}
+      <Header />
+
+      {/* Desktop sidebar */}
       {!isMobile && (
         <Sidebar
           isOpen={sidebarOpen}
@@ -63,14 +67,15 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         />
       )}
 
-      {isMobile && <MobileNav pathname={pathname} />}
+      {/* Mobile navigation - now handled in Header */}
+      {/* {isMobile && <MobileNav pathname={pathname} />} */}
 
       <main
         className={cn(
           "transition-all duration-200 ease-in-out",
+          "pt-16", // Account for fixed header
           !isMobile && sidebarOpen && "md:ml-64",
           !isMobile && !sidebarOpen && "md:ml-16",
-          isMobile && "pt-16",
         )}
       >
         <div className="container mx-auto p-6">{children}</div>
