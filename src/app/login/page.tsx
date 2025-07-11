@@ -14,16 +14,32 @@ function LoginForm() {
   const supabase = createClient();
 
   useEffect(() => {
+    console.log("[Login Page] Component mounted");
     const errorParam = searchParams.get("error");
-    if (errorParam === "auth_callback_error") {
-      setError("Authentication failed. Please try again.");
+    if (errorParam) {
+      console.log("[Login Page] Error param found:", errorParam);
+      if (errorParam === "auth_callback_error") {
+        setError("Authentication failed. Please try again.");
+      } else {
+        setError(decodeURIComponent(errorParam));
+      }
     }
   }, [searchParams]);
 
   const handleGitHubLogin = async () => {
+    console.log("[Login Page] GitHub login button clicked");
+    console.log("[Login Page] Current URL:", window.location.href);
+    console.log(
+      "[Login Page] Redirect URL:",
+      `${window.location.origin}/auth/callback`,
+    );
+
     try {
       setIsLoading(true);
       setError(null);
+
+      const startTime = performance.now();
+      console.log("[Login Page] Calling signInWithOAuth...");
 
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "github",
@@ -33,11 +49,30 @@ function LoginForm() {
         },
       });
 
+      const elapsed = performance.now() - startTime;
+      console.log(
+        `[Login Page] signInWithOAuth completed in ${elapsed.toFixed(2)}ms`,
+      );
+
       if (error) {
+        console.error("[Login Page] OAuth error:", error);
+        console.error("[Login Page] OAuth error details:", {
+          message: error.message,
+          name: error.name,
+          status: (error as { status?: number }).status,
+          code: (error as { code?: string }).code,
+        });
         setError(error.message);
         setIsLoading(false);
+      } else {
+        console.log(
+          "[Login Page] OAuth initiated successfully, should redirect to GitHub...",
+        );
       }
-    } catch {
+    } catch (err) {
+      console.error("[Login Page] Unexpected error:", err);
+      console.error("[Login Page] Error type:", err?.constructor?.name);
+      console.error("[Login Page] Error stack:", (err as Error)?.stack);
       setError("An unexpected error occurred");
       setIsLoading(false);
     }

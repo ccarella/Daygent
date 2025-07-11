@@ -8,6 +8,13 @@ export function useAuth() {
   const supabase = createClient();
 
   const signInWithGitHub = async () => {
+    console.log("[useAuth Hook] Starting GitHub OAuth sign-in...");
+    console.log(
+      "[useAuth Hook] Redirect URL:",
+      `${window.location.origin}/auth/callback`,
+    );
+
+    const startTime = performance.now();
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "github",
       options: {
@@ -16,10 +23,25 @@ export function useAuth() {
       },
     });
 
+    const elapsed = performance.now() - startTime;
+    console.log(
+      `[useAuth Hook] OAuth sign-in call completed in ${elapsed.toFixed(2)}ms`,
+    );
+
     if (error) {
-      console.error("Error signing in with GitHub:", error);
+      console.error("[useAuth Hook] Error signing in with GitHub:", error);
+      console.error("[useAuth Hook] Error details:", {
+        message: error.message,
+        name: error.name,
+        status: (error as { status?: number }).status,
+        code: (error as { code?: string }).code,
+      });
       throw error;
     }
+
+    console.log(
+      "[useAuth Hook] OAuth sign-in successful, redirecting to GitHub...",
+    );
   };
 
   const signOut = async () => {

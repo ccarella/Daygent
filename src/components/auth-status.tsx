@@ -22,16 +22,20 @@ export function AuthStatus() {
   useEffect(() => {
     // Prevent multiple initialization attempts
     if (!initializeAttempted.current) {
+      console.log(
+        "[AuthStatus Component] Starting auth initialization on mount...",
+      );
       initializeAttempted.current = true;
       initialize();
     }
   }, [initialize]);
 
   const handleLogin = async () => {
+    console.log("[AuthStatus Component] Login button clicked");
     try {
       await login();
     } catch (error) {
-      console.error("Login failed:", error);
+      console.error("[AuthStatus Component] Login failed:", error);
     }
   };
 
