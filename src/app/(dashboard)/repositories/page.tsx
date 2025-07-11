@@ -29,6 +29,7 @@ import {
   ChevronRight,
   RefreshCw,
   Loader2,
+  X,
 } from "lucide-react";
 
 export default function RepositoriesPage() {
@@ -48,10 +49,12 @@ export default function RepositoriesPage() {
     fetchRepositories,
     connectSelectedRepositories,
     isConnecting,
+    connectingRepos,
   } = useRepositories();
 
   const [searchInput, setSearchInput] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
+  const [successTimer, setSuccessTimer] = useState<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
@@ -61,13 +64,38 @@ export default function RepositoriesPage() {
     return () => clearTimeout(delayDebounceFn);
   }, [searchInput, setSearchQuery]);
 
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (successTimer) {
+        clearTimeout(successTimer);
+      }
+    };
+  }, [successTimer]);
+
   const handleConnect = async () => {
     try {
       await connectSelectedRepositories();
       setShowSuccess(true);
-      setTimeout(() => setShowSuccess(false), 5000);
+
+      // Clear any existing timer
+      if (successTimer) {
+        clearTimeout(successTimer);
+      }
+
+      // Set new timer
+      const timer = setTimeout(() => setShowSuccess(false), 3000);
+      setSuccessTimer(timer);
     } catch (err) {
       console.error("Failed to connect repositories:", err);
+    }
+  };
+
+  const handleCloseSuccess = () => {
+    setShowSuccess(false);
+    if (successTimer) {
+      clearTimeout(successTimer);
+      setSuccessTimer(null);
     }
   };
 
@@ -120,12 +148,20 @@ export default function RepositoriesPage() {
       </div>
 
       {showSuccess && (
-        <Alert className="border-green-500 bg-green-50">
+        <Alert className="border-green-500 bg-green-50 relative">
           <CheckCircle2 className="h-4 w-4 text-green-600" />
           <AlertTitle className="text-green-800">Success!</AlertTitle>
           <AlertDescription className="text-green-700">
             Selected repositories have been connected successfully.
           </AlertDescription>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="absolute right-2 top-2 h-6 w-6 p-0"
+            onClick={handleCloseSuccess}
+          >
+            <X className="h-4 w-4" />
+          </Button>
         </Alert>
       )}
 
@@ -214,13 +250,24 @@ export default function RepositoriesPage() {
                     : selectedRepos.has(repo.id)
                       ? "border-primary"
                       : ""
-                }`}
+                } ${connectingRepos.has(repo.id) ? "opacity-60" : ""}`}
               >
+                {connectingRepos.has(repo.id) && (
+                  <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/80 rounded-lg">
+                    <div className="flex flex-col items-center gap-2">
+                      <Loader2 className="h-6 w-6 animate-spin" />
+                      <span className="text-sm text-muted-foreground">
+                        Connecting...
+                      </span>
+                    </div>
+                  </div>
+                )}
                 {!repo.is_connected && (
                   <div className="absolute top-4 right-4">
                     <Checkbox
                       checked={selectedRepos.has(repo.id)}
                       onCheckedChange={() => toggleRepoSelection(repo.id)}
+                      disabled={connectingRepos.has(repo.id)}
                     />
                   </div>
                 )}

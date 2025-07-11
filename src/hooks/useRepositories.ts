@@ -26,6 +26,7 @@ interface UseRepositoriesReturn {
   connectSelectedRepositories: () => Promise<void>;
   disconnectRepositories: (repositoryIds: string[]) => Promise<void>;
   isConnecting: boolean;
+  connectingRepos: Set<number>;
 }
 
 export function useRepositories(): UseRepositoriesReturn {
@@ -37,6 +38,9 @@ export function useRepositories(): UseRepositoriesReturn {
   const [selectedRepos, setSelectedRepos] = useState<Set<number>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
   const [isConnecting, setIsConnecting] = useState(false);
+  const [connectingRepos, setConnectingRepos] = useState<Set<number>>(
+    new Set(),
+  );
 
   const fetchRepositories = useCallback(
     async (page = 1) => {
@@ -110,6 +114,7 @@ export function useRepositories(): UseRepositoriesReturn {
     }
 
     setIsConnecting(true);
+    setConnectingRepos(new Set(selectedRepos));
     setError(null);
 
     try {
@@ -154,6 +159,7 @@ export function useRepositories(): UseRepositoriesReturn {
       throw err;
     } finally {
       setIsConnecting(false);
+      setConnectingRepos(new Set());
     }
   }, [
     activeOrganization,
@@ -226,5 +232,6 @@ export function useRepositories(): UseRepositoriesReturn {
     connectSelectedRepositories,
     disconnectRepositories,
     isConnecting,
+    connectingRepos,
   };
 }
