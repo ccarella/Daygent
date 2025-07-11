@@ -2,11 +2,12 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Github, ExternalLink } from "lucide-react";
 import Link from "next/link";
 
-export default function ProjectDetailPage({
+export default async function ProjectDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const { id } = await params;
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
@@ -32,7 +33,7 @@ export default function ProjectDetailPage({
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Repository</span>
-                <span className="font-medium">owner/repo-{params.id}</span>
+                <span className="font-medium">owner/repo-{id}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Status</span>
