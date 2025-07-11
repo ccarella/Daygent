@@ -2,11 +2,12 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Github, ExternalLink } from "lucide-react";
 import Link from "next/link";
 
-type Props = {
+interface PageProps {
   params: Promise<{ id: string }>;
-};
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
+}
 
-export default async function ProjectDetailPage({ params }: Props) {
+export default async function ProjectDetailPage({ params }: PageProps) {
   const { id } = await params;
   return (
     <div className="space-y-6">

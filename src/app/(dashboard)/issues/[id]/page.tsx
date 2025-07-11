@@ -2,11 +2,12 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
-type Props = {
+interface PageProps {
   params: Promise<{ id: string }>;
-};
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
+}
 
-export default async function IssueDetailPage({ params }: Props) {
+export default async function IssueDetailPage({ params }: PageProps) {
   const { id } = await params;
 
   return (
