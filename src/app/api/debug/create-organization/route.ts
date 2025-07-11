@@ -1,6 +1,14 @@
 import { NextResponse } from "next/server";
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
 
+interface DebugOrgResult {
+  id: string | null;
+  name: string | null;
+  slug: string | null;
+  success: boolean;
+  message: string;
+}
+
 export async function POST() {
   try {
     // Get the current user
@@ -83,56 +91,45 @@ export async function POST() {
       userProfile.github_username ||
       userProfile.email.split("@")[0];
 
-    const { data: newOrg, error: createError } = await serviceClient
-      .from("organizations")
-      .insert({
-        name: orgName,
-        slug: slug,
-        subscription_status: "trial",
-        trial_ends_at: new Date(
-          Date.now() + 30 * 24 * 60 * 60 * 1000,
-        ).toISOString(),
-        seats_used: 1,
+    // Use the debug function to create organization and bypass RLS issues
+    const { data: result, error: createError } = await serviceClient
+      .rpc('create_organization_for_user_debug', {
+        p_user_id: user.id,
+        p_org_name: orgName,
+        p_org_slug: slug,
       })
-      .select()
-      .single();
+      .single() as { data: DebugOrgResult | null; error: any };
 
     if (createError) {
+      console.error("Function error:", createError);
       return NextResponse.json(
         { error: `Failed to create organization: ${createError.message}` },
         { status: 400 },
       );
     }
 
-    // Add user as owner
-    const { error: memberError } = await serviceClient
-      .from("organization_members")
-      .insert({
-        organization_id: newOrg.id,
-        user_id: user.id,
-        role: "owner",
-        joined_at: new Date().toISOString(),
-      });
-
-    if (memberError) {
+    if (!result || !result.success) {
       return NextResponse.json(
-        { error: `Failed to add user as owner: ${memberError.message}` },
+        { error: result?.message || "Failed to create organization" },
         { status: 400 },
       );
     }
 
-    // Log activity
-    await serviceClient.from("activities").insert({
-      organization_id: newOrg.id,
-      user_id: user.id,
-      type: "member_joined",
-      description: `Organization created for existing user ${userProfile.email}`,
-    });
+    if (!result.id || !result.name || !result.slug) {
+      return NextResponse.json(
+        { error: "Organization created but missing data" },
+        { status: 400 },
+      );
+    }
 
     return NextResponse.json({
       success: true,
-      organization: newOrg,
-      message: `Successfully created organization "${orgName}" with slug "${slug}"`,
+      organization: {
+        id: result.id,
+        name: result.name,
+        slug: result.slug,
+      },
+      message: `Successfully created organization "${result.name}" with slug "${result.slug}"`,
     });
   } catch (error) {
     console.error("Error creating organization:", error);
