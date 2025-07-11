@@ -29,10 +29,14 @@ function LoginForm() {
   const handleGitHubLogin = async () => {
     console.log("[Login Page] GitHub login button clicked");
     console.log("[Login Page] Current URL:", window.location.href);
-    console.log(
-      "[Login Page] Redirect URL:",
-      `${window.location.origin}/auth/callback`,
-    );
+
+    // Preserve the 'next' parameter through the OAuth flow
+    const next = searchParams.get("next") || "/";
+    const callbackUrl = new URL("/auth/callback", window.location.origin);
+    callbackUrl.searchParams.set("next", next);
+
+    console.log("[Login Page] Redirect URL:", callbackUrl.toString());
+    console.log("[Login Page] Next destination:", next);
 
     try {
       setIsLoading(true);
@@ -44,7 +48,7 @@ function LoginForm() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "github",
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: callbackUrl.toString(),
           scopes: "read:user user:email",
         },
       });
