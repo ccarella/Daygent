@@ -22,20 +22,12 @@ export function Sidebar({ isOpen, onToggle, pathname }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "fixed left-0 top-0 z-40 h-screen bg-card border-r transition-all duration-200",
+        "fixed left-0 top-16 z-40 h-[calc(100vh-4rem)] bg-card border-r transition-all duration-200",
         isOpen ? "w-64" : "w-16",
       )}
     >
       <div className="flex h-full flex-col">
-        <div className="flex h-16 items-center justify-between px-4 border-b">
-          <div
-            className={cn(
-              "font-semibold text-lg transition-opacity duration-200",
-              !isOpen && "opacity-0",
-            )}
-          >
-            Daygent
-          </div>
+        <div className="flex h-12 items-center justify-end px-4 border-b">
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>

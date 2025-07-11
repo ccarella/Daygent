@@ -32,6 +32,10 @@ vi.mock("../MobileNav", () => ({
   MobileNav: () => <div data-testid="mobile-nav">Mobile Nav</div>,
 }));
 
+vi.mock("../Header", () => ({
+  Header: () => <div data-testid="header">Header</div>,
+}));
+
 vi.mock("@/components/CommandPalette", () => ({
   CommandPalette: () => null, // Don't render in these tests
 }));
@@ -65,7 +69,7 @@ describe("DashboardLayout", () => {
     expect(screen.getByText("Test Content")).toBeInTheDocument();
   });
 
-  it("shows sidebar on desktop", () => {
+  it("shows sidebar and header on desktop", () => {
     render(
       <DashboardLayout>
         <div>Test</div>
@@ -73,10 +77,11 @@ describe("DashboardLayout", () => {
     );
 
     expect(screen.getByTestId("sidebar")).toBeInTheDocument();
+    expect(screen.getByTestId("header")).toBeInTheDocument();
     expect(screen.queryByTestId("mobile-nav")).not.toBeInTheDocument();
   });
 
-  it("shows mobile nav on mobile", () => {
+  it("hides sidebar on mobile", () => {
     window.innerWidth = 500;
     window.dispatchEvent(new Event("resize"));
 
@@ -87,7 +92,8 @@ describe("DashboardLayout", () => {
     );
 
     expect(screen.queryByTestId("sidebar")).not.toBeInTheDocument();
-    expect(screen.getByTestId("mobile-nav")).toBeInTheDocument();
+    // Header is always visible (handles mobile search)
+    expect(screen.getByTestId("header")).toBeInTheDocument();
   });
 
   it("toggles sidebar state", () => {
