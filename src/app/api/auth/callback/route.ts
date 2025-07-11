@@ -142,56 +142,31 @@ export async function GET(request: NextRequest) {
         console.log("[Auth Callback] User profile upserted successfully");
       }
 
-      console.log("[Auth Callback] Checking for default organization...");
+      // Check if user has any organizations
+      console.log("[Auth Callback] Checking user organizations...");
       const orgStartTime = performance.now();
-      const defaultOrgResult = await serviceSupabase
-        .from("organizations")
-        .select("id")
-        .eq("name", "Default Organization")
-        .single();
+      const { data: userOrgs } = await serviceSupabase
+        .from("organization_members")
+        .select("organization_id")
+        .eq("user_id", data.user.id)
+        .limit(1);
       const orgTime = performance.now() - orgStartTime;
       console.log(
-        `[Auth Callback] Organization query completed in ${orgTime.toFixed(2)}ms`,
+        `[Auth Callback] Organization check completed in ${orgTime.toFixed(2)}ms`,
       );
 
-      if (defaultOrgResult.data) {
+      // If user has no organizations, redirect to onboarding
+      if (!userOrgs || userOrgs.length === 0) {
         console.log(
-          "[Auth Callback] Default organization found:",
-          defaultOrgResult.data.id,
+          "[Auth Callback] User has no organizations, redirecting to onboarding",
         );
-        console.log("[Auth Callback] Adding user to organization...");
-        const memberStartTime = performance.now();
-        const memberResult = await serviceSupabase
-          .from("organization_members")
-          .upsert({
-            user_id: data.user.id,
-            organization_id: defaultOrgResult.data.id,
-            role: "member",
-          })
-          .select();
-        const memberTime = performance.now() - memberStartTime;
+        const totalTime = performance.now() - startTime;
         console.log(
-          `[Auth Callback] Organization membership upsert completed in ${memberTime.toFixed(2)}ms`,
+          `[Auth Callback] Callback processing completed in ${totalTime.toFixed(2)}ms`,
         );
-
-        if (memberResult.error) {
-          console.error(
-            "[Auth Callback] Error adding user to organization:",
-            memberResult.error,
-          );
-        } else {
-          console.log(
-            "[Auth Callback] User added to organization successfully",
-          );
-        }
-      } else {
-        console.warn("[Auth Callback] Default organization not found");
-        if (defaultOrgResult.error) {
-          console.error(
-            "[Auth Callback] Organization query error:",
-            defaultOrgResult.error,
-          );
-        }
+        return NextResponse.redirect(
+          new URL("/onboarding", requestUrl.origin),
+        );
       }
     }
 
