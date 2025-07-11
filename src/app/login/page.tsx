@@ -31,7 +31,7 @@ function LoginForm() {
     console.log("[Login Page] Current URL:", window.location.href);
 
     // Preserve the 'next' parameter through the OAuth flow
-    const next = searchParams.get("next") || "/";
+    const next = searchParams.get("next") || "/dashboard";
     const callbackUrl = new URL("/auth/callback", window.location.origin);
     callbackUrl.searchParams.set("next", next);
 

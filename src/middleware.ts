@@ -64,7 +64,7 @@ export async function middleware(request: NextRequest) {
   // Redirect authenticated users away from auth-restricted routes
   if (user && isAuthRestrictedRoute) {
     // Check if there's a 'next' parameter to redirect to
-    const next = request.nextUrl.searchParams.get("next") || "/";
+    const next = request.nextUrl.searchParams.get("next") || "/dashboard";
     return NextResponse.redirect(new URL(next, request.url));
   }
 
