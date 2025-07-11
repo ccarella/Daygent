@@ -2,11 +2,11 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Github, ExternalLink } from "lucide-react";
 import Link from "next/link";
 
-export default async function ProjectDetailPage({
-  params,
-}: {
+type Props = {
   params: Promise<{ id: string }>;
-}) {
+};
+
+export default async function ProjectDetailPage({ params }: Props) {
   const { id } = await params;
   return (
     <div className="space-y-6">
