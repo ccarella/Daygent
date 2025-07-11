@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -53,6 +53,7 @@ interface Repository {
   id: string;
   name: string;
   full_name: string;
+  description?: string | null;
 }
 
 interface CreateProjectModalProps {
@@ -78,6 +79,25 @@ export function CreateProjectModal({
       repository_id: "",
     },
   });
+
+  // Find the selected repository based on form value
+  const selectedRepository = repositories.find(
+    (repo) => repo.id === form.watch("repository_id"),
+  );
+
+  // Auto-populate fields when repository is selected
+  useEffect(() => {
+    if (selectedRepository) {
+      // Only update if fields are empty (don't overwrite user input)
+      if (!form.getValues("name")) {
+        form.setValue("name", selectedRepository.name);
+      }
+
+      if (!form.getValues("description") && selectedRepository.description) {
+        form.setValue("description", selectedRepository.description);
+      }
+    }
+  }, [selectedRepository, form]);
 
   async function onSubmit(values: ProjectFormValues) {
     setIsLoading(true);
@@ -143,13 +163,15 @@ export function CreateProjectModal({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Repository</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a repository" />
+                        <SelectValue>
+                          {field.value
+                            ? repositories.find((r) => r.id === field.value)
+                                ?.full_name
+                            : "Select a repository"}
+                        </SelectValue>
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
