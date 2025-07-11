@@ -8,7 +8,7 @@ const routeConfig = {
   publicRoutes: [
     "/",
     "/login",
-    "/auth/callback",
+    "/api/auth/callback",
     "/design-test",
     "/components",
   ],
