@@ -38,6 +38,7 @@ export function SearchResults({
 }: SearchResultsProps) {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const resultsRef = useRef<HTMLDivElement>(null);
 
@@ -45,40 +46,54 @@ export function SearchResults({
   const performSearch = async (searchQuery: string) => {
     if (!searchQuery.trim()) {
       setResults([]);
+      setError(null);
       return;
     }
 
     setLoading(true);
+    setError(null);
 
-    // Simulate API delay
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    try {
+      // Simulate API delay
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
-    // Mock results - replace with actual search implementation
-    const mockResults: SearchResult[] = [
-      {
-        id: "1",
-        type: "issue",
-        title: `Fix authentication bug matching "${searchQuery}"`,
-        description: "Users unable to login with GitHub OAuth",
-        status: "open",
-        repository: "daygent",
-      },
-      {
-        id: "2",
-        type: "project",
-        title: `Project Alpha containing "${searchQuery}"`,
-        description: "Main development project for Q1",
-      },
-      {
-        id: "3",
-        type: "repository",
-        title: `Repository with "${searchQuery}"`,
-        description: "github.com/ccarella/daygent",
-      },
-    ];
+      // TODO: Replace mock results with actual API implementation
+      // Example: const results = await searchAPI(searchQuery);
+      const mockResults: SearchResult[] = [
+        {
+          id: "1",
+          type: "issue",
+          title: `Fix authentication bug matching "${searchQuery}"`,
+          description: "Users unable to login with GitHub OAuth",
+          status: "open",
+          repository: "daygent",
+        },
+        {
+          id: "2",
+          type: "project",
+          title: `Project Alpha containing "${searchQuery}"`,
+          description: "Main development project for Q1",
+        },
+        {
+          id: "3",
+          type: "repository",
+          title: `Repository with "${searchQuery}"`,
+          description: "github.com/ccarella/daygent",
+        },
+      ];
 
-    setResults(mockResults);
-    setLoading(false);
+      setResults(mockResults);
+    } catch (err) {
+      console.error("Search failed:", err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "An error occurred while searching. Please try again.",
+      );
+      setResults([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Perform search when query changes
@@ -133,7 +148,8 @@ export function SearchResults({
   };
 
   const showRecentSearches = !query && recentSearches.length > 0;
-  const showNoResults = query && !loading && results.length === 0;
+  const showError = query && !loading && error;
+  const showNoResults = query && !loading && !error && results.length === 0;
 
   return (
     <Card className="overflow-hidden shadow-lg" ref={resultsRef}>
@@ -172,8 +188,19 @@ export function SearchResults({
           </div>
         )}
 
+        {/* Error state */}
+        {showError && (
+          <div className="flex flex-col items-center justify-center p-8 text-center">
+            <Search className="mb-2 h-8 w-8 text-destructive/50" />
+            <p className="text-sm font-medium text-destructive">
+              Search failed
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">{error}</p>
+          </div>
+        )}
+
         {/* Search results */}
-        {!loading && results.length > 0 && (
+        {!loading && !error && results.length > 0 && (
           <>
             {showRecentSearches && <Separator />}
             <div className="p-2">
