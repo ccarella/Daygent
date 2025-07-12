@@ -3,9 +3,10 @@ import { createClient } from "@/lib/supabase/server";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  props: { params: Promise<{ id: string }> }
 ) {
   try {
+    const params = await props.params;
     const repositoryId = params.id;
     const { searchParams } = new URL(request.url);
     const jobId = searchParams.get("jobId");

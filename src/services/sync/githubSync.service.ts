@@ -2,11 +2,13 @@ import { GET_ISSUES } from "@/lib/github/queries/issues";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { GitHubGraphQLClient } from "@/lib/github/client";
+
+// Type alias for Supabase client to avoid any type issues
+type AppSupabaseClient = SupabaseClient<any, any, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
 import { 
-  getOrCreateUserByGithubId,
-  getProjectByRepositoryId,
-  syncIssue
+  getProjectByRepositoryId
 } from "@/app/api/webhooks/github/db-utils";
+import { ActivityMetadata } from "./types";
 import { 
   GitHubIssue, 
   mapGitHubIssueToSyncData,
@@ -51,17 +53,17 @@ export interface RepositoryInfo {
 
 export class GitHubSyncService {
   private client: GitHubGraphQLClient;
-  private supabase?: SupabaseClient<any, any, any>;
+  private supabase?: AppSupabaseClient;
 
   constructor(client: GitHubGraphQLClient) {
     this.client = client;
   }
 
   async initialize() {
-    this.supabase = await createServiceRoleClient();
+    this.supabase = await createServiceRoleClient() as AppSupabaseClient;
   }
 
-  private getSupabase(): SupabaseClient<any, any, any> {
+  private getSupabase(): AppSupabaseClient {
     if (!this.supabase) {
       throw new Error("GitHubSyncService not initialized. Call initialize() first.");
     }
@@ -209,6 +211,8 @@ export class GitHubSyncService {
 
       // Log sync activity
       await this.logSyncActivity(repository.id, summary, {
+        repository_id: repository.id,
+        sync_type: "issues",
         total: processed,
         created,
         updated,
@@ -356,7 +360,10 @@ export class GitHubSyncService {
     status: "syncing" | "synced" | "error",
     lastSyncedAt?: Date
   ) {
-    const updates: any = { sync_status: status };
+    const updates: {
+      sync_status: string;
+      last_synced_at?: string;
+    } = { sync_status: status };
     if (lastSyncedAt) {
       updates.last_synced_at = lastSyncedAt.toISOString();
     }
@@ -373,7 +380,7 @@ export class GitHubSyncService {
   private async logSyncActivity(
     repositoryId: string,
     description: string,
-    metadata: any
+    metadata: ActivityMetadata
   ) {
     const { data: repository } = await this.getSupabase()
       .from("repositories")
@@ -390,11 +397,7 @@ export class GitHubSyncService {
         user_id: await this.getSystemUserId(),
         type: "webhook_received",
         description: `Issue sync: ${description}`,
-        metadata: {
-          repository_id: repositoryId,
-          sync_type: "issues",
-          ...metadata
-        }
+        metadata
       });
   }
 }

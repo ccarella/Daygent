@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getServerGitHubGraphQLClient } from "@/lib/github/github.graphql.server";
 import { GitHubSyncService } from "@/services/sync/githubSync.service";
+import { RepositoryWithGitHub, SyncJobOptions } from "@/services/sync/types";
 import { z } from "zod";
 
 // Request body schema
@@ -13,9 +14,10 @@ const syncRequestSchema = z.object({
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  props: { params: Promise<{ id: string }> }
 ) {
   try {
+    const params = await props.params;
     const repositoryId = params.id;
     
     // Authenticate user
@@ -127,9 +129,9 @@ export async function POST(
 
 // Perform sync in background
 async function performSync(
-  repository: any,
+  repository: RepositoryWithGitHub,
   jobId: string,
-  options: any
+  options: SyncJobOptions
 ) {
   const supabase = await createClient();
   
