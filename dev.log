@@ -1,0 +1,56 @@
+
+> daygent@0.1.0 dev
+> next dev --turbopack
+
+   ▲ Next.js 15.3.5 (Turbopack)
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.1.126:3000
+   - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Compiled middleware in 174ms
+ ✓ Ready in 1774ms
+ ○ Compiling / ...
+ ✓ Compiled / in 3.7s
+[Supabase Client] Creating browser client...
+[Supabase Client] Environment check: {
+  hasUrl: true,
+  urlLength: 40,
+  urlPrefix: 'https://auihuuoivmufsencxtss.s',
+  hasKey: true,
+  keyLength: 208,
+  keyPrefix: 'eyJhbGciOi'
+}
+[Supabase Client] Creating client with options: {
+  persistSession: true,
+  autoRefreshToken: true,
+  detectSessionInUrl: true
+}
+[Supabase Client] Browser client created in 2.80ms
+[Auth Store] Auth state changed: INITIAL_SESSION
+[Auth Store] Session present: false
+[Auth Store] Event timestamp: 2025-07-11T17:49:46.656Z
+[Auth Store] No user in session, clearing user state
+ HEAD / 200 in 4232ms
+ ○ Compiling /login ...
+ ✓ Compiled /login in 1510ms
+[Supabase Client] Creating browser client...
+[Supabase Client] Environment check: {
+  hasUrl: true,
+  urlLength: 40,
+  urlPrefix: 'https://auihuuoivmufsencxtss.s',
+  hasKey: true,
+  keyLength: 208,
+  keyPrefix: 'eyJhbGciOi'
+}
+[Supabase Client] Creating client with options: {
+  persistSession: true,
+  autoRefreshToken: true,
+  detectSessionInUrl: true
+}
+[Supabase Client] Browser client created in 1.55ms
+ GET /login 200 in 1705ms
+ ○ Compiling /design-test ...
+ ✓ Compiled /design-test in 878ms
+ HEAD /design-test 200 in 1026ms
+[?25h

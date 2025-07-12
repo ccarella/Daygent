@@ -13,11 +13,14 @@ Daygent is a project management platform specifically designed for developers us
 npm run dev          # Start development server with Turbopack on http://localhost:3000
 npm run build        # Build for production
 npm run start        # Start production server
+npm run test:e2e     # Run Playwright E2E tests
 ```
 
 ### Code Quality
 ```bash
 npm run lint         # Run ESLint with Next.js rules
+npm run format       # Format code with Prettier
+npx tsc --noEmit     # Check TypeScript types
 ```
 
 ### Testing
@@ -27,35 +30,76 @@ npm run test:watch   # Run tests in watch mode
 npm run test:ui      # Run tests with Vitest UI
 ```
 
+### Pre-commit Hooks
+The project uses Husky and lint-staged to ensure code quality. Commits must follow Conventional Commits format:
+- Types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `chore`, `revert`, `ci`, `build`
+- Example: `feat: add user authentication`
+
 ## Architecture
 
 ### Tech Stack
 - **Frontend**: Next.js 15.3.5 with App Router, React 19, TypeScript (strict mode)
 - **Styling**: Tailwind CSS v4 with shadcn/ui components
-- **Testing**: Vitest with React Testing Library and jsdom
-- **Planned Backend**: Supabase (PostgreSQL, Auth, Realtime)
-- **Planned Integrations**: Anthropic API, GitHub API v4 (GraphQL), Stripe
+- **State Management**: Zustand stores for auth and command palette
+- **Backend**: Supabase (PostgreSQL, Auth, Realtime) - IMPLEMENTED
+- **Authentication**: Supabase Auth with GitHub and Google OAuth - IMPLEMENTED
+- **Testing**: Vitest with React Testing Library, jsdom, Playwright for E2E
+- **Integrations**: Anthropic API, GitHub API v4 (GraphQL), Stripe (planned)
 
 ### Project Structure
 - `/src/app/` - Next.js App Router pages and layouts
+  - `/(auth)/` - Authentication pages (login)
+  - `/(dashboard)/` - Protected dashboard pages (issues, projects, activity, settings)
+  - `/api/` - API routes (auth callback, webhooks, supabase health)
 - `/src/components/` - React components
-  - `/ui/` - shadcn/ui components (currently button.tsx)
-- `/src/lib/` - Utility functions
-- `/src/test/` - Test configuration and setup
+  - `/ui/` - shadcn/ui components (30+ components implemented)
+  - `/layout/` - Layout components (Header, Sidebar, DashboardLayout, etc.)
+- `/src/lib/` - Utility functions and configurations
+  - `/supabase/` - Supabase client, server, and auth utilities
+- `/src/hooks/` - Custom React hooks
+- `/src/stores/` - Zustand stores
+- `/src/middleware.ts` - Next.js middleware for protected routes
+- `/supabase/` - Database migrations and configuration
 
 ### Key Configuration Files
 - `tsconfig.json` - TypeScript with strict mode enabled
 - `vitest.config.ts` - Test configuration with jsdom environment
 - `components.json` - shadcn/ui component configuration
+- `supabase/config.toml` - Local Supabase configuration
 - `PRD.md` - Comprehensive Product Requirements Document with full specifications
+- `.commitlintrc.js` - Conventional commits configuration
 
 ## Implementation Status
 
-The project is currently a fresh Next.js installation with:
-- Basic shadcn/ui setup (button component only)
-- Testing infrastructure configured but no tests written
-- Comprehensive PRD documenting all planned features
-- No Daygent-specific features implemented yet
+### Completed Features
+- ✅ Authentication system with Supabase Auth
+- ✅ GitHub and Google OAuth integration
+- ✅ Protected route middleware
+- ✅ Database schema with comprehensive migrations
+- ✅ Row Level Security (RLS) policies
+- ✅ Command palette (Cmd+K) with keyboard navigation
+- ✅ Dashboard layout with sidebar navigation
+- ✅ Mobile-responsive navigation
+- ✅ User menu with logout functionality
+- ✅ Activity feed page structure
+- ✅ Issues and projects page structure
+- ✅ Settings page with sections
+- ✅ Comprehensive shadcn/ui component library
+- ✅ Auth state management with Zustand
+- ✅ Test infrastructure with coverage setup
+
+### In Progress
+- 🔄 GitHub repository connection
+- 🔄 Issue creation and management
+- 🔄 AI-powered issue expansion
+- 🔄 GitHub webhook integration
+
+### Not Started
+- ❌ Kanban board for issues
+- ❌ GitHub sync functionality
+- ❌ Stripe subscription management
+- ❌ AI usage tracking
+- ❌ Real-time updates with Supabase Realtime
 
 ## Development Guidelines
 
@@ -67,10 +111,14 @@ When creating new components:
 4. Use TypeScript strict mode types
 
 ### State Management
-The PRD specifies Zustand for state management (not yet implemented). When implementing:
+Zustand is implemented for state management. Current stores:
+- `auth.store.ts` - Authentication state and user management
+- `commandPalette.store.ts` - Command palette state
+
+When creating new stores:
 - Create stores in `/src/stores/`
 - Use TypeScript interfaces for store shapes
-- Follow Zustand best practices for actions and selectors
+- Follow existing patterns for actions and selectors
 
 ### API Integration
 When implementing API routes:
@@ -79,16 +127,61 @@ When implementing API routes:
 - Implement proper error handling
 - Add TypeScript types for all API responses
 
-### Database Schema
-The PRD includes a complete PostgreSQL schema for Supabase. Key tables include:
+### Database Operations
+
+**IMPORTANT**: All database operations should use the Supabase MCP server for consistency and proper handling.
+
+The database schema is fully implemented with migrations. Key tables:
 - organizations (workspaces)
 - users (with GitHub/Google OAuth)
-- projects (GitHub repo connections)
+- organization_members (role-based access)
+- repositories (GitHub connections)
+- projects (repository groupings)
 - issues (with AI-expanded content)
-- Full schema available in PRD.md
+- issue_comments
+- activities (audit trail)
+- ai_usage (token tracking)
+
+All tables have Row Level Security (RLS) policies enabled.
 
 ### Testing Strategy
-- Unit tests for utilities and hooks
-- Component tests for UI components
+- Unit tests for utilities and hooks (Vitest)
+- Component tests for UI components (React Testing Library)
 - Integration tests for API routes
-- E2E tests for critical user flows
+- E2E tests for critical user flows (Playwright)
+- Test coverage goals: 80% minimum
+
+## Environment Variables
+
+Required environment variables for local development:
+```bash
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+
+# OAuth (configure in Supabase dashboard)
+# GitHub and Google OAuth settings are in supabase/config.toml
+```
+
+## Development Workflow
+
+1. **Start Supabase locally**: `npx supabase start`
+2. **Run migrations**: Check `/supabase/migrations/` for latest schema
+3. **Start dev server**: `npm run dev`
+4. **Run tests before committing**: Tests will auto-run via pre-commit hooks
+
+## Common Issues and Solutions
+
+### Authentication Timeout
+- Fixed by using `maybeSingle()` instead of `single()` for profile queries
+- Emergency bypass implemented for hanging profile queries
+
+### RLS Policy Errors
+- Ensure user profiles are created automatically via database trigger
+- Check migrations for proper policy setup
+
+### GitHub OAuth Setup
+- Configure OAuth app in GitHub settings
+- Update redirect URLs in Supabase dashboard
+- Set proper scopes: `repo`, `read:user`, `user:email`

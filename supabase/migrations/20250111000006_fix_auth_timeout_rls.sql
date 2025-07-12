@@ -1,8 +1,3 @@
--- Add INSERT policy so users can create their own profiles
-CREATE POLICY "Users can insert own profile" ON users
-  FOR INSERT
-  WITH CHECK (auth.uid() = id);
-
 -- Create function to auto-create user profile on signup
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
