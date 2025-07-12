@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -170,11 +171,26 @@ export function CreateProjectModal({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {repositories.map((repo) => (
-                        <SelectItem key={repo.id} value={repo.id}>
-                          {repo.full_name}
-                        </SelectItem>
-                      ))}
+                      {repositories.length === 0 ? (
+                        <div className="px-6 py-8 text-center text-sm text-muted-foreground">
+                          <p className="mb-2">No repositories connected</p>
+                          <p>
+                            <Link
+                              href="/settings/repositories"
+                              className="text-primary underline underline-offset-4 hover:no-underline"
+                            >
+                              Connect a repository
+                            </Link>{" "}
+                            to get started
+                          </p>
+                        </div>
+                      ) : (
+                        repositories.map((repo) => (
+                          <SelectItem key={repo.id} value={repo.id}>
+                            {repo.full_name}
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
                   <FormDescription>
