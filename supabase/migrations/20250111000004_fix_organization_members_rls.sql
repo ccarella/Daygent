@@ -29,12 +29,11 @@ CREATE POLICY "Admins can invite to organizations"
   ON organization_members FOR INSERT
   WITH CHECK (
     -- Check if the user is an admin/owner in a separate query
-    EXISTS (
-      SELECT 1 
-      FROM organization_members 
-      WHERE organization_id = NEW.organization_id
-        AND user_id = auth.uid()
-        AND role IN ('owner', 'admin')
+    auth.uid() IN (
+      SELECT user_id 
+      FROM organization_members existing
+      WHERE existing.organization_id = organization_members.organization_id
+        AND existing.role IN ('owner', 'admin')
     )
   );
 

@@ -218,10 +218,9 @@ CREATE POLICY "Members can view organization members"
 CREATE POLICY "Admins can invite to organizations"
   ON organization_members FOR INSERT
   WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM organization_members om
-      WHERE om.organization_id = NEW.organization_id
-        AND om.user_id = auth.uid()
+    auth.uid() IN (
+      SELECT user_id FROM organization_members om
+      WHERE om.organization_id = organization_members.organization_id
         AND om.role IN ('owner', 'admin')
     )
   );
