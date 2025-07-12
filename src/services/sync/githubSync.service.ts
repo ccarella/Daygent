@@ -1,10 +1,7 @@
 import { GET_ISSUES } from "@/lib/github/queries/issues";
 import { createServiceRoleClient } from "@/lib/supabase/server";
-import { SupabaseClient } from "@supabase/supabase-js";
 import { GitHubGraphQLClient } from "@/lib/github/client";
 import { withRetry, isTransientError, isGitHubRateLimitError } from "@/lib/utils/retry";
-// Type-safe Supabase client
-type AppSupabaseClient = SupabaseClient;
 import { 
   getProjectByRepositoryId
 } from "@/app/api/webhooks/github/db-utils";
@@ -57,7 +54,7 @@ export interface RepositoryInfo {
 
 export class GitHubSyncService {
   private client: GitHubGraphQLClient;
-  private supabase?: AppSupabaseClient;
+  private supabase?: Awaited<ReturnType<typeof createServiceRoleClient>>;
 
   constructor(client: GitHubGraphQLClient) {
     this.client = client;
@@ -67,7 +64,7 @@ export class GitHubSyncService {
     this.supabase = await createServiceRoleClient();
   }
 
-  private getSupabase(): AppSupabaseClient {
+  private getSupabase() {
     if (!this.supabase) {
       throw new Error("GitHubSyncService not initialized. Call initialize() first.");
     }
