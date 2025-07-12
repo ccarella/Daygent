@@ -166,12 +166,7 @@ export function CreateProjectModal({
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue>
-                          {field.value
-                            ? repositories.find((r) => r.id === field.value)
-                                ?.full_name
-                            : "Select a repository"}
-                        </SelectValue>
+                        <SelectValue placeholder="Select a repository" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>

@@ -51,7 +51,7 @@ export default function ProjectsPage() {
       try {
         const [projectsResponse, reposResponse] = await Promise.all([
           fetch(`/api/projects?organization_id=${activeOrganization.id}`),
-          fetch(`/api/repositories?organization_id=${activeOrganization.id}`),
+          fetch(`/api/repositories/connected?organization_id=${activeOrganization.id}`),
         ]);
 
         if (!projectsResponse.ok || !reposResponse.ok) {
