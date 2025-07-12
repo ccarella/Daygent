@@ -35,6 +35,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Validate environment variables
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.error("SUPABASE_SERVICE_ROLE_KEY is not configured");
+      return NextResponse.json(
+        { error: "Server configuration error: Service role key missing" },
+        { status: 500 }
+      );
+    }
+
     // Create a service role client to bypass RLS
     const cookieStore = await cookies();
     const serviceRoleClient = createServerClient(
