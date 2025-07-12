@@ -5,7 +5,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -44,7 +43,6 @@ export function CreateOrganizationForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingSlug, setIsCheckingSlug] = useState(false);
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
-  const supabase = createClient();
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -88,17 +86,19 @@ export function CreateOrganizationForm() {
 
       setIsCheckingSlug(true);
       try {
-        const { data, error } = await supabase
-          .from("organizations")
-          .select("id")
-          .eq("slug", slug)
-          .maybeSingle();
-
-        if (error) {
-          console.error("Error checking slug:", error);
-          setSlugAvailable(null);
+        const response = await fetch(`/api/organizations/check-slug?slug=${encodeURIComponent(slug)}`);
+        
+        if (!response.ok) {
+          if (response.status === 401) {
+            console.error("User not authenticated");
+            setSlugAvailable(null);
+          } else {
+            console.error("Error checking slug availability");
+            setSlugAvailable(null);
+          }
         } else {
-          setSlugAvailable(!data);
+          const data = await response.json();
+          setSlugAvailable(data.available);
         }
       } catch (error) {
         console.error("Error checking slug:", error);
@@ -111,7 +111,7 @@ export function CreateOrganizationForm() {
     const timeoutId = setTimeout(checkSlug, 500);
     return () => clearTimeout(timeoutId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form.watch("slug"), supabase]);
+  }, [form.watch("slug")]);
 
   const onSubmit = async (data: FormData) => {
     if (slugAvailable === false) {
