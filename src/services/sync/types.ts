@@ -6,6 +6,7 @@ export interface RepositoryWithGitHub {
   github_id: number;
   github_name: string;
   github_owner: string;
+  full_name?: string;
   sync_status?: string;
   last_synced_at?: string | null;
   sync_error?: string | null;

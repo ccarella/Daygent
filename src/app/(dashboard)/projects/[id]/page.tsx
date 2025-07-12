@@ -1,9 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Github, ExternalLink } from "lucide-react";
+import { ArrowLeft, Github } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
+import { SyncIssuesButton } from "./components/SyncIssuesButton";
 
 export default async function ProjectDetailPage({
   params,
@@ -122,14 +123,9 @@ export default async function ProjectDetailPage({
                   View on GitHub
                 </a>
               </Button>
-              <Button
-                className="w-full justify-start"
-                variant="outline"
-                disabled
-              >
-                <ExternalLink className="mr-2 h-4 w-4" />
-                Sync Issues (Coming Soon)
-              </Button>
+              <SyncIssuesButton 
+                repositoryId={project.repositories.id} 
+              />
             </div>
           </div>
         </div>

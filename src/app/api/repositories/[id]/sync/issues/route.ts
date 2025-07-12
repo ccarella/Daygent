@@ -153,14 +153,22 @@ async function performSync(
     const syncService = new GitHubSyncService(githubClient);
     await syncService.initialize();
 
+    // Extract github_owner and github_name from full_name if not present
+    const github_owner = repository.github_owner || repository.full_name?.split('/')[0];
+    const github_name = repository.github_name || repository.full_name?.split('/')[1];
+    
+    if (!github_owner || !github_name) {
+      throw new Error("Unable to determine repository owner and name");
+    }
+    
     // Perform sync
     const result = await syncService.syncRepositoryIssues(
       {
         id: repository.id,
         organization_id: repository.organization_id,
         github_id: repository.github_id,
-        github_name: repository.github_name,
-        github_owner: repository.github_owner,
+        github_name,
+        github_owner,
       },
       {
         ...options,

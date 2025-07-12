@@ -99,18 +99,58 @@ export class GitHubSyncService {
     let cursor: string | null = null;
     let currentPage = 0;
 
-    // Check if project exists for this repository
-    const project = await getProjectByRepositoryId(repository.id);
+    // Check if project exists for this repository, create one if not
+    let project = await getProjectByRepositoryId(repository.id);
     if (!project) {
-      return {
-        success: false,
-        issuesProcessed: 0,
-        created: 0,
-        updated: 0,
-        errors: 0,
-        summary: "No active project found for repository",
-        errorDetails: ["Repository must be associated with an active project before syncing issues"]
-      };
+      console.log(`[Sync] No project found for repository ${repository.github_name}, creating default project`);
+      
+      // Get repository details to create a default project
+      const { data: repoDetails } = await this.getSupabase()
+        .from("repositories")
+        .select("name, organization_id")
+        .eq("id", repository.id)
+        .single();
+      
+      if (!repoDetails) {
+        return {
+          success: false,
+          issuesProcessed: 0,
+          created: 0,
+          updated: 0,
+          errors: 0,
+          summary: "Failed to get repository details",
+          errorDetails: ["Could not retrieve repository information to create project"]
+        };
+      }
+      
+      // Create a default project for the repository
+      const { data: newProject, error: projectError } = await this.getSupabase()
+        .from("projects")
+        .insert({
+          repository_id: repository.id,
+          name: `${repoDetails.name} Project`,
+          description: `Default project for ${repoDetails.name} repository`,
+          status: "active",
+          created_by: "00000000-0000-0000-0000-000000000000" // System user ID from migration
+        })
+        .select()
+        .single();
+      
+      if (projectError || !newProject) {
+        console.error("[Sync] Failed to create default project:", projectError);
+        return {
+          success: false,
+          issuesProcessed: 0,
+          created: 0,
+          updated: 0,
+          errors: 0,
+          summary: "Failed to create default project",
+          errorDetails: [projectError?.message || "Unknown error creating project"]
+        };
+      }
+      
+      project = newProject;
+      console.log(`[Sync] Created default project: ${project.name}`);
     }
 
     // Start sync process
@@ -251,7 +291,7 @@ export class GitHubSyncService {
       } while (cursor);
 
       // Update sync status
-      await this.updateRepositorySyncStatus(repository.id, "synced", new Date());
+      await this.updateRepositorySyncStatus(repository.id, "synced");
 
       // Generate summary
       const summary = generateSyncSummary(processed, created, updated, errors);
@@ -565,27 +605,6 @@ export class GitHubSyncService {
     return data.id;
   }
 
-  /**
-   * Update repository sync status
-   */
-  private async updateRepositorySyncStatus(
-    repositoryId: string,
-    status: "syncing" | "synced" | "error",
-    lastSyncedAt?: Date
-  ) {
-    const updates: {
-      sync_status: string;
-      last_synced_at?: string;
-    } = { sync_status: status };
-    if (lastSyncedAt) {
-      updates.last_synced_at = lastSyncedAt.toISOString();
-    }
-
-    await this.getSupabase()
-      .from("repositories")
-      .update(updates)
-      .eq("id", repositoryId);
-  }
 
   /**
    * Log sync activity
@@ -612,5 +631,36 @@ export class GitHubSyncService {
         description: `Issue sync: ${description}`,
         metadata
       });
+  }
+
+  /**
+   * Update repository sync status
+   */
+  private async updateRepositorySyncStatus(
+    repositoryId: string, 
+    status: "pending" | "syncing" | "synced" | "error",
+    error?: string
+  ) {
+    const updateData: {
+      sync_status: string;
+      updated_at: string;
+      last_synced_at?: string;
+      sync_error?: string | null;
+    } = {
+      sync_status: status,
+      updated_at: new Date().toISOString()
+    };
+    
+    if (status === "synced") {
+      updateData.last_synced_at = new Date().toISOString();
+      updateData.sync_error = null;
+    } else if (status === "error" && error) {
+      updateData.sync_error = error;
+    }
+    
+    await this.getSupabase()
+      .from("repositories")
+      .update(updateData)
+      .eq("id", repositoryId);
   }
 }

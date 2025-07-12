@@ -91,10 +91,42 @@ export async function syncIssue(
   const supabase = await createServiceRoleClient();
 
   // Find project for this repository
-  const project = await getProjectByRepositoryId(repositoryId);
+  let project = await getProjectByRepositoryId(repositoryId);
   if (!project) {
-    console.warn("[Webhook DB] No active project found for repository:", repositoryId);
-    return null;
+    console.warn("[Webhook DB] No active project found for repository, creating default project:", repositoryId);
+    
+    // Get repository details to create a default project
+    const { data: repository } = await supabase
+      .from("repositories")
+      .select("name")
+      .eq("id", repositoryId)
+      .single();
+    
+    if (!repository) {
+      console.error("[Webhook DB] Repository not found:", repositoryId);
+      return null;
+    }
+    
+    // Create a default project for the repository
+    const { data: newProject, error: projectError } = await supabase
+      .from("projects")
+      .insert({
+        repository_id: repositoryId,
+        name: `${repository.name} Project`,
+        description: `Default project for ${repository.name} repository`,
+        status: "active",
+        created_by: "00000000-0000-0000-0000-000000000000" // System user ID
+      })
+      .select()
+      .single();
+    
+    if (projectError || !newProject) {
+      console.error("[Webhook DB] Failed to create default project:", projectError);
+      return null;
+    }
+    
+    project = newProject;
+    console.log("[Webhook DB] Created default project:", project.name);
   }
 
   // Check if issue already exists
