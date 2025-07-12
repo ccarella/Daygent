@@ -29,7 +29,16 @@ describe("POST /api/organizations", () => {
     },
   };
 
-  const mockServiceClient: any = {
+  interface MockServiceClient {
+    from: ReturnType<typeof vi.fn>;
+    select: ReturnType<typeof vi.fn>;
+    eq: ReturnType<typeof vi.fn>;
+    single: ReturnType<typeof vi.fn>;
+    insert: ReturnType<typeof vi.fn>;
+    delete: ReturnType<typeof vi.fn>;
+  }
+
+  const mockServiceClient: MockServiceClient = {
     from: vi.fn(),
     select: vi.fn(),
     eq: vi.fn(),
