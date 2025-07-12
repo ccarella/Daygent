@@ -2,6 +2,7 @@ export interface Organization {
   id: string;
   name: string;
   slug: string;
+  description?: string;
   subscription_status: "trial" | "active" | "inactive" | "cancelled";
   subscription_id?: string;
   trial_ends_at?: string;
