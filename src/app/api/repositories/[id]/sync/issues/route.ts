@@ -4,6 +4,7 @@ import { getServerGitHubGraphQLClient } from "@/lib/github/github.graphql.server
 import { GitHubSyncService } from "@/services/sync/githubSync.service";
 import { RepositoryWithGitHub, SyncJobOptions } from "@/services/sync/types";
 import { z } from "zod";
+import { syncRateLimiter, rateLimitResponse } from "@/lib/utils/rateLimiter";
 
 // Request body schema
 const syncRequestSchema = z.object({
@@ -29,6 +30,12 @@ export async function POST(
         { error: "Unauthorized" },
         { status: 401 }
       );
+    }
+
+    // Check rate limit
+    const rateLimitResult = rateLimitResponse(user.id, syncRateLimiter);
+    if (rateLimitResult) {
+      return rateLimitResult;
     }
 
     // Validate request body

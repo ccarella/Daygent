@@ -10,6 +10,8 @@ export async function GET(
     const repositoryId = params.id;
     const { searchParams } = new URL(request.url);
     const jobId = searchParams.get("jobId");
+    const page = parseInt(searchParams.get("page") || "1", 10);
+    const limit = parseInt(searchParams.get("limit") || "10", 10);
     
     // Authenticate user
     const supabase = await createClient();
@@ -78,19 +80,35 @@ export async function GET(
       });
     }
 
-    // Get recent sync jobs
+    // Validate pagination params
+    const validatedPage = Math.max(1, page);
+    const validatedLimit = Math.min(Math.max(1, limit), 50); // Max 50 items per page
+    const offset = (validatedPage - 1) * validatedLimit;
+
+    // Get total count of sync jobs
+    const { count: totalJobs } = await supabase
+      .from("sync_jobs")
+      .select("*", { count: "exact", head: true })
+      .eq("repository_id", repositoryId);
+
+    // Get paginated sync jobs
     const { data: recentJobs } = await supabase
       .from("sync_jobs")
       .select("*")
       .eq("repository_id", repositoryId)
       .order("started_at", { ascending: false })
-      .limit(5);
+      .range(offset, offset + validatedLimit - 1);
 
     // Get issue count
     const { count: issueCount } = await supabase
       .from("issues")
       .select("*", { count: "exact", head: true })
       .eq("repository_id", repositoryId);
+
+    // Calculate pagination metadata
+    const totalPages = Math.ceil((totalJobs || 0) / validatedLimit);
+    const hasNextPage = validatedPage < totalPages;
+    const hasPreviousPage = validatedPage > 1;
 
     return NextResponse.json({
       repository: {
@@ -100,7 +118,7 @@ export async function GET(
         syncError: repository.sync_error,
         issueCount: issueCount || 0
       },
-      recentJobs: recentJobs?.map(job => ({
+      jobs: recentJobs?.map(job => ({
         id: job.id,
         type: job.type,
         status: job.status,
@@ -110,7 +128,15 @@ export async function GET(
         issuesCreated: job.issues_created,
         issuesUpdated: job.issues_updated,
         errors: job.errors
-      })) || []
+      })) || [],
+      pagination: {
+        page: validatedPage,
+        limit: validatedLimit,
+        total: totalJobs || 0,
+        totalPages,
+        hasNextPage,
+        hasPreviousPage
+      }
     });
 
   } catch (error) {

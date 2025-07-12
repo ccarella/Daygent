@@ -49,7 +49,12 @@ export interface GitHubIssue {
   };
 }
 
-// Map GitHub issue state to internal status
+/**
+ * Maps GitHub issue state to internal status
+ * @param state - GitHub issue state (OPEN or CLOSED)
+ * @param stateReason - Optional reason for closure
+ * @returns Internal status representation
+ */
 export function mapGitHubStateToStatus(
   state: "OPEN" | "CLOSED",
   stateReason?: "COMPLETED" | "NOT_PLANNED" | "REOPENED" | null
@@ -69,7 +74,11 @@ export function mapGitHubStateToStatus(
   return "open";
 }
 
-// Map labels to priority (if applicable)
+/**
+ * Extracts priority from GitHub issue labels
+ * @param labels - GitHub issue labels
+ * @returns Priority level or null if no priority label found
+ */
 export function extractPriorityFromLabels(
   labels: GitHubIssue["labels"]
 ): "urgent" | "high" | "medium" | "low" | null {
@@ -93,7 +102,12 @@ export function extractPriorityFromLabels(
   return null; // No priority found
 }
 
-// Transform GitHub issue to sync data format
+/**
+ * Transforms GitHub issue to internal sync data format
+ * @param issue - GitHub issue from GraphQL API
+ * @param assigneeUserId - Optional resolved user ID for assignee
+ * @returns Issue data formatted for database sync
+ */
 export function mapGitHubIssueToSyncData(
   issue: GitHubIssue,
   assigneeUserId?: string | null
@@ -110,7 +124,14 @@ export function mapGitHubIssueToSyncData(
   };
 }
 
-// Format issue body for GitHub with AI enhancements
+/**
+ * Formats issue body for GitHub, including AI enhancements if available
+ * @param originalDescription - Original issue description
+ * @param expandedDescription - AI-enhanced description
+ * @param status - Current issue status
+ * @param priority - Issue priority level
+ * @returns Formatted issue body for GitHub
+ */
 export function formatIssueBodyForGitHub(
   originalDescription: string | null,
   expandedDescription: string | null,
@@ -136,7 +157,11 @@ ${expandedDescription}
   return body;
 }
 
-// Extract original description from GitHub body (remove AI enhancements)
+/**
+ * Extracts original description from GitHub body, removing AI enhancements
+ * @param body - Full GitHub issue body
+ * @returns Original description without AI-enhanced content
+ */
 export function extractOriginalDescription(body: string | null): string | null {
   if (!body) return null;
   
@@ -157,7 +182,11 @@ export function extractOriginalDescription(body: string | null): string | null {
   return body;
 }
 
-// Parse PR references from issue body or title
+/**
+ * Parses pull request references from issue body or title
+ * @param text - Text to search for PR references
+ * @returns Array of PR numbers referenced in the text
+ */
 export function extractPullRequestReferences(
   title: string,
   body: string | null
@@ -183,7 +212,14 @@ export function extractPullRequestReferences(
   return [...new Set(prNumbers)];
 }
 
-// Generate a sync summary for activity logging
+/**
+ * Generates a human-readable summary of sync results
+ * @param issueCount - Total number of issues processed
+ * @param created - Number of issues created
+ * @param updated - Number of issues updated
+ * @param errors - Number of errors encountered
+ * @returns Summary string for activity logging
+ */
 export function generateSyncSummary(
   issueCount: number,
   created: number,
