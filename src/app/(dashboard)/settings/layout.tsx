@@ -17,10 +17,10 @@ export default function SettingsLayout({
           </li>
           <li>
             <a
-              href="/settings/account"
+              href="/settings/repositories"
               className="block rounded-md px-3 py-2 text-sm font-medium hover:bg-muted text-muted-foreground"
             >
-              Account
+              Repositories
             </a>
           </li>
           <li>
@@ -29,6 +29,14 @@ export default function SettingsLayout({
               className="block rounded-md px-3 py-2 text-sm font-medium hover:bg-muted text-muted-foreground"
             >
               Integrations
+            </a>
+          </li>
+          <li>
+            <a
+              href="/settings/account"
+              className="block rounded-md px-3 py-2 text-sm font-medium hover:bg-muted text-muted-foreground"
+            >
+              Account
             </a>
           </li>
           <li>
