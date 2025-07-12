@@ -27,9 +27,9 @@ describe('GitHub GraphQL Utils', () => {
   describe('parseApolloError', () => {
     it('should parse authentication error (401)', () => {
       const apolloError = new ApolloError({
-        networkError: {
+        networkError: Object.assign(new Error('Unauthorized'), {
           statusCode: 401,
-        },
+        }),
       });
 
       const error = parseApolloError(apolloError);
@@ -39,9 +39,9 @@ describe('GitHub GraphQL Utils', () => {
 
     it('should parse forbidden error (403)', () => {
       const apolloError = new ApolloError({
-        networkError: {
+        networkError: Object.assign(new Error('Forbidden'), {
           statusCode: 403,
-        },
+        }),
       });
 
       const error = parseApolloError(apolloError);

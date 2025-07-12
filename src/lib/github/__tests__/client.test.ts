@@ -74,7 +74,7 @@ describe('GitHubGraphQLClient', () => {
             errorPolicy: 'all',
           },
           watchQuery: {
-            fetchPolicy: 'cache-and-network',
+            fetchPolicy: 'network-only',
             errorPolicy: 'all',
           },
         },

@@ -7,6 +7,7 @@ import {
   DocumentNode,
   ApolloError,
   OperationVariables,
+  FetchPolicy,
 } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
 import { onError } from '@apollo/client/link/error';
@@ -122,7 +123,7 @@ export class GitHubGraphQLClient {
           errorPolicy: 'all',
         },
         watchQuery: {
-          fetchPolicy: 'cache-and-network',
+          fetchPolicy: 'network-only',
           errorPolicy: 'all',
         },
       },
@@ -133,7 +134,7 @@ export class GitHubGraphQLClient {
     query: DocumentNode,
     variables?: TVariables,
     options: {
-      fetchPolicy?: 'cache-first' | 'network-only' | 'cache-and-network';
+      fetchPolicy?: FetchPolicy;
       retry?: boolean;
     } = {},
   ): Promise<TData> {

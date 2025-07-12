@@ -1,5 +1,4 @@
 import { ApolloError } from '@apollo/client';
-import type { GraphQLFormattedError } from 'graphql';
 import { GitHubGraphQLError } from './types';
 
 export const MAX_RETRIES = 3;
