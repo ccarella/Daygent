@@ -51,9 +51,9 @@ describe('GitHub GraphQL Utils', () => {
 
     it('should parse rate limit error (429)', () => {
       const apolloError = new ApolloError({
-        networkError: {
+        networkError: Object.assign(new Error('Too Many Requests'), {
           statusCode: 429,
-        },
+        }),
       });
 
       const error = parseApolloError(apolloError);
