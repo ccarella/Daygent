@@ -143,7 +143,7 @@ export default function ProjectsPage() {
             </p>
             {repositories.length === 0 ? (
               <Button asChild>
-                <Link href="/repositories">Connect Repository</Link>
+                <Link href="/settings/repositories">Connect Repository</Link>
               </Button>
             ) : (
               <CreateProjectModal
