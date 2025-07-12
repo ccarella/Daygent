@@ -1,8 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyWebhookSignature, parseWebhookHeaders } from "@/lib/github-app";
+import {
+  handleIssueEvent,
+  handleIssueCommentEvent,
+  handlePullRequestEvent,
+  handlePullRequestReviewEvent,
+  handleInstallationEvent,
+  handleInstallationRepositoriesEvent,
+} from "./handlers";
+import { logActivity } from "./db-utils";
+import { createServiceRoleClient } from "@/lib/supabase/server";
+
+// Cache for checking duplicate deliveries (simple in-memory cache)
+const processedDeliveries = new Set<string>();
+const MAX_CACHE_SIZE = 1000;
+
+// For testing purposes - exposed via test utils
+// @ts-ignore - used in tests
+global.__clearWebhookDeliveryCache = () => {
+  processedDeliveries.clear();
+};
 
 export async function POST(request: NextRequest) {
-  console.log("[GitHub Webhook] Received webhook request");
+  const startTime = Date.now();
+  let eventType: string | undefined;
+  let deliveryId: string | undefined;
 
   try {
     // Get the raw body for signature verification
@@ -11,14 +33,49 @@ export async function POST(request: NextRequest) {
     // Parse headers
     const webhookHeaders = parseWebhookHeaders(request.headers);
     const signature = webhookHeaders['x-hub-signature-256'];
-    const eventType = webhookHeaders['x-github-event'];
-    const deliveryId = webhookHeaders['x-github-delivery'];
+    eventType = webhookHeaders['x-github-event'];
+    deliveryId = webhookHeaders['x-github-delivery'];
 
     console.log(`[GitHub Webhook] Event: ${eventType}, Delivery: ${deliveryId}`);
+
+    // Check for duplicate delivery (idempotency)
+    if (deliveryId && processedDeliveries.has(deliveryId)) {
+      console.log(`[GitHub Webhook] Duplicate delivery detected: ${deliveryId}`);
+      return NextResponse.json(
+        { message: "Webhook already processed", delivery_id: deliveryId },
+        { status: 200 }
+      );
+    }
 
     // Verify webhook signature
     if (!verifyWebhookSignature(rawBody, signature)) {
       console.error("[GitHub Webhook] Invalid signature");
+      
+      // Log failed webhook attempt
+      try {
+        const supabase = await createServiceRoleClient();
+        const systemUser = await supabase
+          .from("users")
+          .select("id")
+          .eq("email", "system@daygent.local")
+          .single();
+
+        if (systemUser.data) {
+          await logActivity(
+            "webhook_received",
+            {
+              event: eventType || "unknown",
+              delivery_id: deliveryId || "unknown",
+              error: "Invalid signature",
+              status: "failed",
+            },
+            systemUser.data.id
+          );
+        }
+      } catch (logError) {
+        console.error("[GitHub Webhook] Failed to log invalid signature:", logError);
+      }
+
       return NextResponse.json(
         { error: "Invalid signature" },
         { status: 401 }
@@ -49,72 +106,109 @@ export async function POST(request: NextRequest) {
       case "installation_repositories":
         await handleInstallationRepositoriesEvent(payload);
         break;
+      case "ping":
+        console.log("[GitHub Webhook] Received ping event");
+        break;
       default:
         console.log(`[GitHub Webhook] Unhandled event type: ${eventType}`);
+        
+        // Log unhandled event
+        try {
+          const supabase = await createServiceRoleClient();
+          const systemUser = await supabase
+            .from("users")
+            .select("id")
+            .eq("email", "system@daygent.local")
+            .single();
+
+          if (systemUser.data) {
+            await logActivity(
+              "webhook_received",
+              {
+                event: eventType || "unknown",
+                delivery_id: deliveryId || "unknown",
+                action: payload.action || "unknown",
+                status: "unhandled",
+              },
+              systemUser.data.id
+            );
+          }
+        } catch (logError) {
+          console.error("[GitHub Webhook] Failed to log unhandled event:", logError);
+        }
     }
 
+    // Add to processed deliveries cache
+    if (deliveryId) {
+      processedDeliveries.add(deliveryId);
+      
+      // Clean up cache if it gets too large
+      if (processedDeliveries.size > MAX_CACHE_SIZE) {
+        const entriesToDelete = processedDeliveries.size - MAX_CACHE_SIZE / 2;
+        const iterator = processedDeliveries.values();
+        for (let i = 0; i < entriesToDelete; i++) {
+          const result = iterator.next();
+          if (!result.done && result.value) {
+            processedDeliveries.delete(result.value);
+          }
+        }
+      }
+    }
+
+    const processingTime = Date.now() - startTime;
+    console.log(`[GitHub Webhook] Successfully processed in ${processingTime}ms`);
+
     return NextResponse.json(
-      { message: "Webhook processed successfully" },
+      { 
+        message: "Webhook processed successfully",
+        event: eventType,
+        delivery_id: deliveryId,
+        processing_time_ms: processingTime,
+      },
       { status: 200 }
     );
   } catch (error) {
+    const processingTime = Date.now() - startTime;
     console.error("[GitHub Webhook] Error processing webhook:", error);
+    
+    // Log webhook error
+    try {
+      const supabase = await createServiceRoleClient();
+      const systemUser = await supabase
+        .from("users")
+        .select("id")
+        .eq("email", "system@daygent.local")
+        .single();
+
+      if (systemUser.data) {
+        await logActivity(
+          "webhook_received",
+          {
+            event: eventType || "unknown",
+            delivery_id: deliveryId || "unknown",
+            error: error instanceof Error ? error.message : "Unknown error",
+            status: "error",
+            processing_time_ms: processingTime,
+          },
+          systemUser.data.id
+        );
+      }
+    } catch (logError) {
+      console.error("[GitHub Webhook] Failed to log webhook error:", logError);
+    }
+
+    // Always return 200 OK to GitHub to prevent retries
+    // GitHub will mark the webhook as failed if we return an error status
     return NextResponse.json(
-      { error: "Failed to process webhook" },
-      { status: 500 }
+      { 
+        message: "Webhook received but processing failed",
+        event: eventType,
+        delivery_id: deliveryId,
+        processing_time_ms: processingTime,
+      },
+      { status: 200 }
     );
   }
-}
-
-// Event handlers
-interface WebhookPayload {
-  action?: string;
-  issue?: {
-    number: number;
-    title?: string;
-  };
-  pull_request?: {
-    number: number;
-    title?: string;
-  };
-  installation?: {
-    id: number;
-    account: {
-      login: string;
-    };
-  };
-  repositories_added?: Array<{ full_name: string }>;
-  repositories_removed?: Array<{ full_name: string }>;
-}
-
-async function handleIssueEvent(payload: WebhookPayload) {
-  console.log(`[GitHub Webhook] Processing issue ${payload.action}: #${payload.issue?.number}`);
-  // TODO: Implement issue synchronization with database
-}
-
-async function handleIssueCommentEvent(payload: WebhookPayload) {
-  console.log(`[GitHub Webhook] Processing issue comment ${payload.action}`);
-  // TODO: Implement issue comment synchronization
-}
-
-async function handlePullRequestEvent(payload: WebhookPayload) {
-  console.log(`[GitHub Webhook] Processing PR ${payload.action}: #${payload.pull_request?.number}`);
-  // TODO: Implement PR synchronization
-}
-
-async function handlePullRequestReviewEvent(payload: WebhookPayload) {
-  console.log(`[GitHub Webhook] Processing PR review ${payload.action}`);
-  // TODO: Implement PR review synchronization
-}
-
-async function handleInstallationEvent(payload: WebhookPayload) {
-  console.log(`[GitHub Webhook] Processing installation ${payload.action}`);
-  // TODO: Store installation details in database
-}
-
-async function handleInstallationRepositoriesEvent(payload: WebhookPayload) {
-  console.log(`[GitHub Webhook] Processing installation repositories ${payload.action}`);
-  // TODO: Update repository access in database
 }
 
 export async function GET() {
