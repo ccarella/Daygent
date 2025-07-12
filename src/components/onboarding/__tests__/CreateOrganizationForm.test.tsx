@@ -22,8 +22,10 @@ vi.mock("sonner", () => ({
   },
 }));
 
+// Mock fetch
+global.fetch = vi.fn();
+
 describe("CreateOrganizationForm", () => {
-  const mockUserId = "test-user-id";
   const mockPush = vi.fn();
   const mockSupabaseClient = {
     from: vi.fn().mockReturnThis(),
@@ -50,7 +52,7 @@ describe("CreateOrganizationForm", () => {
   });
 
   it("renders form fields correctly", () => {
-    render(<CreateOrganizationForm userId={mockUserId} />);
+    render(<CreateOrganizationForm />);
 
     expect(screen.getByLabelText(/organization name/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/url slug/i)).toBeInTheDocument();
@@ -59,7 +61,7 @@ describe("CreateOrganizationForm", () => {
   });
 
   it("auto-generates slug from organization name", async () => {
-    render(<CreateOrganizationForm userId={mockUserId} />);
+    render(<CreateOrganizationForm />);
     const user = userEvent.setup();
 
     const nameInput = screen.getByLabelText(/organization name/i);
@@ -73,7 +75,7 @@ describe("CreateOrganizationForm", () => {
   });
 
   it("validates form fields", async () => {
-    render(<CreateOrganizationForm userId={mockUserId} />);
+    render(<CreateOrganizationForm />);
     const user = userEvent.setup();
 
     const submitButton = screen.getByRole("button", { name: /create organization/i });
@@ -89,7 +91,7 @@ describe("CreateOrganizationForm", () => {
     // Mock slug is available
     mockSupabaseClient.maybeSingle.mockResolvedValue({ data: null, error: null });
 
-    render(<CreateOrganizationForm userId={mockUserId} />);
+    render(<CreateOrganizationForm />);
     const user = userEvent.setup();
 
     const slugInput = screen.getByLabelText(/url slug/i);
@@ -108,7 +110,7 @@ describe("CreateOrganizationForm", () => {
       error: null,
     });
 
-    render(<CreateOrganizationForm userId={mockUserId} />);
+    render(<CreateOrganizationForm />);
     const user = userEvent.setup();
 
     const nameInput = screen.getByLabelText(/organization name/i);
@@ -124,15 +126,23 @@ describe("CreateOrganizationForm", () => {
   });
 
   it("creates organization successfully", async () => {
-    // Mock successful responses
+    // Mock slug availability check
     mockSupabaseClient.maybeSingle.mockResolvedValue({ data: null, error: null });
-    mockSupabaseClient.single.mockResolvedValue({
-      data: { id: "new-org-id" },
-      error: null,
-    });
-    mockSupabaseClient.insert.mockReturnThis();
+    
+    // Mock successful API response
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        organization: {
+          id: "new-org-id",
+          name: "New Organization",
+          slug: "new-organization",
+          description: "Test description"
+        }
+      }),
+    } as Response);
 
-    render(<CreateOrganizationForm userId={mockUserId} />);
+    render(<CreateOrganizationForm />);
     const user = userEvent.setup();
 
     const nameInput = screen.getByLabelText(/organization name/i);
@@ -144,27 +154,17 @@ describe("CreateOrganizationForm", () => {
     await user.click(submitButton);
 
     await waitFor(() => {
-      expect(mockSupabaseClient.from).toHaveBeenCalledWith("organizations");
-      expect(mockSupabaseClient.insert).toHaveBeenCalledWith(
-        expect.objectContaining({
+      expect(fetch).toHaveBeenCalledWith("/api/organizations", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
           name: "New Organization",
           slug: "new-organization",
           description: "Test description",
-          subscription_status: "trial",
-          seats_used: 1,
-        })
-      );
-    });
-
-    await waitFor(() => {
-      expect(mockSupabaseClient.from).toHaveBeenCalledWith("organization_members");
-      expect(mockSupabaseClient.insert).toHaveBeenCalledWith(
-        expect.objectContaining({
-          organization_id: "new-org-id",
-          user_id: mockUserId,
-          role: "owner",
-        })
-      );
+        }),
+      });
     });
 
     await waitFor(() => {
@@ -179,14 +179,18 @@ describe("CreateOrganizationForm", () => {
   });
 
   it("handles organization creation error", async () => {
-    // Mock error response
+    // Mock slug availability check
     mockSupabaseClient.maybeSingle.mockResolvedValue({ data: null, error: null });
-    mockSupabaseClient.single.mockResolvedValue({
-      data: null,
-      error: { message: "Database error" },
-    });
+    
+    // Mock error response
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: false,
+      json: async () => ({
+        error: "Database error"
+      }),
+    } as Response);
 
-    render(<CreateOrganizationForm userId={mockUserId} />);
+    render(<CreateOrganizationForm />);
     const user = userEvent.setup();
 
     const nameInput = screen.getByLabelText(/organization name/i);
@@ -199,7 +203,7 @@ describe("CreateOrganizationForm", () => {
       expect(toast.error).toHaveBeenCalledWith(
         "Error creating organization",
         expect.objectContaining({
-          description: "Something went wrong. Please try again.",
+          description: "Database error",
         })
       );
       expect(mockPush).not.toHaveBeenCalled();
@@ -207,13 +211,18 @@ describe("CreateOrganizationForm", () => {
   });
 
   it("disables form during submission", async () => {
-    // Mock successful but slow response
+    // Mock slug availability check
     mockSupabaseClient.maybeSingle.mockResolvedValue({ data: null, error: null });
-    mockSupabaseClient.single.mockImplementation(
-      () => new Promise((resolve) => setTimeout(() => resolve({ data: { id: "org-id" }, error: null }), 100))
+    
+    // Mock slow API response
+    vi.mocked(fetch).mockImplementation(
+      () => new Promise((resolve) => setTimeout(() => resolve({
+        ok: true,
+        json: async () => ({ organization: { id: "org-id" } }),
+      } as Response), 100))
     );
 
-    render(<CreateOrganizationForm userId={mockUserId} />);
+    render(<CreateOrganizationForm />);
     const user = userEvent.setup();
 
     const nameInput = screen.getByLabelText(/organization name/i);

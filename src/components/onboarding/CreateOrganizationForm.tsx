@@ -39,13 +39,7 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
-interface CreateOrganizationFormProps {
-  userId: string;
-}
-
-export function CreateOrganizationForm({
-  userId,
-}: CreateOrganizationFormProps) {
+export function CreateOrganizationForm() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingSlug, setIsCheckingSlug] = useState(false);
@@ -130,43 +124,24 @@ export function CreateOrganizationForm({
 
     setIsLoading(true);
     try {
-      // Create organization
-      const { data: org, error: orgError } = await supabase
-        .from("organizations")
-        .insert({
+      // Use API endpoint that has service role access
+      const response = await fetch("/api/organizations", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
           name: data.name,
           slug: data.slug,
           description: data.description || null,
-          subscription_status: "trial",
-          trial_ends_at: new Date(
-            Date.now() + 30 * 24 * 60 * 60 * 1000
-          ).toISOString(),
-          seats_used: 1,
-        })
-        .select()
-        .single();
-
-      if (orgError) throw orgError;
-
-      // Add user as owner
-      const { error: memberError } = await supabase
-        .from("organization_members")
-        .insert({
-          organization_id: org.id,
-          user_id: userId,
-          role: "owner",
-          joined_at: new Date().toISOString(),
-        });
-
-      if (memberError) throw memberError;
-
-      // Log activity
-      await supabase.from("activities").insert({
-        organization_id: org.id,
-        user_id: userId,
-        type: "member_joined",
-        description: `Organization created`,
+        }),
       });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to create organization");
+      }
 
       toast.success("Organization created!", {
         description: "Your workspace is ready. Let's connect your first repository.",
@@ -176,8 +151,9 @@ export function CreateOrganizationForm({
       router.push("/settings/repositories");
     } catch (error) {
       console.error("Error creating organization:", error);
+      const errorMessage = error instanceof Error ? error.message : "Something went wrong. Please try again.";
       toast.error("Error creating organization", {
-        description: "Something went wrong. Please try again.",
+        description: errorMessage,
       });
     } finally {
       setIsLoading(false);
