@@ -16,10 +16,12 @@ const processedDeliveries = new Set<string>();
 const MAX_CACHE_SIZE = 1000;
 
 // For testing purposes - exposed via test utils
-// @ts-ignore - used in tests
-global.__clearWebhookDeliveryCache = () => {
-  processedDeliveries.clear();
-};
+if (typeof global !== 'undefined') {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (global as any).__clearWebhookDeliveryCache = () => {
+    processedDeliveries.clear();
+  };
+}
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now();

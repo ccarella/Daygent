@@ -47,7 +47,6 @@ import * as githubApp from '@/lib/github-app';
 
 // Declare the global test helper
 declare global {
-  // eslint-disable-next-line no-var
   var __clearWebhookDeliveryCache: () => void;
 }
 
