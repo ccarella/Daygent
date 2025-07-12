@@ -16,8 +16,8 @@ vi.mock("@/lib/supabase/server", () => ({
 
 // Mock the CreateOrganizationForm component
 vi.mock("@/components/onboarding/CreateOrganizationForm", () => ({
-  CreateOrganizationForm: vi.fn(({ userId }) => (
-    <div data-testid="create-org-form">Form for user: {userId}</div>
+  CreateOrganizationForm: vi.fn(() => (
+    <div data-testid="create-org-form">Create Organization Form</div>
   )),
 }));
 

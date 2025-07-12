@@ -50,7 +50,7 @@ export default async function OnboardingPage() {
               projects, and collaborate with your team. You can create multiple
               organizations or join existing ones.
             </p>
-            <CreateOrganizationForm userId={user.id} />
+            <CreateOrganizationForm />
           </div>
         </div>
       </div>
