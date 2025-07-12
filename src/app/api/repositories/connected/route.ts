@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
     // Fetch connected repositories for the organization
     const { data: repositories, error: repoError } = await supabase
       .from("repositories")
-      .select("id, name, full_name, description:full_name")
+      .select("id, name, full_name, description")
       .eq("organization_id", organization_id)
       .order("name", { ascending: true });
 
