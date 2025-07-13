@@ -142,9 +142,7 @@ export async function handleInstallationRepositoriesEvent(
   }
 }
 
-export async function handlePullRequestReviewEvent(
-  payload: unknown
-): Promise<void> {
+export async function handlePullRequestReviewEvent(): Promise<void> {
   // Implementation placeholder
   console.log("[PR Review Handler] Not yet implemented");
 }

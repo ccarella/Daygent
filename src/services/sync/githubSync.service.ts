@@ -12,7 +12,6 @@ import {
   extractPriorityFromLabels,
   generateSyncSummary
 } from "./issueMapper";
-import { IssueSyncData } from "@/app/api/webhooks/github/types";
 
 export interface SyncOptions {
   states?: ("OPEN" | "CLOSED")[];
@@ -257,15 +256,7 @@ export class GitHubSyncService {
       // Generate summary
       const summary = generateSyncSummary(processed, created, updated, errors);
 
-      // Log sync activity
-      await this.logSyncActivity(repository.id, summary, {
-        repository_id: repository.id,
-        sync_type: "issues",
-        total: processed,
-        created,
-        updated,
-        errors
-      });
+      // Activity logging removed - no activities table
 
       return {
         success: errors === 0,
@@ -336,7 +327,7 @@ export class GitHubSyncService {
       state: string;
       author_github_login: string | null;
       assignee_github_login: string | null;
-      labels: any;
+      labels: Array<{ name: string; color: string }> | null;
       github_created_at: string;
       github_updated_at: string;
       github_closed_at: string | null;
@@ -349,7 +340,7 @@ export class GitHubSyncService {
       state: string;
       author_github_login: string | null;
       assignee_github_login: string | null;
-      labels: any;
+      labels: Array<{ name: string; color: string }> | null;
       github_updated_at: string;
       github_closed_at: string | null;
     }
@@ -375,7 +366,6 @@ export class GitHubSyncService {
 
         // Map to sync data format
         const syncData = mapGitHubIssueToSyncData(issue, assigneeUserId);
-        const priority = extractPriorityFromLabels(issue.labels) || "medium";
 
         const existingIssue = existingIssueMap.get(issue.number);
 
@@ -388,7 +378,7 @@ export class GitHubSyncService {
             state: syncData.status === "completed" ? "closed" : "open",
             author_github_login: issue.author?.login || null,
             assignee_github_login: issue.assignees?.nodes?.[0]?.login || null,
-            labels: issue.labels?.nodes?.map((l: any) => ({ name: l.name, color: l.color })) || [],
+            labels: issue.labels?.nodes?.map((l) => ({ name: l.name, color: l.color })) || [],
             github_updated_at: syncData.updated_at,
             github_closed_at: syncData.completed_at || null,
           });
@@ -404,7 +394,7 @@ export class GitHubSyncService {
             state: syncData.status === "completed" ? "closed" : "open",
             author_github_login: issue.author?.login || null,
             assignee_github_login: issue.assignees?.nodes?.[0]?.login || null,
-            labels: issue.labels?.nodes?.map((l: any) => ({ name: l.name, color: l.color })) || [],
+            labels: issue.labels?.nodes?.map((l) => ({ name: l.name, color: l.color })) || [],
             github_created_at: issue.createdAt,
             github_updated_at: syncData.updated_at,
             github_closed_at: syncData.completed_at || null,
@@ -503,7 +493,7 @@ export class GitHubSyncService {
           state: syncData.status === "completed" ? "closed" : "open",
           author_github_login: issue.author?.login || null,
           assignee_github_login: issue.assignees?.nodes?.[0]?.login || null,
-          labels: issue.labels?.nodes?.map((l: any) => ({ name: l.name, color: l.color })) || [],
+          labels: issue.labels?.nodes?.map((l) => ({ name: l.name, color: l.color })) || [],
           github_updated_at: syncData.updated_at,
           github_closed_at: syncData.completed_at,
         })
@@ -527,7 +517,7 @@ export class GitHubSyncService {
           state: syncData.status === "completed" ? "closed" : "open",
           author_github_login: issue.author?.login || null,
           assignee_github_login: issue.assignees?.nodes?.[0]?.login || null,
-          labels: issue.labels?.nodes?.map((l: any) => ({ name: l.name, color: l.color })) || [],
+          labels: issue.labels?.nodes?.map((l) => ({ name: l.name, color: l.color })) || [],
           github_created_at: issue.createdAt,
           github_updated_at: syncData.updated_at,
           github_closed_at: syncData.completed_at,
@@ -570,24 +560,6 @@ export class GitHubSyncService {
   }
 
 
-  /**
-   * Log sync activity
-   */
-  private async logSyncActivity(
-    repositoryId: string,
-    description: string,
-    metadata: ActivityMetadata
-  ) {
-    const { data: repository } = await this.getSupabase()
-      .from("repositories")
-      .select("workspace_id")
-      .eq("id", repositoryId)
-      .single();
-
-    if (!repository) return;
-
-    // Activity logging removed - no activities table
-  }
 
   /**
    * Update repository sync status

@@ -53,19 +53,7 @@ export async function POST(request: NextRequest) {
     if (!verifyWebhookSignature(rawBody, signature)) {
       console.error("[GitHub Webhook] Invalid signature");
       
-      // Log failed webhook attempt
-      try {
-        const supabase = await createServiceRoleClient();
-        const systemUser = await supabase
-          .from("users")
-          .select("id")
-          .eq("email", "system@daygent.local")
-          .single();
-
-        // Activity logging removed - no activities table
-      } catch (logError) {
-        console.error("[GitHub Webhook] Failed to log invalid signature:", logError);
-      }
+      // Log failed webhook attempt (activity logging removed - no activities table)
 
       return NextResponse.json(
         { error: "Invalid signature" },
@@ -103,19 +91,7 @@ export async function POST(request: NextRequest) {
       default:
         console.log(`[GitHub Webhook] Unhandled event type: ${eventType}`);
         
-        // Log unhandled event
-        try {
-          const supabase = await createServiceRoleClient();
-          const systemUser = await supabase
-            .from("users")
-            .select("id")
-            .eq("email", "system@daygent.local")
-            .single();
-
-          // Activity logging removed - no activities table
-        } catch (logError) {
-          console.error("[GitHub Webhook] Failed to log unhandled event:", logError);
-        }
+        // Log unhandled event (activity logging removed - no activities table)
     }
 
     // Add to processed deliveries cache
@@ -151,19 +127,7 @@ export async function POST(request: NextRequest) {
     const processingTime = Date.now() - startTime;
     console.error("[GitHub Webhook] Error processing webhook:", error);
     
-    // Log webhook error
-    try {
-      const supabase = await createServiceRoleClient();
-      const systemUser = await supabase
-        .from("users")
-        .select("id")
-        .eq("email", "system@daygent.local")
-        .single();
-
-      // Activity logging removed - no activities table
-    } catch (logError) {
-      console.error("[GitHub Webhook] Failed to log webhook error:", logError);
-    }
+    // Log webhook error (activity logging removed - no activities table)
 
     // Always return 200 OK to GitHub to prevent retries
     // GitHub will mark the webhook as failed if we return an error status

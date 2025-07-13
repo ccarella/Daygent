@@ -1,6 +1,5 @@
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import {
-  ActivityType,
   IssueSyncData,
   PullRequestSyncData,
   CommentSyncData,

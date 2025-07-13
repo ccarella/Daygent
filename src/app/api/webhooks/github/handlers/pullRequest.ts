@@ -76,32 +76,6 @@ export async function handlePullRequestEvent(payload: unknown): Promise<void> {
       return;
     }
 
-    // Log activity based on action
-    let activityType: "pr_created" | "pr_merged" | "pr_closed";
-    const metadata: Record<string, unknown> = {
-      action,
-      pr_number: pull_request.number,
-      pr_title: pull_request.title,
-      github_pr_id: pull_request.id,
-      linked_issues: prData.linked_issues,
-      base_branch: pull_request.base.ref,
-      head_branch: pull_request.head.ref,
-    };
-
-    if (action === "opened") {
-      activityType = "pr_created";
-    } else if (pull_request.merged) {
-      activityType = "pr_merged";
-      metadata.merged_by = pull_request.merged_by?.login || "unknown";
-      metadata.merge_commit_sha = pull_request.merge_commit_sha;
-    } else if (action === "closed" && !pull_request.merged) {
-      activityType = "pr_closed";
-    } else {
-      // For other actions, we'll use pr_created as a generic type
-      activityType = "pr_created";
-      metadata.update_type = action;
-    }
-
     // Activity logging removed - no activities table
 
     console.log(`[PR Handler] Successfully processed ${action} for PR #${pull_request.number}`);

@@ -67,15 +67,6 @@ export async function handleIssueCommentEvent(payload: unknown): Promise<void> {
       return;
     }
 
-    // Log activity
-    const metadata: Record<string, unknown> = {
-      action,
-      issue_number: issue.number,
-      issue_title: issue.title,
-      comment_id: comment.id,
-      comment_preview: commentContent.substring(0, 100),
-    };
-
     // Activity logging removed - no activities table
 
     console.log(`[Issue Comment Handler] Successfully processed ${action} for comment ${comment.id}`);
