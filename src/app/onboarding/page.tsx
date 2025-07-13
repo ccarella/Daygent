@@ -46,8 +46,8 @@ export default async function OnboardingPage() {
               Create Your Workspace
             </h2>
             <p className="text-sm text-muted-foreground mb-8">
-              Workspaces are where you can manage repositories
-              and collaborate with your team. You can create multiple
+              Workspaces are where you can manage repositories,
+              projects, and collaborate with your team. You can create multiple
               workspaces or join existing ones.
             </p>
             <CreateWorkspaceForm />

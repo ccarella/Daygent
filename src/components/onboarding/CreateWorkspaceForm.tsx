@@ -16,7 +16,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Check, X } from "lucide-react";
 import { toast } from "sonner";
 
@@ -33,7 +32,6 @@ const formSchema = z.object({
       /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
       "Slug must be lowercase alphanumeric with hyphens only"
     ),
-  description: z.string().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -49,7 +47,6 @@ export function CreateWorkspaceForm() {
     defaultValues: {
       name: "",
       slug: "",
-      description: "",
     },
   });
 
@@ -133,7 +130,6 @@ export function CreateWorkspaceForm() {
         body: JSON.stringify({
           name: data.name,
           slug: data.slug,
-          description: data.description || null,
         }),
       });
 
@@ -216,29 +212,6 @@ export function CreateWorkspaceForm() {
               </div>
               <FormDescription>
                 Unique identifier for your workspace URL
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Description (optional)</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="A brief description of your workspace"
-                  className="resize-none"
-                  rows={3}
-                  {...field}
-                  disabled={isLoading}
-                />
-              </FormControl>
-              <FormDescription>
-                Help others understand what your workspace is about
               </FormDescription>
               <FormMessage />
             </FormItem>

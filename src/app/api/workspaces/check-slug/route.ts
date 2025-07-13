@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
 
     // Check if slug exists using the database function
     const { data: available, error } = await serviceRoleClient.rpc(
-      'is_workspace_slug_available',
+      'check_workspace_slug_available',
       { p_slug: slug }
     );
 
