@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create organization
-    console.log("Creating organization with data:", { name, slug, description, plan: "free" });
+    console.log("Creating organization with data:", { name, slug, description });
     
     const { data: organization, error: orgError } = await serviceRoleClient
       .from("organizations")
@@ -87,7 +87,6 @@ export async function POST(request: NextRequest) {
         name,
         slug,
         description: description || null,
-        plan: "free",
       })
       .select()
       .single();
