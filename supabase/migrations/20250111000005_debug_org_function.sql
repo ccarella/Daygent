@@ -51,14 +51,19 @@ BEGIN
   INSERT INTO organization_members (organization_id, user_id, role, joined_at)
   VALUES (v_org_id, p_user_id, 'owner', NOW());
   
-  -- Log activity
-  INSERT INTO activities (organization_id, user_id, action, resource_type, resource_id, metadata)
+  -- Log activity using existing columns
+  INSERT INTO activities (
+    organization_id,
+    user_id,
+    type,
+    description,
+    metadata
+  )
   VALUES (
     v_org_id,
     p_user_id,
+    'member_joined',
     'organization.created',
-    'organization',
-    v_org_id,
     jsonb_build_object('description', 'Organization created via debug tool')
   );
   

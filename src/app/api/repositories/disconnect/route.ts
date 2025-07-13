@@ -60,8 +60,8 @@ export async function POST(request: NextRequest) {
     const { error: activityError } = await supabase.from("activities").insert({
       organization_id,
       user_id: user.id,
-      action: "repositories.disconnected",
-      resource_type: "repository",
+      type: "repository_connected",
+      description: "repositories.disconnected",
       metadata: {
         count: deletedRepos?.length || 0,
         repository_names:
