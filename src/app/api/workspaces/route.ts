@@ -3,16 +3,15 @@ import { createClient } from "@/lib/supabase/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
-interface CreateOrganizationRequest {
+interface CreateWorkspaceRequest {
   name: string;
   slug: string;
-  description?: string | null;
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const body: CreateOrganizationRequest = await request.json();
-    const { name, slug, description } = body;
+    const body: CreateWorkspaceRequest = await request.json();
+    const { name, slug } = body;
 
     if (!name || !slug) {
       return NextResponse.json(
@@ -78,64 +77,70 @@ export async function POST(request: NextRequest) {
     );
 
     // Check if slug is already taken
-    const { data: existingOrg } = await serviceRoleClient
-      .from("organizations")
+    const { data: existingWorkspace } = await serviceRoleClient
+      .from("workspaces")
       .select("slug")
       .eq("slug", slug)
       .single();
 
-    if (existingOrg) {
+    if (existingWorkspace) {
       return NextResponse.json(
-        { error: "Organization slug is already taken" },
+        { error: "Workspace slug is already taken" },
         { status: 400 }
       );
     }
 
-    // Create organization using database function that bypasses RLS
-    console.log("Creating organization with data:", { name, slug, description });
+    // Create workspace using database function that bypasses RLS
+    console.log("Creating workspace with data:", { name, slug });
     
-    const { data: orgData, error: orgError } = await serviceRoleClient.rpc(
-      'create_organization_with_owner',
+    const { data: workspaceId, error: workspaceError } = await serviceRoleClient.rpc(
+      'create_workspace_with_member',
       {
         p_name: name,
         p_slug: slug,
-        p_description: description || null,
         p_user_id: user.id,
       }
     );
 
-    const organization = orgData?.[0];
-
-    if (orgError || !organization) {
-      console.error("Error creating organization:", orgError);
-      console.error("Organization creation failed - Details:", {
-        error: orgError,
-        errorMessage: orgError?.message,
-        errorDetails: orgError?.details,
-        errorHint: orgError?.hint,
-        errorCode: orgError?.code,
+    if (workspaceError || !workspaceId) {
+      console.error("Error creating workspace:", workspaceError);
+      console.error("Workspace creation failed - Details:", {
+        error: workspaceError,
+        errorMessage: workspaceError?.message,
+        errorDetails: workspaceError?.details,
+        errorHint: workspaceError?.hint,
+        errorCode: workspaceError?.code,
       });
       return NextResponse.json(
         { 
-          error: "Failed to create organization",
-          details: orgError?.message || "Unknown error",
-          code: orgError?.code,
+          error: "Failed to create workspace",
+          details: workspaceError?.message || "Unknown error",
+          code: workspaceError?.code,
         },
         { status: 500 }
       );
     }
 
-    // The database function already handles:
-    // 1. Creating the organization
-    // 2. Adding the user as owner
-    // 3. Logging the activity
-    // So we can just return the result
+    // Get the created workspace
+    const { data: workspace, error: fetchError } = await serviceRoleClient
+      .from("workspaces")
+      .select("*")
+      .eq("id", workspaceId)
+      .single();
 
-    return NextResponse.json({ organization });
+    if (fetchError || !workspace) {
+      console.error("Error fetching created workspace:", fetchError);
+      return NextResponse.json(
+        { error: "Workspace created but failed to fetch details" },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ workspace });
   } catch (error) {
-    console.error("Error in organization creation:", error);
+    console.error("Error in workspace creation:", error);
     return NextResponse.json(
-      { error: "Failed to create organization" },
+      { error: "Failed to create workspace" },
       { status: 500 }
     );
   }

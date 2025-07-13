@@ -2,16 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
 interface DisconnectRepositoryRequest {
-  organization_id: string;
+  workspace_id: string;
   repository_ids: string[];
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body: DisconnectRepositoryRequest = await request.json();
-    const { organization_id, repository_ids } = body;
+    const { workspace_id, repository_ids } = body;
 
-    if (!organization_id || !repository_ids || repository_ids.length === 0) {
+    if (!workspace_id || !repository_ids || repository_ids.length === 0) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 },
@@ -29,15 +29,15 @@ export async function POST(request: NextRequest) {
     }
 
     const { data: memberData, error: memberError } = await supabase
-      .from("organization_members")
-      .select("role")
-      .eq("organization_id", organization_id)
+      .from("workspace_members")
+      .select("user_id")
+      .eq("workspace_id", workspace_id)
       .eq("user_id", user.id)
       .single();
 
     if (memberError || !memberData) {
       return NextResponse.json(
-        { error: "You are not a member of this organization" },
+        { error: "You are not a member of this workspace" },
         { status: 403 },
       );
     }
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
     const { data: deletedRepos, error: deleteError } = await supabase
       .from("repositories")
       .delete()
-      .eq("organization_id", organization_id)
+      .eq("workspace_id", workspace_id)
       .in("id", repository_ids)
       .select();
 
@@ -57,21 +57,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { error: activityError } = await supabase.from("activities").insert({
-      organization_id,
-      user_id: user.id,
-      type: "repository_connected",
-      description: "repositories.disconnected",
-      metadata: {
-        count: deletedRepos?.length || 0,
-        repository_names:
-          deletedRepos?.map((r: { full_name: string }) => r.full_name) || [],
-      },
-    });
-
-    if (activityError) {
-      console.error("Error creating activity log:", activityError);
-    }
+    // Activities table doesn't exist in new schema, skip logging
 
     return NextResponse.json({
       message: "Repositories disconnected successfully",

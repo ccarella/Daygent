@@ -1,7 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-// Database types generated from schema
-// Last updated: 2025-01-10
-
 export type Json =
   | string
   | number
@@ -10,443 +6,535 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
-export interface Database {
+export type Database = {
+  // Allows to automatically instanciate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "12.2.3 (519615d)";
+  };
   public: {
     Tables: {
-      organizations: {
+      github_installations: {
         Row: {
+          github_account_name: string;
+          github_account_type: string;
           id: string;
-          name: string;
-          slug: string;
-          subscription_status: "trial" | "active" | "inactive" | "cancelled";
-          subscription_id: string | null;
-          trial_ends_at: string | null;
-          seats_used: number;
-          created_at: string;
-          updated_at: string;
+          installation_id: number;
+          installed_at: string | null;
+          installed_by: string | null;
+          workspace_id: string | null;
         };
         Insert: {
+          github_account_name: string;
+          github_account_type: string;
           id?: string;
-          name: string;
-          slug: string;
-          subscription_status?: "trial" | "active" | "inactive" | "cancelled";
-          subscription_id?: string | null;
-          trial_ends_at?: string | null;
-          seats_used?: number;
-          created_at?: string;
-          updated_at?: string;
+          installation_id: number;
+          installed_at?: string | null;
+          installed_by?: string | null;
+          workspace_id?: string | null;
         };
         Update: {
+          github_account_name?: string;
+          github_account_type?: string;
           id?: string;
-          name?: string;
-          slug?: string;
-          subscription_status?: "trial" | "active" | "inactive" | "cancelled";
-          subscription_id?: string | null;
-          trial_ends_at?: string | null;
-          seats_used?: number;
-          created_at?: string;
-          updated_at?: string;
+          installation_id?: number;
+          installed_at?: string | null;
+          installed_by?: string | null;
+          workspace_id?: string | null;
         };
-      };
-      users: {
-        Row: {
-          id: string;
-          email: string;
-          name: string | null;
-          avatar_url: string | null;
-          github_id: number | null;
-          github_username: string | null;
-          google_id: string | null;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id?: string;
-          email: string;
-          name?: string | null;
-          avatar_url?: string | null;
-          github_id?: number | null;
-          github_username?: string | null;
-          google_id?: string | null;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          id?: string;
-          email?: string;
-          name?: string | null;
-          avatar_url?: string | null;
-          github_id?: number | null;
-          github_username?: string | null;
-          google_id?: string | null;
-          created_at?: string;
-          updated_at?: string;
-        };
-      };
-      organization_members: {
-        Row: {
-          id: string;
-          organization_id: string;
-          user_id: string;
-          role: "owner" | "admin" | "member";
-          invited_by: string | null;
-          invited_at: string;
-          joined_at: string | null;
-        };
-        Insert: {
-          id?: string;
-          organization_id: string;
-          user_id: string;
-          role?: "owner" | "admin" | "member";
-          invited_by?: string | null;
-          invited_at?: string;
-          joined_at?: string | null;
-        };
-        Update: {
-          id?: string;
-          organization_id?: string;
-          user_id?: string;
-          role?: "owner" | "admin" | "member";
-          invited_by?: string | null;
-          invited_at?: string;
-          joined_at?: string | null;
-        };
-      };
-      repositories: {
-        Row: {
-          id: string;
-          organization_id: string;
-          github_id: number;
-          name: string;
-          full_name: string;
-          private: boolean;
-          default_branch: string;
-          installation_id: number | null;
-          webhook_secret: string | null;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id?: string;
-          organization_id: string;
-          github_id: number;
-          name: string;
-          full_name: string;
-          private?: boolean;
-          default_branch?: string;
-          installation_id?: number | null;
-          webhook_secret?: string | null;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          id?: string;
-          organization_id?: string;
-          github_id?: number;
-          name?: string;
-          full_name?: string;
-          private?: boolean;
-          default_branch?: string;
-          installation_id?: number | null;
-          webhook_secret?: string | null;
-          created_at?: string;
-          updated_at?: string;
-        };
-      };
-      projects: {
-        Row: {
-          id: string;
-          repository_id: string;
-          name: string;
-          description: string | null;
-          status: "active" | "archived";
-          created_by: string;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id?: string;
-          repository_id: string;
-          name: string;
-          description?: string | null;
-          status?: "active" | "archived";
-          created_by: string;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          id?: string;
-          repository_id?: string;
-          name?: string;
-          description?: string | null;
-          status?: "active" | "archived";
-          created_by?: string;
-          created_at?: string;
-          updated_at?: string;
-        };
+        Relationships: [
+          {
+            foreignKeyName: "github_installations_installed_by_fkey";
+            columns: ["installed_by"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "github_installations_workspace_id_fkey";
+            columns: ["workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       issues: {
         Row: {
-          id: string;
-          project_id: string;
-          repository_id: string;
-          github_issue_number: number | null;
+          assignee_github_login: string | null;
+          author_github_login: string | null;
+          body: string | null;
+          created_at: string | null;
+          github_closed_at: string | null;
+          github_created_at: string | null;
           github_issue_id: number | null;
-          title: string;
-          original_description: string | null;
-          expanded_description: string | null;
-          status: "open" | "in_progress" | "review" | "completed" | "cancelled";
-          priority: "urgent" | "high" | "medium" | "low";
-          created_by: string;
-          assigned_to: string | null;
-          github_pr_number: number | null;
-          github_pr_id: number | null;
-          created_at: string;
-          updated_at: string;
-          completed_at: string | null;
-        };
-        Insert: {
-          id?: string;
-          project_id: string;
-          repository_id: string;
-          github_issue_number?: number | null;
-          github_issue_id?: number | null;
-          title: string;
-          original_description?: string | null;
-          expanded_description?: string | null;
-          status?:
-            | "open"
-            | "in_progress"
-            | "review"
-            | "completed"
-            | "cancelled";
-          priority?: "urgent" | "high" | "medium" | "low";
-          created_by: string;
-          assigned_to?: string | null;
-          github_pr_number?: number | null;
-          github_pr_id?: number | null;
-          created_at?: string;
-          updated_at?: string;
-          completed_at?: string | null;
-        };
-        Update: {
-          id?: string;
-          project_id?: string;
-          repository_id?: string;
-          github_issue_number?: number | null;
-          github_issue_id?: number | null;
-          title?: string;
-          original_description?: string | null;
-          expanded_description?: string | null;
-          status?:
-            | "open"
-            | "in_progress"
-            | "review"
-            | "completed"
-            | "cancelled";
-          priority?: "urgent" | "high" | "medium" | "low";
-          created_by?: string;
-          assigned_to?: string | null;
-          github_pr_number?: number | null;
-          github_pr_id?: number | null;
-          created_at?: string;
-          updated_at?: string;
-          completed_at?: string | null;
-        };
-      };
-      issue_comments: {
-        Row: {
+          github_issue_number: number;
+          github_node_id: string | null;
+          github_updated_at: string | null;
           id: string;
-          issue_id: string;
-          user_id: string;
-          content: string;
-          is_ai_generated: boolean;
-          github_comment_id: number | null;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id?: string;
-          issue_id: string;
-          user_id: string;
-          content: string;
-          is_ai_generated?: boolean;
-          github_comment_id?: number | null;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          id?: string;
-          issue_id?: string;
-          user_id?: string;
-          content?: string;
-          is_ai_generated?: boolean;
-          github_comment_id?: number | null;
-          created_at?: string;
-          updated_at?: string;
-        };
-      };
-      activities: {
-        Row: {
-          id: string;
-          organization_id: string;
+          labels: Json | null;
           repository_id: string | null;
-          project_id: string | null;
-          issue_id: string | null;
-          user_id: string;
-          type:
-            | "issue_created"
-            | "issue_updated"
-            | "issue_completed"
-            | "issue_comment"
-            | "project_created"
-            | "repository_connected"
-            | "member_invited"
-            | "member_joined";
-          description: string;
-          metadata: Json | null;
-          external_url: string | null;
-          created_at: string;
+          state: string | null;
+          title: string;
+          updated_at: string | null;
+          workspace_id: string | null;
         };
         Insert: {
+          assignee_github_login?: string | null;
+          author_github_login?: string | null;
+          body?: string | null;
+          created_at?: string | null;
+          github_closed_at?: string | null;
+          github_created_at?: string | null;
+          github_issue_id?: number | null;
+          github_issue_number: number;
+          github_node_id?: string | null;
+          github_updated_at?: string | null;
           id?: string;
-          organization_id: string;
+          labels?: Json | null;
           repository_id?: string | null;
-          project_id?: string | null;
-          issue_id?: string | null;
-          user_id: string;
-          type:
-            | "issue_created"
-            | "issue_updated"
-            | "issue_completed"
-            | "issue_comment"
-            | "project_created"
-            | "repository_connected"
-            | "member_invited"
-            | "member_joined";
-          description: string;
-          metadata?: Json | null;
-          external_url?: string | null;
-          created_at?: string;
+          state?: string | null;
+          title: string;
+          updated_at?: string | null;
+          workspace_id?: string | null;
         };
         Update: {
+          assignee_github_login?: string | null;
+          author_github_login?: string | null;
+          body?: string | null;
+          created_at?: string | null;
+          github_closed_at?: string | null;
+          github_created_at?: string | null;
+          github_issue_id?: number | null;
+          github_issue_number?: number;
+          github_node_id?: string | null;
+          github_updated_at?: string | null;
           id?: string;
-          organization_id?: string;
+          labels?: Json | null;
           repository_id?: string | null;
-          project_id?: string | null;
-          issue_id?: string | null;
-          user_id?: string;
-          type?:
-            | "issue_created"
-            | "issue_updated"
-            | "issue_completed"
-            | "issue_comment"
-            | "project_created"
-            | "repository_connected"
-            | "member_invited"
-            | "member_joined";
-          description?: string;
-          metadata?: Json | null;
-          external_url?: string | null;
-          created_at?: string;
+          state?: string | null;
+          title?: string;
+          updated_at?: string | null;
+          workspace_id?: string | null;
         };
+        Relationships: [
+          {
+            foreignKeyName: "issues_repository_id_fkey";
+            columns: ["repository_id"];
+            isOneToOne: false;
+            referencedRelation: "repositories";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "issues_workspace_id_fkey";
+            columns: ["workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id"];
+          },
+        ];
       };
-      ai_usage: {
+      repositories: {
+        Row: {
+          created_at: string | null;
+          default_branch: string | null;
+          full_name: string;
+          github_id: number;
+          id: string;
+          installation_id: number | null;
+          last_synced_at: string | null;
+          name: string;
+          owner: string;
+          private: boolean | null;
+          updated_at: string | null;
+          workspace_id: string | null;
+        };
+        Insert: {
+          created_at?: string | null;
+          default_branch?: string | null;
+          full_name: string;
+          github_id: number;
+          id?: string;
+          installation_id?: number | null;
+          last_synced_at?: string | null;
+          name: string;
+          owner: string;
+          private?: boolean | null;
+          updated_at?: string | null;
+          workspace_id?: string | null;
+        };
+        Update: {
+          created_at?: string | null;
+          default_branch?: string | null;
+          full_name?: string;
+          github_id?: number;
+          id?: string;
+          installation_id?: number | null;
+          last_synced_at?: string | null;
+          name?: string;
+          owner?: string;
+          private?: boolean | null;
+          updated_at?: string | null;
+          workspace_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "repositories_workspace_id_fkey";
+            columns: ["workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      sync_status: {
+        Row: {
+          created_at: string | null;
+          id: string;
+          last_issue_cursor: string | null;
+          last_issue_sync: string | null;
+          repository_id: string | null;
+          sync_in_progress: boolean | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          created_at?: string | null;
+          id?: string;
+          last_issue_cursor?: string | null;
+          last_issue_sync?: string | null;
+          repository_id?: string | null;
+          sync_in_progress?: boolean | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          created_at?: string | null;
+          id?: string;
+          last_issue_cursor?: string | null;
+          last_issue_sync?: string | null;
+          repository_id?: string | null;
+          sync_in_progress?: boolean | null;
+          updated_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "sync_status_repository_id_fkey";
+            columns: ["repository_id"];
+            isOneToOne: false;
+            referencedRelation: "repositories";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      users: {
+        Row: {
+          avatar_url: string | null;
+          created_at: string | null;
+          email: string;
+          github_id: number | null;
+          github_username: string | null;
+          google_id: string | null;
+          id: string;
+          name: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          avatar_url?: string | null;
+          created_at?: string | null;
+          email: string;
+          github_id?: number | null;
+          github_username?: string | null;
+          google_id?: string | null;
+          id?: string;
+          name?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          avatar_url?: string | null;
+          created_at?: string | null;
+          email?: string;
+          github_id?: number | null;
+          github_username?: string | null;
+          google_id?: string | null;
+          id?: string;
+          name?: string | null;
+          updated_at?: string | null;
+        };
+        Relationships: [];
+      };
+      workspace_members: {
         Row: {
           id: string;
-          organization_id: string;
-          user_id: string;
-          model: string;
-          tokens_used: number;
-          purpose: string;
-          cost_cents: number;
-          created_at: string;
+          joined_at: string | null;
+          user_id: string | null;
+          workspace_id: string | null;
         };
         Insert: {
           id?: string;
-          organization_id: string;
-          user_id: string;
-          model: string;
-          tokens_used: number;
-          purpose: string;
-          cost_cents: number;
-          created_at?: string;
+          joined_at?: string | null;
+          user_id?: string | null;
+          workspace_id?: string | null;
         };
         Update: {
           id?: string;
-          organization_id?: string;
-          user_id?: string;
-          model?: string;
-          tokens_used?: number;
-          purpose?: string;
-          cost_cents?: number;
-          created_at?: string;
+          joined_at?: string | null;
+          user_id?: string | null;
+          workspace_id?: string | null;
         };
+        Relationships: [
+          {
+            foreignKeyName: "workspace_members_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "workspace_members_workspace_id_fkey";
+            columns: ["workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      workspaces: {
+        Row: {
+          created_at: string | null;
+          created_by: string | null;
+          id: string;
+          name: string;
+          slug: string;
+          updated_at: string | null;
+        };
+        Insert: {
+          created_at?: string | null;
+          created_by?: string | null;
+          id?: string;
+          name: string;
+          slug: string;
+          updated_at?: string | null;
+        };
+        Update: {
+          created_at?: string | null;
+          created_by?: string | null;
+          id?: string;
+          name?: string;
+          slug?: string;
+          updated_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "workspaces_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
       };
     };
     Views: {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      check_organization_slug_available: {
+        Args: { p_slug: string };
+        Returns: boolean;
+      };
+      create_organization_with_owner: {
+        Args: {
+          p_name: string;
+          p_slug: string;
+          p_description: string;
+          p_user_id: string;
+        };
+        Returns: {
+          id: string;
+          name: string;
+          slug: string;
+          description: string;
+          subscription_status: string;
+          subscription_id: string;
+          trial_ends_at: string;
+          seats_used: number;
+          created_at: string;
+          updated_at: string;
+        }[];
+      };
+      create_workspace_with_member: {
+        Args: { p_name: string; p_slug: string; p_user_id: string };
+        Returns: string;
+      };
+      get_user_default_organization: {
+        Args: { user_id: string };
+        Returns: {
+          id: string;
+          name: string;
+          slug: string;
+          subscription_status: string;
+          trial_ends_at: string;
+          seats_used: number;
+          created_at: string;
+          updated_at: string;
+        }[];
+      };
+      is_workspace_slug_available: {
+        Args: { p_slug: string };
+        Returns: boolean;
+      };
     };
     Enums: {
-      subscription_status: "trial" | "active" | "inactive" | "cancelled";
-      organization_role: "owner" | "admin" | "member";
-      project_status: "active" | "archived";
-      issue_status:
-        | "open"
-        | "in_progress"
-        | "review"
-        | "completed"
-        | "cancelled";
-      issue_priority: "urgent" | "high" | "medium" | "low";
-      activity_type:
-        | "issue_created"
-        | "issue_updated"
-        | "issue_completed"
-        | "issue_comment"
-        | "project_created"
-        | "repository_connected"
-        | "member_invited"
-        | "member_joined";
+      [_ in never]: never;
+    };
+    CompositeTypes: {
+      [_ in never]: never;
     };
   };
-}
+};
 
-// Helper types for easier usage
-export type Tables<T extends keyof Database["public"]["Tables"]> =
-  Database["public"]["Tables"][T]["Row"];
-export type Enums<T extends keyof Database["public"]["Enums"]> =
-  Database["public"]["Enums"][T];
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">;
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<
+  keyof Database,
+  "public"
+>];
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R;
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R;
+      }
+      ? R
+      : never
+    : never;
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I;
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I;
+      }
+      ? I
+      : never
+    : never;
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U;
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U;
+      }
+      ? U
+      : never
+    : never;
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never;
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never;
+
+export const Constants = {
+  public: {
+    Enums: {},
+  },
+} as const;
 
 // Specific table types
-export type Organization = Tables<"organizations">;
+export type Workspace = Tables<"workspaces">;
 export type User = Tables<"users">;
-export type OrganizationMember = Tables<"organization_members">;
+export type WorkspaceMember = Tables<"workspace_members">;
+export type GitHubInstallation = Tables<"github_installations">;
 export type Repository = Tables<"repositories">;
-export type Project = Tables<"projects">;
 export type Issue = Tables<"issues">;
-export type IssueComment = Tables<"issue_comments">;
-export type Activity = Tables<"activities">;
-export type AIUsage = Tables<"ai_usage">;
-
-// Enum types
-export type SubscriptionStatus = Enums<"subscription_status">;
-export type OrganizationRole = Enums<"organization_role">;
-export type ProjectStatus = Enums<"project_status">;
-export type IssueStatus = Enums<"issue_status">;
-export type IssuePriority = Enums<"issue_priority">;
-export type ActivityType = Enums<"activity_type">;
+export type SyncStatus = Tables<"sync_status">;
 
 // Utility types for database operations
-export type InsertOrganization = Omit<
-  Database["public"]["Tables"]["organizations"]["Insert"],
+export type InsertWorkspace = Omit<
+  Database["public"]["Tables"]["workspaces"]["Insert"],
   "id" | "created_at" | "updated_at"
 >;
 
-export type UpdateOrganization = Omit<
-  Database["public"]["Tables"]["organizations"]["Update"],
+export type UpdateWorkspace = Omit<
+  Database["public"]["Tables"]["workspaces"]["Update"],
   "id" | "created_at" | "updated_at"
 >;
 
@@ -470,16 +558,6 @@ export type UpdateRepository = Omit<
   "id" | "created_at" | "updated_at"
 >;
 
-export type InsertProject = Omit<
-  Database["public"]["Tables"]["projects"]["Insert"],
-  "id" | "created_at" | "updated_at"
->;
-
-export type UpdateProject = Omit<
-  Database["public"]["Tables"]["projects"]["Update"],
-  "id" | "created_at" | "updated_at"
->;
-
 export type InsertIssue = Omit<
   Database["public"]["Tables"]["issues"]["Insert"],
   "id" | "created_at" | "updated_at"
@@ -487,37 +565,17 @@ export type InsertIssue = Omit<
 
 export type UpdateIssue = Omit<
   Database["public"]["Tables"]["issues"]["Update"],
-  "id" | "created_at" | "updated_at" | "completed_at"
->;
-
-export type InsertIssueComment = Omit<
-  Database["public"]["Tables"]["issue_comments"]["Insert"],
   "id" | "created_at" | "updated_at"
 >;
 
-export type UpdateIssueComment = Omit<
-  Database["public"]["Tables"]["issue_comments"]["Update"],
-  "id" | "created_at" | "updated_at"
+export type InsertWorkspaceMember = Omit<
+  Database["public"]["Tables"]["workspace_members"]["Insert"],
+  "id" | "joined_at"
 >;
 
-export type InsertActivity = Omit<
-  Database["public"]["Tables"]["activities"]["Insert"],
-  "id" | "created_at"
->;
-
-export type InsertAIUsage = Omit<
-  Database["public"]["Tables"]["ai_usage"]["Insert"],
-  "id" | "created_at"
->;
-
-export type InsertOrganizationMember = Omit<
-  Database["public"]["Tables"]["organization_members"]["Insert"],
-  "id" | "invited_at"
->;
-
-export type UpdateOrganizationMember = Omit<
-  Database["public"]["Tables"]["organization_members"]["Update"],
-  "id" | "invited_at"
+export type UpdateWorkspaceMember = Omit<
+  Database["public"]["Tables"]["workspace_members"]["Update"],
+  "id" | "joined_at"
 >;
 
 // Type guards for date string conversion
@@ -527,14 +585,16 @@ export const isDateString = (value: unknown): value is string => {
 };
 
 // Utility function to convert date strings to Date objects
-export const parseDates = <T extends Record<string, any>>(
+export const parseDates = <T extends Record<string, unknown>>(
   obj: T,
-  dateFields: (keyof T)[],
+  dateFields: string[],
 ): T => {
   const result = { ...obj };
   dateFields.forEach((field) => {
-    if (result[field] && isDateString(result[field])) {
-      (result as any)[field] = new Date(result[field] as string);
+    if (field in result && result[field] && isDateString(result[field])) {
+      (result as Record<string, unknown>)[field] = new Date(
+        result[field] as string,
+      );
     }
   });
   return result;
@@ -542,13 +602,17 @@ export const parseDates = <T extends Record<string, any>>(
 
 // Define date fields for each table
 export const dateFields = {
-  organizations: ["created_at", "updated_at", "trial_ends_at"],
+  workspaces: ["created_at", "updated_at"],
   users: ["created_at", "updated_at"],
-  organization_members: ["invited_at", "joined_at"],
-  repositories: ["created_at", "updated_at"],
-  projects: ["created_at", "updated_at"],
-  issues: ["created_at", "updated_at", "completed_at"],
-  issue_comments: ["created_at", "updated_at"],
-  activities: ["created_at"],
-  ai_usage: ["created_at"],
+  workspace_members: ["joined_at"],
+  github_installations: ["installed_at"],
+  repositories: ["created_at", "updated_at", "last_synced_at"],
+  issues: [
+    "created_at",
+    "updated_at",
+    "github_created_at",
+    "github_updated_at",
+    "github_closed_at",
+  ],
+  sync_status: ["created_at", "updated_at", "last_issue_sync"],
 } as const;

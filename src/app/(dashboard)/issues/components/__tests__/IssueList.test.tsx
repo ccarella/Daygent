@@ -4,10 +4,7 @@ import { IssueList } from "../IssueList";
 import type { Database } from "@/lib/database.types";
 
 type Issue = Database["public"]["Tables"]["issues"]["Row"] & {
-  project: { id: string; name: string } | null;
   repository: { id: string; name: string; full_name: string } | null;
-  assigned_user: { id: string; name: string; avatar_url: string | null } | null;
-  created_user: { id: string; name: string; avatar_url: string | null } | null;
 };
 
 const mockPush = vi.fn();
@@ -23,26 +20,23 @@ vi.mock("next/navigation", () => ({
 
 const createMockIssue = (overrides: Partial<Issue> = {}): Issue => ({
   id: "123e4567-e89b-12d3-a456-426614174000",
-  project_id: "proj-1",
   repository_id: "repo-1",
+  workspace_id: "workspace-1",
   github_issue_number: 1,
   github_issue_id: null,
+  github_node_id: null,
   title: "Test Issue",
-  original_description: null,
-  expanded_description: null,
-  status: "open",
-  priority: "medium",
-  created_by: "user-1",
-  assigned_to: null,
-  github_pr_number: null,
-  github_pr_id: null,
+  body: null,
+  state: "open",
+  author_github_login: null,
+  assignee_github_login: null,
+  labels: null,
+  github_created_at: null,
+  github_updated_at: null,
+  github_closed_at: null,
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
-  completed_at: null,
-  project: { id: "proj-1", name: "Test Project" },
   repository: { id: "repo-1", name: "test-repo", full_name: "org/test-repo" },
-  assigned_user: null,
-  created_user: { id: "user-1", name: "Test User", avatar_url: null },
   ...overrides,
 });
 
