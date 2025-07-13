@@ -162,9 +162,8 @@ export async function POST() {
       await serviceClient.from("activities").insert({
         organization_id: newOrg.id,
         user_id: user.id,
-        action: "organization.created",
-        resource_type: "organization",
-        resource_id: newOrg.id,
+        type: "member_joined",
+        description: "organization.created",
         metadata: {
           description: `Organization created for existing user ${userProfile.email}`,
         },

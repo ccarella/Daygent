@@ -100,9 +100,9 @@ export async function POST(request: NextRequest) {
     const { error: activityError } = await supabase.from("activities").insert({
       organization_id,
       user_id: user.id,
-      action: "project.created",
-      resource_type: "project",
-      resource_id: project.id,
+      project_id: project.id,
+      type: "project_created",
+      description: "project.created",
       metadata: {
         project_name: name,
         repository_id,
