@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { CreateOrganizationForm } from "@/components/onboarding/CreateOrganizationForm";
+import { CreateWorkspaceForm } from "@/components/onboarding/CreateWorkspaceForm";
 
 export const metadata = {
-  title: "Create Your Organization - Daygent",
+  title: "Create Your Workspace - Daygent",
   description: "Set up your workspace to start managing projects with Daygent",
 };
 
@@ -17,14 +17,14 @@ export default async function OnboardingPage() {
     redirect("/login");
   }
 
-  // Check if user already has an organization
-  const { data: organizations } = await supabase
-    .from("organization_members")
-    .select("organization_id")
+  // Check if user already has a workspace
+  const { data: workspaces } = await supabase
+    .from("workspace_members")
+    .select("workspace_id")
     .eq("user_id", user.id)
     .limit(1);
 
-  if (organizations && organizations.length > 0) {
+  if (workspaces && workspaces.length > 0) {
     redirect("/issues");
   }
 
@@ -43,14 +43,14 @@ export default async function OnboardingPage() {
         <div className="mt-12">
           <div className="rounded-lg border bg-card p-8">
             <h2 className="text-xl font-semibold mb-6">
-              Create Your Organization
+              Create Your Workspace
             </h2>
             <p className="text-sm text-muted-foreground mb-8">
-              Organizations are workspaces where you can manage repositories,
+              Workspaces are where you can manage repositories,
               projects, and collaborate with your team. You can create multiple
-              organizations or join existing ones.
+              workspaces or join existing ones.
             </p>
-            <CreateOrganizationForm />
+            <CreateWorkspaceForm />
           </div>
         </div>
       </div>

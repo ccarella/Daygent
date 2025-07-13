@@ -69,7 +69,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL(next, request.url));
   }
 
-  // Check if authenticated user has an organization (skip for public/error/onboarding routes)
+  // Check if authenticated user has a workspace (skip for public/error/onboarding routes)
   if (
     user &&
     !isPublicRoute &&
@@ -92,25 +92,25 @@ export async function middleware(request: NextRequest) {
     );
 
     try {
-      const { data: orgs, error } = await supabase
-        .from("organization_members")
-        .select("organization_id")
+      const { data: workspaces, error } = await supabase
+        .from("workspace_members")
+        .select("workspace_id")
         .eq("user_id", user.id)
         .limit(1);
 
       if (error) {
         console.error(
-          "[Middleware] Error checking organization membership:",
+          "[Middleware] Error checking workspace membership:",
           error,
         );
-      } else if (!orgs || orgs.length === 0) {
+      } else if (!workspaces || workspaces.length === 0) {
         console.log(
-          "[Middleware] User has no organization, redirecting to onboarding",
+          "[Middleware] User has no workspace, redirecting to onboarding",
         );
         return NextResponse.redirect(new URL("/onboarding", request.url));
       }
     } catch (error) {
-      console.error("[Middleware] Failed to check organization:", error);
+      console.error("[Middleware] Failed to check workspace:", error);
     }
   }
 
