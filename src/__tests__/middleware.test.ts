@@ -38,9 +38,16 @@ describe("Middleware - Onboarding Flow", () => {
   });
 
   it("allows access to /onboarding without organization check", async () => {
-    const mockUser = { id: "user-123", email: "test@example.com" };
+    const mockUser = {
+      id: "user-123",
+      email: "test@example.com",
+      app_metadata: {},
+      user_metadata: {},
+      aud: "authenticated",
+      created_at: new Date().toISOString(),
+    } as any;
     const mockResponse = {} as NextResponse;
-    
+
     vi.mocked(updateSession).mockResolvedValue({
       response: mockResponse,
       user: mockUser,
@@ -54,7 +61,14 @@ describe("Middleware - Onboarding Flow", () => {
   });
 
   it("redirects to /onboarding if authenticated user has no workspace", async () => {
-    const mockUser = { id: "user-123", email: "test@example.com" };
+    const mockUser = {
+      id: "user-123",
+      email: "test@example.com",
+      app_metadata: {},
+      user_metadata: {},
+      aud: "authenticated",
+      created_at: new Date().toISOString(),
+    } as any;
     const mockResponse = {} as NextResponse;
     const mockSupabase = {
       from: vi.fn().mockReturnThis(),
@@ -67,9 +81,7 @@ describe("Middleware - Onboarding Flow", () => {
       response: mockResponse,
       user: mockUser,
     });
-    vi.mocked(createServerClient).mockReturnValue(
-      mockSupabase as ReturnType<typeof createServerClient>
-    );
+    vi.mocked(createServerClient).mockReturnValue(mockSupabase as any);
 
     const request = mockRequest("http://localhost:3000/issues");
     await middleware(request);
@@ -77,12 +89,19 @@ describe("Middleware - Onboarding Flow", () => {
     expect(mockSupabase.from).toHaveBeenCalledWith("workspace_members");
     expect(mockSupabase.eq).toHaveBeenCalledWith("user_id", "user-123");
     expect(NextResponse.redirect).toHaveBeenCalledWith(
-      new URL("http://localhost:3000/onboarding")
+      new URL("http://localhost:3000/onboarding"),
     );
   });
 
   it("allows access to protected routes if user has workspace", async () => {
-    const mockUser = { id: "user-123", email: "test@example.com" };
+    const mockUser = {
+      id: "user-123",
+      email: "test@example.com",
+      app_metadata: {},
+      user_metadata: {},
+      aud: "authenticated",
+      created_at: new Date().toISOString(),
+    } as any;
     const mockResponse = {} as NextResponse;
     const mockSupabase = {
       from: vi.fn().mockReturnThis(),
@@ -98,9 +117,7 @@ describe("Middleware - Onboarding Flow", () => {
       response: mockResponse,
       user: mockUser,
     });
-    vi.mocked(createServerClient).mockReturnValue(
-      mockSupabase as ReturnType<typeof createServerClient>
-    );
+    vi.mocked(createServerClient).mockReturnValue(mockSupabase as any);
 
     const request = mockRequest("http://localhost:3000/issues");
     const result = await middleware(request);
@@ -111,7 +128,7 @@ describe("Middleware - Onboarding Flow", () => {
 
   it("redirects unauthenticated users to login", async () => {
     const mockResponse = {} as NextResponse;
-    
+
     vi.mocked(updateSession).mockResolvedValue({
       response: mockResponse,
       user: null,
@@ -123,7 +140,7 @@ describe("Middleware - Onboarding Flow", () => {
     expect(NextResponse.redirect).toHaveBeenCalledWith(
       expect.objectContaining({
         pathname: "/login",
-      })
+      }),
     );
   });
 });

@@ -14,15 +14,17 @@ vi.mock("@supabase/ssr", () => ({
 }));
 
 vi.mock("next/headers", () => ({
-  cookies: vi.fn(() => Promise.resolve({
-    get: vi.fn(),
-    set: vi.fn(),
-    delete: vi.fn(),
-    getAll: vi.fn(() => []),
-  })),
+  cookies: vi.fn(() =>
+    Promise.resolve({
+      get: vi.fn(),
+      set: vi.fn(),
+      delete: vi.fn(),
+      getAll: vi.fn(() => []),
+    }),
+  ),
 }));
 
-describe("POST /api/organizations", () => {
+describe("POST /api/workspaces", () => {
   const mockAuthClient = {
     auth: {
       getUser: vi.fn(),
@@ -36,6 +38,7 @@ describe("POST /api/organizations", () => {
     single: ReturnType<typeof vi.fn>;
     insert: ReturnType<typeof vi.fn>;
     delete: ReturnType<typeof vi.fn>;
+    rpc: ReturnType<typeof vi.fn>;
   }
 
   const mockServiceClient: MockServiceClient = {
@@ -45,6 +48,7 @@ describe("POST /api/organizations", () => {
     single: vi.fn(),
     insert: vi.fn(),
     delete: vi.fn(),
+    rpc: vi.fn(),
   };
 
   // Setup chain methods
@@ -62,14 +66,14 @@ describe("POST /api/organizations", () => {
     mockServiceClient.eq.mockReturnValue(mockServiceClient);
     mockServiceClient.insert.mockReturnValue(mockServiceClient);
     mockServiceClient.delete.mockReturnValue(mockServiceClient);
-    
+
     // Mock the imports - ensure cookies is properly mocked
-    vi.mocked(createClient).mockResolvedValue(mockAuthClient as ReturnType<typeof createClient>);
-    vi.mocked(createServerClient).mockReturnValue(mockServiceClient);
+    vi.mocked(createClient).mockResolvedValue(mockAuthClient as any);
+    vi.mocked(createServerClient).mockReturnValue(mockServiceClient as any);
   });
 
   it("returns 400 when name or slug is missing", async () => {
-    const request = new NextRequest("http://localhost:3000/api/organizations", {
+    const request = new NextRequest("http://localhost:3000/api/workspaces", {
       method: "POST",
       body: JSON.stringify({ name: "Test" }), // missing slug
     });
@@ -87,7 +91,7 @@ describe("POST /api/organizations", () => {
       error: new Error("Not authenticated"),
     });
 
-    const request = new NextRequest("http://localhost:3000/api/organizations", {
+    const request = new NextRequest("http://localhost:3000/api/workspaces", {
       method: "POST",
       body: JSON.stringify({ name: "Test", slug: "test" }),
     });
@@ -110,7 +114,7 @@ describe("POST /api/organizations", () => {
       error: null,
     });
 
-    const request = new NextRequest("http://localhost:3000/api/organizations", {
+    const request = new NextRequest("http://localhost:3000/api/workspaces", {
       method: "POST",
       body: JSON.stringify({ name: "Test", slug: "test" }),
     });
@@ -119,16 +123,15 @@ describe("POST /api/organizations", () => {
     const data = await response.json();
 
     expect(response.status).toBe(400);
-    expect(data.error).toBe("Organization slug is already taken");
+    expect(data.error).toBe("Workspace slug is already taken");
   });
 
-  it("creates organization and adds user as owner", async () => {
+  it("creates workspace and adds user as member", async () => {
     const mockUser = { id: "user-123", email: "test@example.com" };
-    const mockOrg = {
-      id: "org-123",
-      name: "Test Organization",
-      slug: "test-org",
-      description: "Test description",
+    const mockWorkspace = {
+      id: "workspace-123",
+      name: "Test Workspace",
+      slug: "test-workspace",
     };
 
     mockAuthClient.auth.getUser.mockResolvedValue({
@@ -136,85 +139,75 @@ describe("POST /api/organizations", () => {
       error: null,
     });
 
-    // Mock slug check - not found
-    mockServiceClient.single.mockResolvedValueOnce({
-      data: null,
+    // Mock RPC call for slug check
+    mockServiceClient.rpc = vi.fn().mockResolvedValueOnce({
+      data: true, // slug is available
       error: null,
     });
 
-    // Mock organization creation - returns org data  
-    mockServiceClient.single.mockResolvedValueOnce({
-      data: mockOrg,
+    // Mock RPC call for workspace creation
+    mockServiceClient.rpc.mockResolvedValueOnce({
+      data: mockWorkspace.id,
       error: null,
     });
 
-    // Mock organization insert needs to chain with select().single()
-    mockServiceClient.insert.mockReturnValueOnce(mockServiceClient);
-    
-    // After the org creation, we need to mock member and activity inserts
-    // These just return { error: null }
-    mockServiceClient.insert.mockImplementation(() => ({ error: null }));
-
-    const request = new NextRequest("http://localhost:3000/api/organizations", {
+    const request = new NextRequest("http://localhost:3000/api/workspaces", {
       method: "POST",
       body: JSON.stringify({
-        name: "Test Organization",
-        slug: "test-org",
-        description: "Test description",
+        name: "Test Workspace",
+        slug: "test-workspace",
       }),
     });
 
     const response = await POST(request);
     const data = await response.json();
 
-    expect(response.status).toBe(200);
-    expect(data.organization).toEqual(mockOrg);
-
-    // Verify organization was created with correct data
-    expect(mockServiceClient.insert).toHaveBeenCalledWith({
-      name: "Test Organization",
-      slug: "test-org",
-      description: "Test description",
+    expect(response.status).toBe(201);
+    expect(data.workspace).toEqual({
+      id: mockWorkspace.id,
+      name: mockWorkspace.name,
+      slug: mockWorkspace.slug,
     });
 
-    // Verify user was added as owner
-    expect(mockServiceClient.insert).toHaveBeenCalledWith({
-      organization_id: "org-123",
-      user_id: "user-123",
-      role: "owner",
-    });
+    // Verify RPC calls were made correctly
+    expect(mockServiceClient.rpc).toHaveBeenCalledWith(
+      "is_workspace_slug_available",
+      {
+        p_slug: "test-workspace",
+      },
+    );
+
+    expect(mockServiceClient.rpc).toHaveBeenCalledWith(
+      "create_workspace_with_member",
+      {
+        p_name: "Test Workspace",
+        p_slug: "test-workspace",
+        p_user_id: "user-123",
+      },
+    );
   });
 
-  it("cleans up organization if member creation fails", async () => {
+  it("handles workspace creation failure", async () => {
     const mockUser = { id: "user-123", email: "test@example.com" };
-    const mockOrg = { id: "org-123", name: "Test", slug: "test" };
 
     mockAuthClient.auth.getUser.mockResolvedValue({
       data: { user: mockUser },
       error: null,
     });
 
-    // Mock slug check - not found
-    mockServiceClient.single.mockResolvedValueOnce({
+    // Mock RPC call for slug check
+    mockServiceClient.rpc = vi.fn().mockResolvedValueOnce({
+      data: true, // slug is available
+      error: null,
+    });
+
+    // Mock RPC call for workspace creation failure
+    mockServiceClient.rpc.mockResolvedValueOnce({
       data: null,
-      error: null,
+      error: new Error("Failed to create workspace"),
     });
 
-    // Mock organization creation
-    mockServiceClient.single.mockResolvedValueOnce({
-      data: mockOrg,
-      error: null,
-    });
-
-    // Mock organization insert needs to chain with select().single()
-    mockServiceClient.insert.mockReturnValueOnce(mockServiceClient);
-    
-    // Mock member insertion failure (second insert call)
-    mockServiceClient.insert.mockReturnValueOnce({
-      error: new Error("RLS policy violation"),
-    });
-
-    const request = new NextRequest("http://localhost:3000/api/organizations", {
+    const request = new NextRequest("http://localhost:3000/api/workspaces", {
       method: "POST",
       body: JSON.stringify({ name: "Test", slug: "test" }),
     });
@@ -223,51 +216,35 @@ describe("POST /api/organizations", () => {
     const data = await response.json();
 
     expect(response.status).toBe(500);
-    expect(data.error).toBe("Failed to add user as organization owner");
-
-    // Verify cleanup was attempted
-    expect(mockServiceClient.delete).toHaveBeenCalled();
-    expect(mockServiceClient.eq).toHaveBeenCalledWith("id", "org-123");
+    expect(data.error).toBe("Failed to create workspace");
   });
 
-  it("handles null description correctly", async () => {
+  it("handles slug availability check correctly", async () => {
     const mockUser = { id: "user-123", email: "test@example.com" };
-    const mockOrg = {
-      id: "org-123",
-      name: "Test",
-      slug: "test",
-      description: null,
-    };
 
     mockAuthClient.auth.getUser.mockResolvedValue({
       data: { user: mockUser },
       error: null,
     });
 
-    mockServiceClient.single.mockResolvedValueOnce({ data: null, error: null });
-    mockServiceClient.single.mockResolvedValueOnce({ data: mockOrg, error: null });
-    
-    // Mock organization insert chains with select().single()
-    mockServiceClient.insert.mockReturnValueOnce(mockServiceClient);
-    // Subsequent inserts return just error status
-    mockServiceClient.insert.mockImplementation(() => ({ error: null }));
+    // Mock RPC call for slug check - slug already taken
+    mockServiceClient.rpc = vi.fn().mockResolvedValueOnce({
+      data: false, // slug is not available
+      error: null,
+    });
 
-    const request = new NextRequest("http://localhost:3000/api/organizations", {
+    const request = new NextRequest("http://localhost:3000/api/workspaces", {
       method: "POST",
       body: JSON.stringify({
         name: "Test",
         slug: "test",
-        description: null,
       }),
     });
 
     const response = await POST(request);
+    const data = await response.json();
 
-    expect(response.status).toBe(200);
-    expect(mockServiceClient.insert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        description: null,
-      })
-    );
+    expect(response.status).toBe(400);
+    expect(data.error).toBe("Workspace slug is already taken");
   });
 });

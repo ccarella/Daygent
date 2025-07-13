@@ -46,9 +46,7 @@ describe("CreateWorkspaceForm", () => {
       replace: vi.fn(),
       prefetch: vi.fn(),
     } as ReturnType<typeof useRouter>);
-    vi.mocked(createClient).mockReturnValue(
-      mockSupabaseClient as ReturnType<typeof createClient>
-    );
+    vi.mocked(createClient).mockReturnValue(mockSupabaseClient as any);
   });
 
   it("renders form fields correctly", () => {
@@ -57,7 +55,9 @@ describe("CreateWorkspaceForm", () => {
     expect(screen.getByLabelText(/workspace name/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/url slug/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/description/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /create workspace/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /create workspace/i }),
+    ).toBeInTheDocument();
   });
 
   it("auto-generates slug from workspace name", async () => {
@@ -78,18 +78,27 @@ describe("CreateWorkspaceForm", () => {
     render(<CreateWorkspaceForm />);
     const user = userEvent.setup();
 
-    const submitButton = screen.getByRole("button", { name: /create workspace/i });
+    const submitButton = screen.getByRole("button", {
+      name: /create workspace/i,
+    });
     await user.click(submitButton);
 
     await waitFor(() => {
-      expect(screen.getByText(/workspace name must be at least 2 characters/i)).toBeInTheDocument();
-      expect(screen.getByText(/slug must be at least 2 characters/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/workspace name must be at least 2 characters/i),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText(/slug must be at least 2 characters/i),
+      ).toBeInTheDocument();
     });
   });
 
   it("checks slug availability", async () => {
     // Mock slug is available
-    mockSupabaseClient.maybeSingle.mockResolvedValue({ data: null, error: null });
+    mockSupabaseClient.maybeSingle.mockResolvedValue({
+      data: null,
+      error: null,
+    });
 
     render(<CreateWorkspaceForm />);
     const user = userEvent.setup();
@@ -99,7 +108,10 @@ describe("CreateWorkspaceForm", () => {
 
     await waitFor(() => {
       expect(mockSupabaseClient.from).toHaveBeenCalledWith("workspaces");
-      expect(mockSupabaseClient.eq).toHaveBeenCalledWith("slug", "available-slug");
+      expect(mockSupabaseClient.eq).toHaveBeenCalledWith(
+        "slug",
+        "available-slug",
+      );
     });
   });
 
@@ -120,15 +132,20 @@ describe("CreateWorkspaceForm", () => {
     await user.type(slugInput, "taken-slug");
 
     await waitFor(() => {
-      const submitButton = screen.getByRole("button", { name: /create workspace/i });
+      const submitButton = screen.getByRole("button", {
+        name: /create workspace/i,
+      });
       expect(submitButton).toBeDisabled();
     });
   });
 
   it("creates workspace successfully", async () => {
     // Mock slug availability check
-    mockSupabaseClient.maybeSingle.mockResolvedValue({ data: null, error: null });
-    
+    mockSupabaseClient.maybeSingle.mockResolvedValue({
+      data: null,
+      error: null,
+    });
+
     // Mock successful API response
     vi.mocked(fetch).mockResolvedValueOnce({
       ok: true,
@@ -137,8 +154,8 @@ describe("CreateWorkspaceForm", () => {
           id: "new-workspace-id",
           name: "New Workspace",
           slug: "new-workspace",
-          description: "Test description"
-        }
+          description: "Test description",
+        },
       }),
     } as Response);
 
@@ -150,7 +167,9 @@ describe("CreateWorkspaceForm", () => {
     await user.type(nameInput, "New Workspace");
     await user.type(descriptionInput, "Test description");
 
-    const submitButton = screen.getByRole("button", { name: /create workspace/i });
+    const submitButton = screen.getByRole("button", {
+      name: /create workspace/i,
+    });
     await user.click(submitButton);
 
     await waitFor(() => {
@@ -171,8 +190,9 @@ describe("CreateWorkspaceForm", () => {
       expect(toast.success).toHaveBeenCalledWith(
         "Workspace created!",
         expect.objectContaining({
-          description: "Your workspace is ready. Let's connect your first repository.",
-        })
+          description:
+            "Your workspace is ready. Let's connect your first repository.",
+        }),
       );
       expect(mockPush).toHaveBeenCalledWith("/settings/repositories");
     });
@@ -180,13 +200,16 @@ describe("CreateWorkspaceForm", () => {
 
   it("handles workspace creation error", async () => {
     // Mock slug availability check
-    mockSupabaseClient.maybeSingle.mockResolvedValue({ data: null, error: null });
-    
+    mockSupabaseClient.maybeSingle.mockResolvedValue({
+      data: null,
+      error: null,
+    });
+
     // Mock error response
     vi.mocked(fetch).mockResolvedValueOnce({
       ok: false,
       json: async () => ({
-        error: "Database error"
+        error: "Database error",
       }),
     } as Response);
 
@@ -196,7 +219,9 @@ describe("CreateWorkspaceForm", () => {
     const nameInput = screen.getByLabelText(/workspace name/i);
     await user.type(nameInput, "Test Workspace");
 
-    const submitButton = screen.getByRole("button", { name: /create workspace/i });
+    const submitButton = screen.getByRole("button", {
+      name: /create workspace/i,
+    });
     await user.click(submitButton);
 
     await waitFor(() => {
@@ -204,7 +229,7 @@ describe("CreateWorkspaceForm", () => {
         "Error creating workspace",
         expect.objectContaining({
           description: "Database error",
-        })
+        }),
       );
       expect(mockPush).not.toHaveBeenCalled();
     });
@@ -212,14 +237,24 @@ describe("CreateWorkspaceForm", () => {
 
   it("disables form during submission", async () => {
     // Mock slug availability check
-    mockSupabaseClient.maybeSingle.mockResolvedValue({ data: null, error: null });
-    
+    mockSupabaseClient.maybeSingle.mockResolvedValue({
+      data: null,
+      error: null,
+    });
+
     // Mock slow API response
     vi.mocked(fetch).mockImplementation(
-      () => new Promise((resolve) => setTimeout(() => resolve({
-        ok: true,
-        json: async () => ({ workspace: { id: "workspace-id" } }),
-      } as Response), 100))
+      () =>
+        new Promise((resolve) =>
+          setTimeout(
+            () =>
+              resolve({
+                ok: true,
+                json: async () => ({ workspace: { id: "workspace-id" } }),
+              } as Response),
+            100,
+          ),
+        ),
     );
 
     render(<CreateWorkspaceForm />);
@@ -228,7 +263,9 @@ describe("CreateWorkspaceForm", () => {
     const nameInput = screen.getByLabelText(/workspace name/i);
     await user.type(nameInput, "Test Workspace");
 
-    const submitButton = screen.getByRole("button", { name: /create workspace/i });
+    const submitButton = screen.getByRole("button", {
+      name: /create workspace/i,
+    });
     await user.click(submitButton);
 
     // Check that inputs are disabled during submission

@@ -32,15 +32,15 @@ export async function POST() {
       );
     }
 
-    // Check if user already has organizations
-    const { data: existingOrgs } = await serviceClient
-      .from("organization_members")
-      .select("organization_id")
+    // Check if user already has workspaces
+    const { data: existingWorkspaces } = await serviceClient
+      .from("workspace_members")
+      .select("workspace_id")
       .eq("user_id", user.id);
 
-    if (existingOrgs && existingOrgs.length > 0) {
+    if (existingWorkspaces && existingWorkspaces.length > 0) {
       return NextResponse.json(
-        { error: "User already has organizations" },
+        { error: "User already has workspaces" },
         { status: 400 },
       );
     }
@@ -67,7 +67,7 @@ export async function POST() {
 
     while (true) {
       const { data: existing } = await serviceClient
-        .from("organizations")
+        .from("workspaces")
         .select("id")
         .eq("slug", slug)
         .single();
@@ -78,46 +78,41 @@ export async function POST() {
       slug = `${baseSlug}-${counter}`;
     }
 
-    // Create organization
-    const orgName =
+    // Create workspace
+    const workspaceName =
       userProfile.name ||
       userProfile.github_username ||
       userProfile.email.split("@")[0];
 
-    // Create organization directly - service role should bypass RLS
-    const { data: newOrg, error: createError } = await serviceClient
-      .from("organizations")
+    // Create workspace directly - service role should bypass RLS
+    const { data: newWorkspace, error: createError } = await serviceClient
+      .from("workspaces")
       .insert({
-        name: orgName,
+        name: workspaceName,
         slug: slug,
-        subscription_status: "trial",
-        trial_ends_at: new Date(
-          Date.now() + 30 * 24 * 60 * 60 * 1000,
-        ).toISOString(),
-        seats_used: 1,
+        created_by: user.id,
       })
       .select()
       .single();
 
     if (createError) {
-      console.error("Failed to create organization:", createError);
+      console.error("Failed to create workspace:", createError);
       return NextResponse.json(
-        { error: `Failed to create organization: ${createError.message}` },
+        { error: `Failed to create workspace: ${createError.message}` },
         { status: 400 },
       );
     }
 
-    // Add user as owner - try multiple approaches to bypass RLS
+    // Add user as member
     let memberAdded = false;
     let memberError: PostgrestError | null = null;
 
-    // First attempt: direct insert with service role
+    // Direct insert with service role
     const { error: directError } = await serviceClient
-      .from("organization_members")
+      .from("workspace_members")
       .insert({
-        organization_id: newOrg.id,
+        workspace_id: newWorkspace.id,
         user_id: user.id,
-        role: "owner",
         joined_at: new Date().toISOString(),
       });
 
@@ -126,30 +121,15 @@ export async function POST() {
     } else {
       memberError = directError;
       console.error("Direct member insert failed:", directError);
-
-      // Second attempt: use raw SQL via Supabase SQL editor function if available
-      try {
-        const { error: sqlError } = await serviceClient.rpc("exec", {
-          sql: `INSERT INTO organization_members (organization_id, user_id, role, joined_at) VALUES ($1, $2, $3, $4)`,
-          params: [newOrg.id, user.id, "owner", new Date().toISOString()],
-        });
-
-        if (!sqlError) {
-          memberAdded = true;
-          memberError = null;
-        }
-      } catch {
-        console.log("SQL function not available");
-      }
     }
 
     if (!memberAdded) {
-      // Clean up: delete the organization if we can't add the member
-      await serviceClient.from("organizations").delete().eq("id", newOrg.id);
+      // Clean up: delete the workspace if we can't add the member
+      await serviceClient.from("workspaces").delete().eq("id", newWorkspace.id);
 
       return NextResponse.json(
         {
-          error: `Organization creation incomplete due to database policy restrictions. ${
+          error: `Workspace creation incomplete due to database policy restrictions. ${
             memberError ? `Error: ${memberError.message}` : ""
           }. Please contact support or run database migrations.`,
         },
@@ -157,33 +137,19 @@ export async function POST() {
       );
     }
 
-    // Try to log activity (non-critical)
-    try {
-      await serviceClient.from("activities").insert({
-        organization_id: newOrg.id,
-        user_id: user.id,
-        action: "organization.created",
-        resource_type: "organization",
-        resource_id: newOrg.id,
-        metadata: {
-          description: `Organization created for existing user ${userProfile.email}`,
-        },
-      });
-    } catch (activityError) {
-      console.warn("Failed to log activity:", activityError);
-    }
+    // Activities table doesn't exist in new schema, skip logging
 
     return NextResponse.json({
       success: true,
-      organization: {
-        id: newOrg.id,
-        name: newOrg.name,
-        slug: newOrg.slug,
+      workspace: {
+        id: newWorkspace.id,
+        name: newWorkspace.name,
+        slug: newWorkspace.slug,
       },
-      message: `Successfully created organization "${newOrg.name}" with slug "${newOrg.slug}"`,
+      message: `Successfully created workspace "${newWorkspace.name}" with slug "${newWorkspace.slug}"`,
     });
   } catch (error) {
-    console.error("Error creating organization:", error);
+    console.error("Error creating workspace:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 },
