@@ -36,7 +36,7 @@ describe("useAuth", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     vi.mocked(useRouter).mockReturnValue(mockRouter as any);
   });
 
@@ -67,9 +67,9 @@ describe("useAuth", () => {
   it("should handle sign in error", async () => {
     const mockError = new Error("OAuth error");
     mockSignInWithOAuth.mockResolvedValue({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       data: null as any,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       error: mockError as any,
     });
 
@@ -104,7 +104,7 @@ describe("useAuth", () => {
       user: { id: "user-123" },
     };
     mockGetSession.mockResolvedValue({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       data: { session: mockSession as any },
       error: null,
     });
@@ -124,7 +124,7 @@ describe("useAuth", () => {
       user: { id: "user-123" },
     };
     mockRefreshSession.mockResolvedValue({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       data: { session: mockSession as any, user: mockSession.user as any },
       error: null,
     });

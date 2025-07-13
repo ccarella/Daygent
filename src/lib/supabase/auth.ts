@@ -69,16 +69,15 @@ export async function createUserProfile(
   return { data, error };
 }
 
-export async function getUserOrganizations(userId: string) {
+export async function getUserWorkspaces(userId: string) {
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from("organization_members")
+    .from("workspace_members")
     .select(
       `
-      organization_id,
-      role,
-      organizations (*)
+      workspace_id,
+      workspace:workspaces (*)
     `,
     )
     .eq("user_id", userId);
@@ -86,29 +85,29 @@ export async function getUserOrganizations(userId: string) {
   return { data, error };
 }
 
-export async function createDefaultOrganization(userId: string) {
+export async function createDefaultWorkspace(userId: string) {
   const supabase = await createClient();
 
-  // Check if default org exists
-  const { data: existingOrg } = await supabase
-    .from("organizations")
+  // Check if default workspace exists
+  const { data: existingWorkspace } = await supabase
+    .from("workspaces")
     .select("id")
-    .eq("name", "Default Organization")
+    .eq("name", "Default Workspace")
     .single();
 
-  if (existingOrg) {
-    // Add user to default org
+  if (existingWorkspace) {
+    // Add user to default workspace
     const { data, error } = await supabase
-      .from("organization_members")
+      .from("workspace_members")
       .upsert({
         user_id: userId,
-        organization_id: existingOrg.id,
-        role: "member",
+        workspace_id: existingWorkspace.id,
+        joined_at: new Date().toISOString(),
       })
       .select();
 
     return { data, error };
   }
 
-  return { data: null, error: new Error("Default organization not found") };
+  return { data: null, error: new Error("Default workspace not found") };
 }

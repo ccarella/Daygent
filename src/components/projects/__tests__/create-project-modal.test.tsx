@@ -53,7 +53,7 @@ describe("CreateProjectModal", () => {
     render(
       <CreateProjectModal
         repositories={mockRepositories}
-        organizationId="org-123"
+        workspaceId="ws-123"
       />,
     );
 
@@ -66,7 +66,7 @@ describe("CreateProjectModal", () => {
     const { user } = render(
       <CreateProjectModal
         repositories={mockRepositories}
-        organizationId="org-123"
+        workspaceId="ws-123"
       />,
     );
 
@@ -80,7 +80,7 @@ describe("CreateProjectModal", () => {
     const { user } = render(
       <CreateProjectModal
         repositories={mockRepositories}
-        organizationId="org-123"
+        workspaceId="ws-123"
       />,
     );
 
@@ -104,7 +104,7 @@ describe("CreateProjectModal", () => {
     const { user } = render(
       <CreateProjectModal
         repositories={mockRepositories}
-        organizationId="org-123"
+        workspaceId="ws-123"
       />,
     );
 
@@ -130,7 +130,7 @@ describe("CreateProjectModal", () => {
     const { user } = render(
       <CreateProjectModal
         repositories={mockRepositories}
-        organizationId="org-123"
+        workspaceId="ws-123"
       />,
     );
 
@@ -160,7 +160,7 @@ describe("CreateProjectModal", () => {
     const { user } = render(
       <CreateProjectModal
         repositories={mockRepositories}
-        organizationId="org-123"
+        workspaceId="ws-123"
       />,
     );
 
@@ -188,7 +188,7 @@ describe("CreateProjectModal", () => {
     const { user } = render(
       <CreateProjectModal
         repositories={mockRepositories}
-        organizationId="org-123"
+        workspaceId="ws-123"
       />,
     );
 
@@ -218,7 +218,7 @@ describe("CreateProjectModal", () => {
     const { user } = render(
       <CreateProjectModal
         repositories={mockRepositories}
-        organizationId="org-123"
+        workspaceId="ws-123"
       />,
     );
 
@@ -250,7 +250,7 @@ describe("CreateProjectModal", () => {
           name: "daygent",
           description: "AI-powered project management tool",
           repository_id: "1",
-          organization_id: "org-123",
+          workspace_id: "ws-123",
         }),
       });
     });
@@ -262,7 +262,7 @@ describe("CreateProjectModal", () => {
     const { user } = render(
       <CreateProjectModal
         repositories={mockRepositories}
-        organizationId="org-123"
+        workspaceId="ws-123"
       />,
     );
 
@@ -286,7 +286,7 @@ describe("CreateProjectModal", () => {
     const { user } = render(
       <CreateProjectModal
         repositories={mockRepositories}
-        organizationId="org-123"
+        workspaceId="ws-123"
       />,
     );
 
@@ -316,7 +316,7 @@ describe("CreateProjectModal", () => {
     render(
       <CreateProjectModal
         repositories={mockRepositories}
-        organizationId="org-123"
+        workspaceId="ws-123"
         trigger={<button>Custom Trigger</button>}
       />,
     );

@@ -142,23 +142,23 @@ export async function GET(request: NextRequest) {
         console.log("[Auth Callback] User profile upserted successfully");
       }
 
-      // Check if user has any organizations
-      console.log("[Auth Callback] Checking user organizations...");
-      const orgStartTime = performance.now();
-      const { data: userOrgs } = await serviceSupabase
-        .from("organization_members")
-        .select("organization_id")
+      // Check if user has any workspaces
+      console.log("[Auth Callback] Checking user workspaces...");
+      const workspaceStartTime = performance.now();
+      const { data: userWorkspaces } = await serviceSupabase
+        .from("workspace_members")
+        .select("workspace_id")
         .eq("user_id", data.user.id)
         .limit(1);
-      const orgTime = performance.now() - orgStartTime;
+      const workspaceTime = performance.now() - workspaceStartTime;
       console.log(
-        `[Auth Callback] Organization check completed in ${orgTime.toFixed(2)}ms`,
+        `[Auth Callback] Workspace check completed in ${workspaceTime.toFixed(2)}ms`,
       );
 
-      // If user has no organizations, redirect to onboarding
-      if (!userOrgs || userOrgs.length === 0) {
+      // If user has no workspaces, redirect to onboarding
+      if (!userWorkspaces || userWorkspaces.length === 0) {
         console.log(
-          "[Auth Callback] User has no organizations, redirecting to onboarding",
+          "[Auth Callback] User has no workspaces, redirecting to onboarding",
         );
         const totalTime = performance.now() - startTime;
         console.log(

@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
     const { data: connectedRepos } = await supabase
       .from("repositories")
       .select("github_id")
-      .eq("organization_id", searchParams.get("organization_id") || "");
+      .eq("workspace_id", searchParams.get("workspace_id") || "");
 
     const connectedGitHubIds = new Set(
       connectedRepos?.map((repo: { github_id: number }) => repo.github_id) ||

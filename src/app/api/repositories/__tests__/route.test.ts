@@ -56,7 +56,7 @@ describe("GET /api/repositories", () => {
 
   it("should return repositories with connection status", async () => {
     const request = new NextRequest(
-      "http://localhost:3000/api/repositories?organization_id=org-123",
+      "http://localhost:3000/api/repositories?workspace_id=ws-123",
     );
 
     const response = await GET(request);
@@ -87,7 +87,7 @@ describe("GET /api/repositories", () => {
         }),
       },
     };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     vi.mocked(createClient).mockResolvedValueOnce(mockClient as any);
 
     const request = new NextRequest("http://localhost:3000/api/repositories");
@@ -122,7 +122,7 @@ describe("GET /api/repositories", () => {
     const mockService = {
       searchRepositories: mockSearchRepositories,
     };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     vi.mocked(getServerGitHubService).mockResolvedValueOnce(mockService as any);
 
     const request = new NextRequest(

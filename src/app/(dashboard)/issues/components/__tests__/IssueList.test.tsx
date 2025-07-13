@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@/test/test-utils";
 import { IssueList } from "../IssueList";
-import type { Database } from "@/lib/database.types";
+import type { Issue as WorkspaceIssue, Repository } from "@/types/workspace";
 
-type Issue = Database["public"]["Tables"]["issues"]["Row"] & {
+type Issue = WorkspaceIssue & {
   repository: { id: string; name: string; full_name: string } | null;
 };
 
@@ -27,16 +27,29 @@ const createMockIssue = (overrides: Partial<Issue> = {}): Issue => ({
   github_node_id: null,
   title: "Test Issue",
   body: null,
-  state: "open",
+  state: "open" as const,
   author_github_login: null,
   assignee_github_login: null,
-  labels: null,
+  labels: [],
   github_created_at: null,
   github_updated_at: null,
   github_closed_at: null,
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
-  repository: { id: "repo-1", name: "test-repo", full_name: "org/test-repo" },
+  repository: {
+    id: "repo-1",
+    name: "test-repo",
+    full_name: "org/test-repo",
+    workspace_id: "workspace-1",
+    github_id: 123456,
+    owner: "org",
+    private: false,
+    default_branch: "main",
+    installation_id: null,
+    last_synced_at: null,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  } as Repository & { id: string; name: string; full_name: string },
   ...overrides,
 });
 

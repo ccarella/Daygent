@@ -8,7 +8,7 @@ import {
   handleInstallationEvent,
   handleInstallationRepositoriesEvent,
 } from "./handlers";
-import { logActivity } from "./db-utils";
+// import { logActivity } from "./db-utils"; // Activities table removed
 import { createServiceRoleClient } from "@/lib/supabase/server";
 
 // Cache for checking duplicate deliveries (simple in-memory cache)
@@ -62,18 +62,7 @@ export async function POST(request: NextRequest) {
           .eq("email", "system@daygent.local")
           .single();
 
-        if (systemUser.data) {
-          await logActivity(
-            "webhook_received",
-            {
-              event: eventType || "unknown",
-              delivery_id: deliveryId || "unknown",
-              error: "Invalid signature",
-              status: "failed",
-            },
-            systemUser.data.id
-          );
-        }
+        // Activity logging removed - no activities table
       } catch (logError) {
         console.error("[GitHub Webhook] Failed to log invalid signature:", logError);
       }
@@ -123,18 +112,7 @@ export async function POST(request: NextRequest) {
             .eq("email", "system@daygent.local")
             .single();
 
-          if (systemUser.data) {
-            await logActivity(
-              "webhook_received",
-              {
-                event: eventType || "unknown",
-                delivery_id: deliveryId || "unknown",
-                action: payload.action || "unknown",
-                status: "unhandled",
-              },
-              systemUser.data.id
-            );
-          }
+          // Activity logging removed - no activities table
         } catch (logError) {
           console.error("[GitHub Webhook] Failed to log unhandled event:", logError);
         }
@@ -182,19 +160,7 @@ export async function POST(request: NextRequest) {
         .eq("email", "system@daygent.local")
         .single();
 
-      if (systemUser.data) {
-        await logActivity(
-          "webhook_received",
-          {
-            event: eventType || "unknown",
-            delivery_id: deliveryId || "unknown",
-            error: error instanceof Error ? error.message : "Unknown error",
-            status: "error",
-            processing_time_ms: processingTime,
-          },
-          systemUser.data.id
-        );
-      }
+      // Activity logging removed - no activities table
     } catch (logError) {
       console.error("[GitHub Webhook] Failed to log webhook error:", logError);
     }

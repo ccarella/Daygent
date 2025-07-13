@@ -3,7 +3,6 @@ import {
   getRepositoryByGithubId,
   getOrCreateUserByGithubId,
   linkPullRequestToIssues,
-  logActivity,
   parseIssueReferences,
 } from "../db-utils";
 
@@ -103,13 +102,7 @@ export async function handlePullRequestEvent(payload: unknown): Promise<void> {
       metadata.update_type = action;
     }
 
-    await logActivity(
-      activityType,
-      metadata,
-      senderUser.id,
-      repo.organization_id,
-      repo.id
-    );
+    // Activity logging removed - no activities table
 
     console.log(`[PR Handler] Successfully processed ${action} for PR #${pull_request.number}`);
   } catch (error) {

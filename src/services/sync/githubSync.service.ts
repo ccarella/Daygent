@@ -3,7 +3,7 @@ import { createServiceRoleClient } from "@/lib/supabase/server";
 import { GitHubGraphQLClient } from "@/lib/github/client";
 import { withRetry, isTransientError, isGitHubRateLimitError } from "@/lib/utils/retry";
 import { 
-  getProjectByRepositoryId
+  getWorkspaceFromRepository
 } from "@/app/api/webhooks/github/db-utils";
 import { ActivityMetadata } from "./types";
 import { 
@@ -46,7 +46,7 @@ export interface SyncResult {
 
 export interface RepositoryInfo {
   id: string;
-  organization_id: string;
+  workspace_id: string;
   github_id: number;
   github_name: string;
   github_owner: string;
@@ -99,58 +99,19 @@ export class GitHubSyncService {
     let cursor: string | null = null;
     let currentPage = 0;
 
-    // Check if project exists for this repository, create one if not
-    let project = await getProjectByRepositoryId(repository.id);
-    if (!project) {
-      console.log(`[Sync] No project found for repository ${repository.github_name}, creating default project`);
-      
-      // Get repository details to create a default project
-      const { data: repoDetails } = await this.getSupabase()
-        .from("repositories")
-        .select("name, organization_id")
-        .eq("id", repository.id)
-        .single();
-      
-      if (!repoDetails) {
-        return {
-          success: false,
-          issuesProcessed: 0,
-          created: 0,
-          updated: 0,
-          errors: 0,
-          summary: "Failed to get repository details",
-          errorDetails: ["Could not retrieve repository information to create project"]
-        };
-      }
-      
-      // Create a default project for the repository
-      const { data: newProject, error: projectError } = await this.getSupabase()
-        .from("projects")
-        .insert({
-          repository_id: repository.id,
-          name: `${repoDetails.name} Project`,
-          description: `Default project for ${repoDetails.name} repository`,
-          status: "active",
-          created_by: "00000000-0000-0000-0000-000000000000" // System user ID from migration
-        })
-        .select()
-        .single();
-      
-      if (projectError || !newProject) {
-        console.error("[Sync] Failed to create default project:", projectError);
-        return {
-          success: false,
-          issuesProcessed: 0,
-          created: 0,
-          updated: 0,
-          errors: 0,
-          summary: "Failed to create default project",
-          errorDetails: [projectError?.message || "Unknown error creating project"]
-        };
-      }
-      
-      project = newProject;
-      console.log(`[Sync] Created default project: ${project.name}`);
+    // Get workspace from repository
+    const workspaceId = await getWorkspaceFromRepository(repository.id);
+    if (!workspaceId) {
+      console.error(`[Sync] No workspace found for repository ${repository.github_name}`);
+      return {
+        success: false,
+        issuesProcessed: 0,
+        created: 0,
+        updated: 0,
+        errors: 0,
+        summary: "Failed to get workspace for repository",
+        errorDetails: ["Repository must belong to a workspace"]
+      };
     }
 
     // Start sync process
@@ -227,7 +188,7 @@ export class GitHubSyncService {
         const batchResult = await this.syncIssueBatch(
           repository,
           issues,
-          project.id,
+          workspaceId,
           {
             onProgress: (issueNumber, title) => {
               // Check for cancellation
@@ -341,7 +302,7 @@ export class GitHubSyncService {
   private async syncIssueBatch(
     repository: RepositoryInfo,
     issues: GitHubIssue[],
-    projectId: string,
+    workspaceId: string,
     options: {
       onProgress?: (issueNumber: number, title: string) => boolean;
     } = {}
@@ -366,30 +327,31 @@ export class GitHubSyncService {
 
     // Prepare batch operations
     interface IssueCreateData {
-      project_id: string;
+      workspace_id: string;
       repository_id: string;
       github_issue_number: number;
       github_issue_id: number;
       title: string;
-      original_description: string | null;
-      status: IssueSyncData["status"];
-      priority: string;
-      assigned_to: string | null;
-      created_by: string;
-      created_at: string;
-      updated_at: string;
-      completed_at: string | null;
+      body: string | null;
+      state: string;
+      author_github_login: string | null;
+      assignee_github_login: string | null;
+      labels: any;
+      github_created_at: string;
+      github_updated_at: string;
+      github_closed_at: string | null;
     }
     
     interface IssueUpdateData {
       id: string;
       title: string;
-      original_description: string | null;
-      status: IssueSyncData["status"];
-      assigned_to: string | null;
-      priority: string;
-      updated_at: string;
-      completed_at: string | null;
+      body: string | null;
+      state: string;
+      author_github_login: string | null;
+      assignee_github_login: string | null;
+      labels: any;
+      github_updated_at: string;
+      github_closed_at: string | null;
     }
     
     const issuesToCreate: IssueCreateData[] = [];
@@ -422,29 +384,30 @@ export class GitHubSyncService {
           issuesToUpdate.push({
             id: existingIssue.id,
             title: syncData.title,
-            original_description: syncData.original_description,
-            status: syncData.status,
-            assigned_to: syncData.assigned_to || null,
-            priority: priority || existingIssue.priority,
-            updated_at: syncData.updated_at,
-            completed_at: syncData.completed_at || null,
+            body: syncData.original_description,
+            state: syncData.status === "completed" ? "closed" : "open",
+            author_github_login: issue.author?.login || null,
+            assignee_github_login: issue.assignees?.nodes?.[0]?.login || null,
+            labels: issue.labels?.nodes?.map((l: any) => ({ name: l.name, color: l.color })) || [],
+            github_updated_at: syncData.updated_at,
+            github_closed_at: syncData.completed_at || null,
           });
         } else {
           // Prepare creation
           issuesToCreate.push({
-            project_id: projectId,
+            workspace_id: workspaceId,
             repository_id: repository.id,
             github_issue_number: syncData.github_issue_number,
             github_issue_id: syncData.github_issue_id,
             title: syncData.title,
-            original_description: syncData.original_description,
-            status: syncData.status,
-            priority,
-            assigned_to: syncData.assigned_to || null,
-            created_by: await this.getSystemUserId(),
-            created_at: issue.createdAt,
-            updated_at: syncData.updated_at,
-            completed_at: syncData.completed_at || null,
+            body: syncData.original_description,
+            state: syncData.status === "completed" ? "closed" : "open",
+            author_github_login: issue.author?.login || null,
+            assignee_github_login: issue.assignees?.nodes?.[0]?.login || null,
+            labels: issue.labels?.nodes?.map((l: any) => ({ name: l.name, color: l.color })) || [],
+            github_created_at: issue.createdAt,
+            github_updated_at: syncData.updated_at,
+            github_closed_at: syncData.completed_at || null,
           });
         }
       } catch (error) {
@@ -507,7 +470,7 @@ export class GitHubSyncService {
   private async syncSingleIssue(
     repository: RepositoryInfo,
     issue: GitHubIssue,
-    projectId: string
+    workspaceId: string
   ): Promise<{ created: boolean; updated: boolean }> {
     // Resolve assignee if present
     let assigneeUserId: string | null = null;
@@ -536,12 +499,13 @@ export class GitHubSyncService {
         .from("issues")
         .update({
           title: syncData.title,
-          original_description: syncData.original_description,
-          status: syncData.status,
-          assigned_to: syncData.assigned_to,
-          priority,
-          updated_at: syncData.updated_at,
-          completed_at: syncData.completed_at,
+          body: syncData.original_description,
+          state: syncData.status === "completed" ? "closed" : "open",
+          author_github_login: issue.author?.login || null,
+          assignee_github_login: issue.assignees?.nodes?.[0]?.login || null,
+          labels: issue.labels?.nodes?.map((l: any) => ({ name: l.name, color: l.color })) || [],
+          github_updated_at: syncData.updated_at,
+          github_closed_at: syncData.completed_at,
         })
         .eq("id", existingIssue.id);
 
@@ -554,19 +518,19 @@ export class GitHubSyncService {
       const { error } = await this.getSupabase()
         .from("issues")
         .insert({
-          project_id: projectId,
+          workspace_id: workspaceId,
           repository_id: repository.id,
           github_issue_number: syncData.github_issue_number,
           github_issue_id: syncData.github_issue_id,
           title: syncData.title,
-          original_description: syncData.original_description,
-          status: syncData.status,
-          priority,
-          assigned_to: syncData.assigned_to,
-          created_by: await this.getSystemUserId(),
-          created_at: issue.createdAt,
-          updated_at: syncData.updated_at,
-          completed_at: syncData.completed_at,
+          body: syncData.original_description,
+          state: syncData.status === "completed" ? "closed" : "open",
+          author_github_login: issue.author?.login || null,
+          assignee_github_login: issue.assignees?.nodes?.[0]?.login || null,
+          labels: issue.labels?.nodes?.map((l: any) => ({ name: l.name, color: l.color })) || [],
+          github_created_at: issue.createdAt,
+          github_updated_at: syncData.updated_at,
+          github_closed_at: syncData.completed_at,
         });
 
       if (error) throw error;
@@ -616,21 +580,13 @@ export class GitHubSyncService {
   ) {
     const { data: repository } = await this.getSupabase()
       .from("repositories")
-      .select("organization_id")
+      .select("workspace_id")
       .eq("id", repositoryId)
       .single();
 
     if (!repository) return;
 
-    await this.getSupabase()
-      .from("activities")
-      .insert({
-        organization_id: repository.organization_id,
-        user_id: await this.getSystemUserId(),
-        type: "webhook_received",
-        description: `Issue sync: ${description}`,
-        metadata
-      });
+    // Activity logging removed - no activities table
   }
 
   /**

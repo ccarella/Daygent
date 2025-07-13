@@ -71,7 +71,7 @@ describe("useUser", () => {
     };
 
     mockGetUser.mockResolvedValue({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       data: { user: mockUser as any },
       error: null,
     });

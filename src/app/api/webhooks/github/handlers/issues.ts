@@ -3,7 +3,6 @@ import {
   getRepositoryByGithubId,
   getOrCreateUserByGithubId,
   syncIssue,
-  logActivity,
 } from "../db-utils";
 
 export async function handleIssueEvent(payload: unknown): Promise<void> {
@@ -107,15 +106,7 @@ export async function handleIssueEvent(payload: unknown): Promise<void> {
         activityType = "issue_updated";
     }
 
-    await logActivity(
-      activityType,
-      metadata,
-      senderUser.id,
-      repo.organization_id,
-      repo.id,
-      syncedIssue.project_id,
-      syncedIssue.id
-    );
+    // Activity logging removed - no activities table
 
     console.log(`[Issue Handler] Successfully processed ${action} for issue #${issue.number}`);
   } catch (error) {
