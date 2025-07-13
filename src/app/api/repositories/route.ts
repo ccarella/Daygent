@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerGitHubService } from "@/services/github.server";
+import { getServerGitHubService } from "@/services/github-app.server";
 import { createClient } from "@/lib/supabase/server";
 
 export async function GET(request: NextRequest) {
@@ -21,11 +21,19 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const githubService = await getServerGitHubService();
+    const workspaceId = searchParams.get("workspace_id");
+    if (!workspaceId) {
+      return NextResponse.json(
+        { error: "workspace_id is required" },
+        { status: 400 },
+      );
+    }
+
+    const githubService = await getServerGitHubService(workspaceId);
 
     if (!githubService) {
       return NextResponse.json(
-        { error: "GitHub service not available. Please re-authenticate." },
+        { error: "GitHub not connected. Please connect your GitHub account in settings." },
         { status: 401 },
       );
     }
@@ -48,7 +56,7 @@ export async function GET(request: NextRequest) {
     const { data: connectedRepos } = await supabase
       .from("repositories")
       .select("github_id")
-      .eq("workspace_id", searchParams.get("workspace_id") || "");
+      .eq("workspace_id", workspaceId);
 
     const connectedGitHubIds = new Set(
       connectedRepos?.map((repo: { github_id: number }) => repo.github_id) ||

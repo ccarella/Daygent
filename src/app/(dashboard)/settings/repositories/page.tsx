@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRepositories } from "@/hooks/useRepositories";
 import { useWorkspaceStore } from "@/stores/workspace.store";
+import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -30,6 +31,7 @@ import {
   RefreshCw,
   Loader2,
   X,
+  Github,
 } from "lucide-react";
 
 export default function RepositoriesPage() {
@@ -55,6 +57,8 @@ export default function RepositoriesPage() {
   const [searchInput, setSearchInput] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
   const [successTimer, setSuccessTimer] = useState<NodeJS.Timeout | null>(null);
+  const [hasGitHubInstallation, setHasGitHubInstallation] = useState<boolean | null>(null);
+  const [checkingInstallation, setCheckingInstallation] = useState(true);
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
@@ -63,6 +67,31 @@ export default function RepositoriesPage() {
 
     return () => clearTimeout(delayDebounceFn);
   }, [searchInput, setSearchQuery]);
+
+  // Check for GitHub installation
+  useEffect(() => {
+    const checkInstallation = async () => {
+      if (!currentWorkspace) return;
+      
+      setCheckingInstallation(true);
+      try {
+        const supabase = createClient();
+        const { data } = await supabase
+          .from("github_installations")
+          .select("id")
+          .eq("workspace_id", currentWorkspace.id)
+          .single();
+        
+        setHasGitHubInstallation(!!data);
+      } catch {
+        setHasGitHubInstallation(false);
+      } finally {
+        setCheckingInstallation(false);
+      }
+    };
+
+    checkInstallation();
+  }, [currentWorkspace]);
 
   // Cleanup timer on unmount
   useEffect(() => {
@@ -114,6 +143,48 @@ export default function RepositoriesPage() {
             repositories.
           </AlertDescription>
         </Alert>
+      </div>
+    );
+  }
+
+  if (checkingInstallation) {
+    return (
+      <div className="container mx-auto py-8">
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!hasGitHubInstallation) {
+    return (
+      <div className="container mx-auto py-8 space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">Connect Repositories</h1>
+          <p className="text-muted-foreground mt-2">
+            Connect GitHub to import repositories to {currentWorkspace.name}
+          </p>
+        </div>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>GitHub Not Connected</CardTitle>
+            <CardDescription>
+              You need to connect your GitHub account before you can import repositories.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center gap-3 text-muted-foreground">
+              <Github className="h-8 w-8" />
+              <p>Connect your GitHub account to get started</p>
+            </div>
+            <Button onClick={() => router.push("/settings/github")}>
+              <Github className="mr-2 h-4 w-4" />
+              Connect GitHub Account
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }

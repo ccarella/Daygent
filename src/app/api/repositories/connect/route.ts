@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { getServerGitHubService } from "@/services/github.server";
+import { getServerGitHubService } from "@/services/github-app.server";
 // Repository type for inserting
 type InsertRepository = {
   workspace_id: string;
@@ -59,10 +59,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const githubService = await getServerGitHubService();
+    const githubService = await getServerGitHubService(workspace_id);
     if (!githubService) {
       return NextResponse.json(
-        { error: "GitHub service not available" },
+        { error: "GitHub not connected. Please connect your GitHub account in settings." },
         { status: 401 },
       );
     }
