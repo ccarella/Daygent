@@ -9,7 +9,7 @@ import {
   handleInstallationRepositoriesEvent,
 } from "./handlers";
 // import { logActivity } from "./db-utils"; // Activities table removed
-import { createServiceRoleClient } from "@/lib/supabase/server";
+// import { createServiceRoleClient } from "@/lib/supabase/server"; // Removed - activity logging removed
 
 // Cache for checking duplicate deliveries (simple in-memory cache)
 const processedDeliveries = new Set<string>();

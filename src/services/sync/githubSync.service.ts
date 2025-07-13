@@ -5,7 +5,6 @@ import { withRetry, isTransientError, isGitHubRateLimitError } from "@/lib/utils
 import { 
   getWorkspaceFromRepository
 } from "@/app/api/webhooks/github/db-utils";
-import { ActivityMetadata } from "./types";
 import { 
   GitHubIssue, 
   mapGitHubIssueToSyncData,
@@ -483,7 +482,6 @@ export class GitHubSyncService {
 
     if (existingIssue) {
       // Update existing issue
-      const priority = extractPriorityFromLabels(issue.labels) || existingIssue.priority;
       
       const { error } = await this.getSupabase()
         .from("issues")
@@ -503,7 +501,6 @@ export class GitHubSyncService {
       return { created: false, updated: true };
     } else {
       // Create new issue
-      const priority = extractPriorityFromLabels(issue.labels) || "medium";
       
       const { error } = await this.getSupabase()
         .from("issues")
