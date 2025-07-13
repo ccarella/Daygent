@@ -39,14 +39,11 @@ export const useAuthStore = create<AuthStore>()(
         }
       },
 
-      login: async () => {
+      login: async (redirectTo?: string) => {
         console.log("[Auth Store] Starting GitHub OAuth login...");
+        console.log("[Auth Store] Redirect to:", redirectTo || "default");
         console.log("[Auth Store] Login timestamp:", new Date().toISOString());
         console.log("[Auth Store] Current origin:", window.location.origin);
-        console.log(
-          "[Auth Store] Redirect URL:",
-          `${window.location.origin}/auth/callback`,
-        );
 
         set({ isLoading: true, error: null }, false, "login/start");
 
@@ -54,10 +51,18 @@ export const useAuthStore = create<AuthStore>()(
           const loginStartTime = performance.now();
           console.log("[Auth Store] Calling supabase.auth.signInWithOAuth...");
 
+          // Build callback URL with optional next parameter
+          const callbackUrl = new URL("/auth/callback", window.location.origin);
+          if (redirectTo) {
+            callbackUrl.searchParams.set("next", redirectTo);
+          }
+
+          console.log("[Auth Store] Callback URL:", callbackUrl.toString());
+
           const { error } = await supabase.auth.signInWithOAuth({
             provider: "github",
             options: {
-              redirectTo: `${window.location.origin}/auth/callback`,
+              redirectTo: callbackUrl.toString(),
               scopes: "repo read:user user:email",
             },
           });
@@ -426,15 +431,14 @@ export const useAuthStore = create<AuthStore>()(
             // Fetch user's workspaces
             let activeWorkspace = null;
             try {
-              console.log(
-                "[Auth Store] Fetching user's workspaces...",
-              );
-              const { data: workspaceData, error: workspaceError } = await supabase
-                .from("workspace_members")
-                .select("workspace_id, workspace:workspaces(*)")
-                .eq("user_id", user.id)
-                .limit(1)
-                .single();
+              console.log("[Auth Store] Fetching user's workspaces...");
+              const { data: workspaceData, error: workspaceError } =
+                await supabase
+                  .from("workspace_members")
+                  .select("workspace_id, workspace:workspaces(*)")
+                  .eq("user_id", user.id)
+                  .limit(1)
+                  .single();
 
               if (workspaceError) {
                 console.error(
@@ -442,7 +446,8 @@ export const useAuthStore = create<AuthStore>()(
                   workspaceError,
                 );
               } else if (workspaceData && workspaceData.workspace) {
-                activeWorkspace = workspaceData.workspace as unknown as Workspace;
+                activeWorkspace =
+                  workspaceData.workspace as unknown as Workspace;
                 console.log(
                   "[Auth Store] Default workspace found:",
                   activeWorkspace.slug,
