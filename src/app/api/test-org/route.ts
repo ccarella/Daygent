@@ -56,46 +56,24 @@ export async function GET() {
       }
     );
 
-    // Test organization creation
+    // Test organization creation using the database function
     const testSlug = `test-org-${Date.now()}`;
-    const { data: organization, error: orgError } = await serviceRoleClient
-      .from("organizations")
-      .insert({
-        name: "Test Organization",
-        slug: testSlug,
-        description: "Test organization created for debugging",
-      })
-      .select()
-      .single();
+    const { data: orgData, error: orgError } = await serviceRoleClient.rpc(
+      'create_organization_with_owner',
+      {
+        p_name: "Test Organization",
+        p_slug: testSlug,
+        p_description: "Test organization created for debugging",
+        p_user_id: user.id,
+      }
+    );
 
-    if (orgError) {
+    const organization = orgData?.[0];
+
+    if (orgError || !organization) {
       return NextResponse.json({ 
         error: "Failed to create organization",
         details: orgError,
-        hasServiceKey,
-        serviceKeyPreview 
-      }, { status: 500 });
-    }
-
-    // Add the user as owner
-    const { error: memberError } = await serviceRoleClient
-      .from("organization_members")
-      .insert({
-        organization_id: organization.id,
-        user_id: user.id,
-        role: "owner",
-      });
-
-    if (memberError) {
-      // Clean up
-      await serviceRoleClient
-        .from("organizations")
-        .delete()
-        .eq("id", organization.id);
-
-      return NextResponse.json({ 
-        error: "Failed to add user as owner",
-        details: memberError,
         hasServiceKey,
         serviceKeyPreview 
       }, { status: 500 });

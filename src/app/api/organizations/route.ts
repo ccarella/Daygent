@@ -91,18 +91,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create organization
+    // Create organization using database function that bypasses RLS
     console.log("Creating organization with data:", { name, slug, description });
     
-    const { data: organization, error: orgError } = await serviceRoleClient
-      .from("organizations")
-      .insert({
-        name,
-        slug,
-        description: description || null,
-      })
-      .select()
-      .single();
+    const { data: orgData, error: orgError } = await serviceRoleClient.rpc(
+      'create_organization_with_owner',
+      {
+        p_name: name,
+        p_slug: slug,
+        p_description: description || null,
+        p_user_id: user.id,
+      }
+    );
+
+    const organization = orgData?.[0];
 
     if (orgError || !organization) {
       console.error("Error creating organization:", orgError);
@@ -123,41 +125,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Add the user as owner
-    const { error: memberError } = await serviceRoleClient
-      .from("organization_members")
-      .insert({
-        organization_id: organization.id,
-        user_id: user.id,
-        role: "owner",
-      });
-
-    if (memberError) {
-      console.error("Error adding user as owner:", memberError);
-      // Clean up - delete the organization if we can't add the owner
-      await serviceRoleClient
-        .from("organizations")
-        .delete()
-        .eq("id", organization.id);
-
-      return NextResponse.json(
-        { error: "Failed to add user as organization owner" },
-        { status: 500 }
-      );
-    }
-
-    // Log activity
-    await serviceRoleClient.from("activities").insert({
-      organization_id: organization.id,
-      user_id: user.id,
-      action: "organization.created",
-      resource_type: "organization",
-      resource_id: organization.id,
-      metadata: {
-        organization_name: name,
-        organization_slug: slug,
-      },
-    });
+    // The database function already handles:
+    // 1. Creating the organization
+    // 2. Adding the user as owner
+    // 3. Logging the activity
+    // So we can just return the result
 
     return NextResponse.json({ organization });
   } catch (error) {
