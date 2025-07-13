@@ -64,9 +64,9 @@ export const useWorkspaceStore = create<WorkspaceState>()(
 
           if (error) throw error;
 
-          const workspaces = (memberRecords
-            ?.map(record => record.organizations)
-            .filter((org): org is Workspace => org !== null) || []) as Workspace[];
+          const workspaces = memberRecords
+            ?.map(record => record.organizations as unknown as Workspace)
+            .filter(org => org !== null) || [];
 
           set({ workspaces, isLoading: false });
 

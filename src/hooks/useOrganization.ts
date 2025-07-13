@@ -13,7 +13,19 @@ export function useOrganization() {
   } = useWorkspaceStore();
   
   const setActiveOrganization = (org: Organization | null) => {
-    setCurrentWorkspace(org);
+    if (org) {
+      // Convert Organization to Workspace type
+      const workspace = {
+        ...org,
+        subscription_id: org.subscription_id ?? null,
+        trial_ends_at: org.trial_ends_at ?? null,
+        description: org.description ?? null,
+        created_by: org.id, // Use a placeholder since Organization doesn't have created_by
+      };
+      setCurrentWorkspace(workspace);
+    } else {
+      setCurrentWorkspace(null);
+    }
   };
 
   return {
