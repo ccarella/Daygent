@@ -45,8 +45,11 @@ export async function getGitHubAppService(workspaceId: string): Promise<GitHubSe
     // Get an installation access token
     const app = getGitHubApp();
     
-    // Create a GitHub service with the installation token
-    const installationToken = await app.octokit.rest.apps.createInstallationAccessToken({
+    // Get installation-authenticated Octokit instance
+    const octokit = await app.getInstallationOctokit(installation.installation_id);
+    
+    // Create an installation access token
+    const installationToken = await octokit.request('POST /app/installations/{installation_id}/access_tokens', {
       installation_id: installation.installation_id,
     });
 
