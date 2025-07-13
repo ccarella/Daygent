@@ -35,11 +35,15 @@ export async function POST(request: NextRequest) {
     // Validate environment variables
     if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
       console.error("SUPABASE_SERVICE_ROLE_KEY is not configured");
+      console.error("Available env vars:", Object.keys(process.env).filter(key => key.includes('SUPABASE')).sort());
       return NextResponse.json(
         { error: "Server configuration error: Service role key missing" },
         { status: 500 }
       );
     }
+
+    // Log service role key info (first few chars only for security)
+    console.log("Service role key present, starts with:", process.env.SUPABASE_SERVICE_ROLE_KEY.substring(0, 20) + "...");
 
     // Create a service role client to bypass RLS
     const cookieStore = await cookies();
@@ -75,6 +79,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Create organization
+    console.log("Creating organization with data:", { name, slug, description, plan: "free" });
+    
     const { data: organization, error: orgError } = await serviceRoleClient
       .from("organizations")
       .insert({
@@ -88,8 +94,19 @@ export async function POST(request: NextRequest) {
 
     if (orgError || !organization) {
       console.error("Error creating organization:", orgError);
+      console.error("Organization creation failed - Details:", {
+        error: orgError,
+        errorMessage: orgError?.message,
+        errorDetails: orgError?.details,
+        errorHint: orgError?.hint,
+        errorCode: orgError?.code,
+      });
       return NextResponse.json(
-        { error: "Failed to create organization" },
+        { 
+          error: "Failed to create organization",
+          details: orgError?.message || "Unknown error",
+          code: orgError?.code,
+        },
         { status: 500 }
       );
     }

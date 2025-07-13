@@ -38,6 +38,7 @@ export async function GET(request: NextRequest) {
     // Validate environment variables
     if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
       console.error("SUPABASE_SERVICE_ROLE_KEY is not configured");
+      console.error("Available env vars:", Object.keys(process.env).filter(key => key.includes('SUPABASE')).sort());
       return NextResponse.json(
         { error: "Server configuration error: Service role key missing" },
         { status: 500 }
