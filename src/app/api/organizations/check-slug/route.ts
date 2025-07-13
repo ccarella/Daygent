@@ -77,12 +77,11 @@ export async function GET(request: NextRequest) {
       }
     );
 
-    // Check if slug exists
-    const { data: existingOrg, error } = await serviceRoleClient
-      .from("organizations")
-      .select("id")
-      .eq("slug", slug)
-      .maybeSingle();
+    // Check if slug exists using the database function
+    const { data: available, error } = await serviceRoleClient.rpc(
+      'check_organization_slug_available',
+      { p_slug: slug }
+    );
 
     if (error) {
       console.error("Error checking slug availability:", error);
@@ -92,7 +91,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ available: !existingOrg });
+    return NextResponse.json({ available: available ?? false });
   } catch (error) {
     console.error("Error in slug check:", error);
     return NextResponse.json(
