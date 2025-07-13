@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { POST } from "../route";
+import { GET, POST } from "../route";
 import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServerClient } from "@supabase/ssr";
@@ -30,6 +30,20 @@ describe("POST /api/workspaces", () => {
       getUser: vi.fn(),
     },
   };
+
+  // Mock environment variables
+  const originalEnv = process.env;
+  beforeEach(() => {
+    process.env = {
+      ...originalEnv,
+      NEXT_PUBLIC_SUPABASE_URL: "http://localhost:54321",
+      SUPABASE_SERVICE_ROLE_KEY: "test-service-role-key",
+    };
+  });
+
+  afterEach(() => {
+    process.env = originalEnv;
+  });
 
   interface MockServiceClient {
     from: ReturnType<typeof vi.fn>;
@@ -132,6 +146,9 @@ describe("POST /api/workspaces", () => {
       id: "workspace-123",
       name: "Test Workspace",
       slug: "test-workspace",
+      created_by: mockUser.id,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     };
 
     mockAuthClient.auth.getUser.mockResolvedValue({
@@ -139,15 +156,21 @@ describe("POST /api/workspaces", () => {
       error: null,
     });
 
-    // Mock RPC call for slug check
-    mockServiceClient.rpc = vi.fn().mockResolvedValueOnce({
-      data: true, // slug is available
-      error: null,
+    // Mock slug check - no existing workspace
+    mockServiceClient.single.mockResolvedValueOnce({
+      data: null,
+      error: { code: "PGRST116", message: "No rows found" },
     });
 
     // Mock RPC call for workspace creation
-    mockServiceClient.rpc.mockResolvedValueOnce({
+    mockServiceClient.rpc = vi.fn().mockResolvedValueOnce({
       data: mockWorkspace.id,
+      error: null,
+    });
+
+    // Mock fetching the created workspace
+    mockServiceClient.single.mockResolvedValueOnce({
+      data: mockWorkspace,
       error: null,
     });
 
@@ -162,27 +185,16 @@ describe("POST /api/workspaces", () => {
     const response = await POST(request);
     const data = await response.json();
 
-    expect(response.status).toBe(201);
-    expect(data.workspace).toEqual({
-      id: mockWorkspace.id,
-      name: mockWorkspace.name,
-      slug: mockWorkspace.slug,
-    });
+    expect(response.status).toBe(200);
+    expect(data.workspace).toEqual(mockWorkspace);
 
-    // Verify RPC calls were made correctly
-    expect(mockServiceClient.rpc).toHaveBeenCalledWith(
-      "is_workspace_slug_available",
-      {
-        p_slug: "test-workspace",
-      },
-    );
-
+    // Verify RPC call was made correctly
     expect(mockServiceClient.rpc).toHaveBeenCalledWith(
       "create_workspace_with_member",
       {
         p_name: "Test Workspace",
         p_slug: "test-workspace",
-        p_user_id: "user-123",
+        p_user_id: mockUser.id,
       },
     );
   });
@@ -227,9 +239,9 @@ describe("POST /api/workspaces", () => {
       error: null,
     });
 
-    // Mock RPC call for slug check - slug already taken
-    mockServiceClient.rpc = vi.fn().mockResolvedValueOnce({
-      data: false, // slug is not available
+    // Mock slug check - workspace already exists
+    mockServiceClient.single.mockResolvedValueOnce({
+      data: { slug: "test" },
       error: null,
     });
 
@@ -246,5 +258,139 @@ describe("POST /api/workspaces", () => {
 
     expect(response.status).toBe(400);
     expect(data.error).toBe("Workspace slug is already taken");
+  });
+});
+
+describe("GET /api/workspaces", () => {
+  const mockAuthClient = {
+    auth: {
+      getUser: vi.fn(),
+    },
+    from: vi.fn(),
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(createClient).mockResolvedValue(mockAuthClient as any);
+  });
+
+  it("returns 401 if user is not authenticated", async () => {
+    mockAuthClient.auth.getUser.mockResolvedValueOnce({
+      data: { user: null },
+      error: { message: "Not authenticated" },
+    });
+
+    const response = await GET();
+    const data = await response.json();
+
+    expect(response.status).toBe(401);
+    expect(data.error).toBe("Unauthorized");
+  });
+
+  it("returns user workspaces successfully", async () => {
+    const mockUser = { id: "test-user-id" };
+    const mockWorkspaces = [
+      {
+        workspace_id: "workspace-1",
+        workspace: {
+          id: "workspace-1",
+          name: "Test Workspace 1",
+          slug: "test-workspace-1",
+          created_by: "test-user-id",
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+      },
+      {
+        workspace_id: "workspace-2",
+        workspace: {
+          id: "workspace-2",
+          name: "Test Workspace 2",
+          slug: "test-workspace-2",
+          created_by: "another-user-id",
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+      },
+    ];
+
+    mockAuthClient.auth.getUser.mockResolvedValueOnce({
+      data: { user: mockUser },
+      error: null,
+    });
+
+    const mockSelect = vi.fn().mockReturnThis();
+    const mockEq = vi.fn().mockResolvedValueOnce({
+      data: mockWorkspaces,
+      error: null,
+    });
+
+    mockAuthClient.from.mockReturnValueOnce({
+      select: mockSelect,
+      eq: mockEq,
+    });
+
+    const response = await GET();
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(mockAuthClient.from).toHaveBeenCalledWith("workspace_members");
+    expect(mockSelect).toHaveBeenCalledWith(expect.stringContaining("workspace:workspaces(*)"));
+    expect(mockEq).toHaveBeenCalledWith("user_id", mockUser.id);
+    expect(data.workspaces).toHaveLength(2);
+    expect(data.workspaces[0]).toEqual(mockWorkspaces[0].workspace);
+    expect(data.workspaces[1]).toEqual(mockWorkspaces[1].workspace);
+  });
+
+  it("returns 500 if database query fails", async () => {
+    const mockUser = { id: "test-user-id" };
+
+    mockAuthClient.auth.getUser.mockResolvedValueOnce({
+      data: { user: mockUser },
+      error: null,
+    });
+
+    const mockSelect = vi.fn().mockReturnThis();
+    const mockEq = vi.fn().mockResolvedValueOnce({
+      data: null,
+      error: { message: "Database error" },
+    });
+
+    mockAuthClient.from.mockReturnValueOnce({
+      select: mockSelect,
+      eq: mockEq,
+    });
+
+    const response = await GET();
+    const data = await response.json();
+
+    expect(response.status).toBe(500);
+    expect(data.error).toBe("Failed to fetch workspaces");
+  });
+
+  it("returns empty array if user has no workspaces", async () => {
+    const mockUser = { id: "test-user-id" };
+
+    mockAuthClient.auth.getUser.mockResolvedValueOnce({
+      data: { user: mockUser },
+      error: null,
+    });
+
+    const mockSelect = vi.fn().mockReturnThis();
+    const mockEq = vi.fn().mockResolvedValueOnce({
+      data: [],
+      error: null,
+    });
+
+    mockAuthClient.from.mockReturnValueOnce({
+      select: mockSelect,
+      eq: mockEq,
+    });
+
+    const response = await GET();
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.workspaces).toEqual([]);
   });
 });
