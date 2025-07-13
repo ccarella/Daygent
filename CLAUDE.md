@@ -164,6 +164,12 @@ SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 # GitHub and Google OAuth settings are in supabase/config.toml
 ```
 
+**Production Deployment (Vercel):**
+- All three Supabase environment variables above are **required** in production
+- The `SUPABASE_SERVICE_ROLE_KEY` is critical for organization creation and administrative operations
+- Without it, users will get 500 errors when trying to create organizations
+- See [VERCEL_ENV_FIX.md](./VERCEL_ENV_FIX.md) for troubleshooting deployment issues
+
 ## Development Workflow
 
 1. **Start Supabase locally**: `npx supabase start`

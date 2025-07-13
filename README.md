@@ -1,5 +1,26 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Environment Setup
+
+### Required Environment Variables
+
+Create a `.env.local` file in the root of your project with the following variables:
+
+```bash
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+```
+
+**Important for Production (Vercel):**
+- The `SUPABASE_SERVICE_ROLE_KEY` is **required** for organization creation and other administrative operations
+- This key bypasses Row Level Security (RLS) and should be kept secure
+- Never expose it in client-side code or commit it to version control
+- Add all these variables to your Vercel project settings under Settings → Environment Variables
+
+For detailed instructions on fixing organization creation issues on Vercel, see [VERCEL_ENV_FIX.md](./VERCEL_ENV_FIX.md).
+
 ## Getting Started
 
 First, run the development server:
