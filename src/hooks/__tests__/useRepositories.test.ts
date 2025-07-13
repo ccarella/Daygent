@@ -5,11 +5,11 @@ import { useRepositories } from "../useRepositories";
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
-vi.mock("../useOrganization", () => ({
-  useOrganization: vi.fn(() => ({
-    activeOrganization: {
-      id: "org-123",
-      name: "Test Org",
+vi.mock("../useWorkspace", () => ({
+  useWorkspace: vi.fn(() => ({
+    activeWorkspace: {
+      id: "ws-123",
+      name: "Test Workspace",
     },
   })),
 }));
@@ -75,7 +75,7 @@ describe("useRepositories", () => {
 
     expect(mockFetch).toHaveBeenCalledWith(
       expect.stringContaining(
-        "/api/repositories?page=1&per_page=30&organization_id=org-123",
+        "/api/repositories?page=1&per_page=30&workspace_id=ws-123",
       ),
     );
   });
@@ -184,7 +184,7 @@ describe("useRepositories", () => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            organization_id: "org-123",
+            workspace_id: "ws-123",
             repositories: [
               {
                 github_id: 1,

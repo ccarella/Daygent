@@ -4,7 +4,6 @@ import {
 } from "../types";
 import {
   updateRepositoryInstallation,
-  logActivity,
   getOrCreateUserByGithubId,
 } from "../db-utils";
 
@@ -19,7 +18,7 @@ export async function handleInstallationEvent(payload: unknown): Promise<void> {
   console.log(`[Installation Handler] Processing ${action} for installation ${installation.id}`);
 
   try {
-    // Get or create sender user for activity logging
+    // Get or create sender user
     const senderUser = await getOrCreateUserByGithubId(
       sender.id,
       sender.login,
@@ -33,26 +32,15 @@ export async function handleInstallationEvent(payload: unknown): Promise<void> {
 
     switch (action) {
       case "created":
-        // When an installation is created, update all repositories
+        // When an installation is created, mark all repositories as installed
         if (repositories) {
           for (const repo of repositories) {
             await updateRepositoryInstallation(repo.full_name, installation.id);
-            console.log(`[Installation Handler] Added installation ${installation.id} to ${repo.full_name}`);
+            console.log(`[Installation Handler] Marked ${repo.full_name} as installed`);
           }
         }
 
-        // Log activity
-        await logActivity(
-          "repository_added",
-          {
-            action: "installation_created",
-            installation_id: installation.id,
-            account: installation.account.login,
-            repository_count: repositories?.length || 0,
-            repository_names: repositories?.map(r => r.full_name) || [],
-          },
-          senderUser.id
-        );
+        // Activity logging removed - no activities table
         break;
 
       case "deleted":
@@ -60,36 +48,17 @@ export async function handleInstallationEvent(payload: unknown): Promise<void> {
         if (repositories) {
           for (const repo of repositories) {
             await updateRepositoryInstallation(repo.full_name, null);
-            console.log(`[Installation Handler] Removed installation from ${repo.full_name}`);
+            console.log(`[Installation Handler] Marked ${repo.full_name} as uninstalled`);
           }
         }
 
-        // Log activity
-        await logActivity(
-          "repository_removed",
-          {
-            action: "installation_deleted",
-            installation_id: installation.id,
-            account: installation.account.login,
-            repository_count: repositories?.length || 0,
-            repository_names: repositories?.map(r => r.full_name) || [],
-          },
-          senderUser.id
-        );
+        // Activity logging removed - no activities table
         break;
 
       case "suspend":
       case "unsuspend":
         // Log these actions but don't modify repositories
-        await logActivity(
-          "webhook_received",
-          {
-            action: `installation_${action}`,
-            installation_id: installation.id,
-            account: installation.account.login,
-          },
-          senderUser.id
-        );
+        // Activity logging removed - no activities table
         break;
 
       default:
@@ -98,23 +67,33 @@ export async function handleInstallationEvent(payload: unknown): Promise<void> {
 
     console.log(`[Installation Handler] Successfully processed ${action}`);
   } catch (error) {
-    console.error("[Installation Handler] Error processing installation event:", error);
-    // Don't throw - we want webhook to return 200 OK to GitHub
+    console.error("[Installation Handler] Error processing event:", error);
+    throw error;
   }
 }
 
-export async function handleInstallationRepositoriesEvent(payload: unknown): Promise<void> {
+export async function handleInstallationRepositoriesEvent(
+  payload: unknown
+): Promise<void> {
   if (!isInstallationRepositoriesEvent(payload)) {
     console.error("[Installation Repos Handler] Invalid payload type");
     return;
   }
 
-  const { action, installation, repositories_added, repositories_removed, sender } = payload;
-  
-  console.log(`[Installation Repos Handler] Processing ${action} for installation ${installation.id}`);
+  const {
+    action,
+    installation,
+    sender,
+    repositories_added = [],
+    repositories_removed = [],
+  } = payload;
+
+  console.log(
+    `[Installation Repos Handler] Processing ${action} for installation ${installation.id}`
+  );
 
   try {
-    // Get or create sender user for activity logging
+    // Get or create sender user
     const senderUser = await getOrCreateUserByGithubId(
       sender.id,
       sender.login,
@@ -127,50 +106,43 @@ export async function handleInstallationRepositoriesEvent(payload: unknown): Pro
     }
 
     // Handle added repositories
-    if (repositories_added && repositories_added.length > 0) {
+    if (repositories_added.length > 0) {
+      console.log(
+        `[Installation Repos Handler] Adding ${repositories_added.length} repositories`
+      );
+
       for (const repo of repositories_added) {
         await updateRepositoryInstallation(repo.full_name, installation.id);
         console.log(`[Installation Repos Handler] Added installation ${installation.id} to ${repo.full_name}`);
       }
 
-      // Log activity for added repositories
-      await logActivity(
-        "repository_added",
-        {
-          action: "repositories_added",
-          installation_id: installation.id,
-          account: installation.account.login,
-          repository_count: repositories_added.length,
-          repository_names: repositories_added.map(r => r.full_name),
-        },
-        senderUser.id
-      );
+      // Activity logging removed - no activities table
     }
 
     // Handle removed repositories
-    if (repositories_removed && repositories_removed.length > 0) {
+    if (repositories_removed.length > 0) {
+      console.log(
+        `[Installation Repos Handler] Removing ${repositories_removed.length} repositories`
+      );
+
       for (const repo of repositories_removed) {
         await updateRepositoryInstallation(repo.full_name, null);
         console.log(`[Installation Repos Handler] Removed installation from ${repo.full_name}`);
       }
 
-      // Log activity for removed repositories
-      await logActivity(
-        "repository_removed",
-        {
-          action: "repositories_removed",
-          installation_id: installation.id,
-          account: installation.account.login,
-          repository_count: repositories_removed.length,
-          repository_names: repositories_removed.map(r => r.full_name),
-        },
-        senderUser.id
-      );
+      // Activity logging removed - no activities table
     }
 
-    console.log(`[Installation Repos Handler] Successfully processed ${action}`);
+    console.log(
+      `[Installation Repos Handler] Successfully processed ${action}`
+    );
   } catch (error) {
-    console.error("[Installation Repos Handler] Error processing installation repositories event:", error);
-    // Don't throw - we want webhook to return 200 OK to GitHub
+    console.error("[Installation Repos Handler] Error processing event:", error);
+    throw error;
   }
+}
+
+export async function handlePullRequestReviewEvent(): Promise<void> {
+  // Implementation placeholder
+  console.log("[PR Review Handler] Not yet implemented");
 }

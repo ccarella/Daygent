@@ -14,14 +14,13 @@ import { Loader2, AlertCircle, CheckCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-interface Organization {
+interface Workspace {
   id: string;
   name: string;
   slug: string;
-  subscription_status: string;
-  trial_ends_at: string;
-  seats_used: number;
+  created_by: string;
   created_at: string;
+  updated_at: string;
 }
 
 interface UserProfile {
@@ -35,13 +34,13 @@ export default function DebugOrgPage() {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [user, setUser] = useState<UserProfile | null>(null);
-  const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const router = useRouter();
   const supabase = createClient();
 
-  const checkUserAndOrganizations = useCallback(async () => {
+  const checkUserAndWorkspaces = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -70,29 +69,26 @@ export default function DebugOrgPage() {
 
       setUser(userProfile);
 
-      // Get user's organizations
-      const { data: orgs, error: orgsError } = await supabase
-        .from("organizations")
+      // Get user's workspaces
+      const { data: workspaceData, error: workspacesError } = await supabase
+        .from("workspace_members")
         .select(
           `
-          id,
-          name,
-          slug,
-          subscription_status,
-          trial_ends_at,
-          seats_used,
-          created_at,
-          organization_members!inner(role)
+          workspace_id,
+          workspace:workspaces(*)
         `,
         )
-        .eq("organization_members.user_id", authUser.id);
+        .eq("user_id", authUser.id);
 
-      if (orgsError) {
-        setError(`Failed to fetch organizations: ${orgsError.message}`);
+      if (workspacesError) {
+        setError(`Failed to fetch workspaces: ${workspacesError.message}`);
         return;
       }
 
-      setOrganizations(orgs || []);
+      const workspaces = workspaceData
+        ?.map((item: { workspace: unknown }) => item.workspace as Workspace | null)
+        .filter((ws): ws is Workspace => ws !== null) || [];
+      setWorkspaces(workspaces);
     } catch (err) {
       setError(
         `Unexpected error: ${err instanceof Error ? err.message : "Unknown error"}`,
@@ -103,10 +99,10 @@ export default function DebugOrgPage() {
   }, [supabase]);
 
   useEffect(() => {
-    checkUserAndOrganizations();
-  }, [checkUserAndOrganizations]);
+    checkUserAndWorkspaces();
+  }, [checkUserAndWorkspaces]);
 
-  const createOrganization = async () => {
+  const createWorkspace = async () => {
     if (!user) return;
 
     try {
@@ -114,8 +110,8 @@ export default function DebugOrgPage() {
       setError(null);
       setSuccess(null);
 
-      // Call the API route to create organization
-      const response = await fetch("/api/debug/create-organization", {
+      // Call the API route to create workspace
+      const response = await fetch("/api/debug/create-workspace", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -125,14 +121,14 @@ export default function DebugOrgPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || "Failed to create organization");
+        setError(data.error || "Failed to create workspace");
         return;
       }
 
       setSuccess(data.message);
 
-      // Refresh organizations list
-      await checkUserAndOrganizations();
+      // Refresh workspaces list
+      await checkUserAndWorkspaces();
     } catch (err) {
       setError(
         `Unexpected error: ${err instanceof Error ? err.message : "Unknown error"}`,
@@ -154,9 +150,9 @@ export default function DebugOrgPage() {
     <div className="container mx-auto p-6 max-w-4xl">
       <Card>
         <CardHeader>
-          <CardTitle>Organization Debug Tool</CardTitle>
+          <CardTitle>Workspace Debug Tool</CardTitle>
           <CardDescription>
-            Check and manage organizations for the current user
+            Check and manage workspaces for the current user
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -199,49 +195,47 @@ export default function DebugOrgPage() {
             </Alert>
           )}
 
-          {/* Organizations */}
+          {/* Workspaces */}
           <div className="space-y-2">
-            <h3 className="text-lg font-semibold">Organizations</h3>
-            {organizations.length === 0 ? (
+            <h3 className="text-lg font-semibold">Workspaces</h3>
+            {workspaces.length === 0 ? (
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  No organizations found for this user.
+                  No workspaces found for this user.
                 </p>
                 <Button
-                  onClick={createOrganization}
+                  onClick={createWorkspace}
                   disabled={creating}
                   className="w-full sm:w-auto"
                 >
                   {creating && (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   )}
-                  Create Default Organization
+                  Create Default Workspace
                 </Button>
               </div>
             ) : (
               <div className="space-y-4">
-                {organizations.map((org) => (
-                  <Card key={org.id}>
+                {workspaces.map((workspace) => (
+                  <Card key={workspace.id}>
                     <CardContent className="pt-6">
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
                           <p className="text-muted-foreground">Name</p>
-                          <p className="font-medium">{org.name}</p>
+                          <p className="font-medium">{workspace.name}</p>
                         </div>
                         <div>
                           <p className="text-muted-foreground">Slug</p>
-                          <p className="font-medium">{org.slug}</p>
+                          <p className="font-medium">{workspace.slug}</p>
                         </div>
                         <div>
-                          <p className="text-muted-foreground">Status</p>
-                          <p className="font-medium capitalize">
-                            {org.subscription_status}
-                          </p>
+                          <p className="text-muted-foreground">ID</p>
+                          <p className="font-medium text-xs">{workspace.id}</p>
                         </div>
                         <div>
                           <p className="text-muted-foreground">Created</p>
                           <p className="font-medium">
-                            {new Date(org.created_at).toLocaleDateString()}
+                            {new Date(workspace.created_at).toLocaleDateString()}
                           </p>
                         </div>
                       </div>
@@ -254,7 +248,7 @@ export default function DebugOrgPage() {
 
           {/* Actions */}
           <div className="flex gap-4 pt-4">
-            <Button onClick={checkUserAndOrganizations} variant="outline">
+            <Button onClick={checkUserAndWorkspaces} variant="outline">
               Refresh
             </Button>
             <Button onClick={() => router.push("/dashboard")} variant="outline">

@@ -19,11 +19,11 @@ function AuthErrorContent() {
 
   const getErrorMessage = () => {
     switch (errorCode) {
-      case "no_organization":
+      case "no_workspace":
         return {
-          title: "Organization Setup Required",
+          title: "Workspace Setup Required",
           description:
-            "There was an issue creating your organization. This is usually temporary.",
+            "There was an issue creating your workspace. This is usually temporary.",
           action: "Try Refreshing",
         };
       default:
@@ -62,7 +62,7 @@ function AuthErrorContent() {
             </p>
           </div>
           <div className="flex flex-col gap-2">
-            {errorCode === "no_organization" ? (
+            {errorCode === "no_workspace" ? (
               <Button onClick={handleRefresh} className="w-full">
                 <RefreshCw className="mr-2 h-4 w-4" />
                 {errorInfo.action}

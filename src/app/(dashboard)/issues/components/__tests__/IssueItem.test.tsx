@@ -1,9 +1,9 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@/test/test-utils";
 import { IssueItem } from "../IssueItem";
-import type { Database } from "@/lib/database.types";
+import type { Issue as WorkspaceIssue, Repository } from "@/types/workspace";
 
-type Issue = Database["public"]["Tables"]["issues"]["Row"] & {
+type Issue = WorkspaceIssue & {
   repository: { id: string; name: string; full_name: string } | null;
 };
 
@@ -16,16 +16,32 @@ const mockIssue: Issue = {
   github_node_id: "I_kwDOBmJvEc5QdMYp",
   title: "Fix authentication bug",
   body: "Users can't log in",
-  state: "open",
+  state: "open" as const,
   author_github_login: "johnsmith",
   assignee_github_login: "janedoe",
-  labels: ["bug", "urgent"],
+  labels: [
+    { name: "bug", color: "#d73a4a" },
+    { name: "urgent", color: "#e99695" }
+  ],
   github_created_at: new Date(Date.now() - 86400000).toISOString(),
   github_updated_at: new Date(Date.now() - 3600000).toISOString(),
   github_closed_at: null,
   created_at: new Date(Date.now() - 86400000).toISOString(),
   updated_at: new Date(Date.now() - 3600000).toISOString(),
-  repository: { id: "repo-1", name: "daygent", full_name: "org/daygent" },
+  repository: {
+    id: "repo-1",
+    name: "daygent",
+    full_name: "org/daygent",
+    workspace_id: "workspace-1",
+    github_id: 123456,
+    owner: "org",
+    private: false,
+    default_branch: "main",
+    installation_id: null,
+    last_synced_at: null,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  } as Repository & { id: string; name: string; full_name: string },
 };
 
 describe("IssueItem", () => {
@@ -67,7 +83,7 @@ describe("IssueItem", () => {
   it("should handle missing repository gracefully", () => {
     const issueWithoutRepository = {
       ...mockIssue,
-      repository: null,
+      repository: null as any,
     };
 
     render(<IssueItem issue={issueWithoutRepository} />);

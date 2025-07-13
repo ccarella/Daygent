@@ -56,12 +56,12 @@ export async function POST(
       .from("repositories")
       .select(`
         *,
-        organizations!inner(
-          organization_members!inner(*)
+        workspace:workspaces!inner(
+          workspace_members!inner(*)
         )
       `)
       .eq("id", repositoryId)
-      .eq("organizations.organization_members.user_id", user.id)
+      .eq("workspace.workspace_members.user_id", user.id)
       .single();
 
     if (repoError || !repository) {
@@ -71,11 +71,11 @@ export async function POST(
       );
     }
 
-    // Check if user has admin/owner role
-    const memberRole = repository.organizations.organization_members[0]?.role;
-    if (!memberRole || !["admin", "owner"].includes(memberRole)) {
+    // Check if user has access (all workspace members have full access)
+    const hasAccess = repository.workspace.workspace_members.length > 0;
+    if (!hasAccess) {
       return NextResponse.json(
-        { error: "Insufficient permissions. Admin or owner role required." },
+        { error: "Access denied. You must be a workspace member." },
         { status: 403 }
       );
     }
@@ -165,7 +165,7 @@ async function performSync(
     const result = await syncService.syncRepositoryIssues(
       {
         id: repository.id,
-        organization_id: repository.organization_id,
+        workspace_id: repository.workspace_id,
         github_id: repository.github_id,
         github_name,
         github_owner,

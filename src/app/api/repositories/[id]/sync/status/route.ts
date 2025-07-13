@@ -32,12 +32,12 @@ export async function GET(
         sync_status,
         last_synced_at,
         sync_error,
-        organizations!inner(
-          organization_members!inner(user_id)
+        workspace:workspaces!inner(
+          workspace_members!inner(user_id)
         )
       `)
       .eq("id", repositoryId)
-      .eq("organizations.organization_members.user_id", user.id)
+      .eq("workspace.workspace_members.user_id", user.id)
       .single();
 
     if (repoError || !repository) {

@@ -3,7 +3,6 @@ import {
   getRepositoryByGithubId,
   getOrCreateUserByGithubId,
   syncIssue,
-  logActivity,
 } from "../db-utils";
 
 export async function handleIssueEvent(payload: unknown): Promise<void> {
@@ -82,40 +81,7 @@ export async function handleIssueEvent(payload: unknown): Promise<void> {
       return;
     }
 
-    // Log activity based on action
-    let activityType: "issue_created" | "issue_updated" | "issue_completed" | "issue_assigned";
-    const metadata: Record<string, unknown> = {
-      action,
-      issue_number: issue.number,
-      issue_title: issue.title,
-      github_issue_id: issue.id,
-    };
-
-    switch (action) {
-      case "opened":
-        activityType = "issue_created";
-        break;
-      case "closed":
-        activityType = "issue_completed";
-        break;
-      case "assigned":
-      case "unassigned":
-        activityType = "issue_assigned";
-        metadata.assignee = issue.assignee?.login || null;
-        break;
-      default:
-        activityType = "issue_updated";
-    }
-
-    await logActivity(
-      activityType,
-      metadata,
-      senderUser.id,
-      repo.organization_id,
-      repo.id,
-      syncedIssue.project_id,
-      syncedIssue.id
-    );
+    // Activity logging removed - no activities table
 
     console.log(`[Issue Handler] Successfully processed ${action} for issue #${issue.number}`);
   } catch (error) {

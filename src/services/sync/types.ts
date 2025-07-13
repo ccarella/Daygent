@@ -2,7 +2,7 @@
 
 export interface RepositoryWithGitHub {
   id: string;
-  organization_id: string;
+  workspace_id: string;
   github_id: number;
   github_name: string;
   github_owner: string;

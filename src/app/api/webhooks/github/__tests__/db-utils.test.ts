@@ -86,7 +86,7 @@ describe('Database Utilities', () => {
             })),
           })),
         })),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       } as any);
 
       const result = await getRepositoryByGithubId(12345);
@@ -108,7 +108,7 @@ describe('Database Utilities', () => {
             })),
           })),
         })),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       } as any);
 
       const result = await getRepositoryByGithubId(12345);
@@ -135,7 +135,7 @@ describe('Database Utilities', () => {
           })),
           insert: vi.fn(),
         })),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       } as any);
 
       const result = await getOrCreateUserByGithubId(67890, 'testuser');
@@ -164,7 +164,7 @@ describe('Database Utilities', () => {
             })),
           })),
         })),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       } as any);
 
       const result = await getOrCreateUserByGithubId(11111, 'newuser', 'newuser@example.com');
@@ -175,7 +175,7 @@ describe('Database Utilities', () => {
       const { createServiceRoleClient } = await import('@/lib/supabase/server');
       const mockClient = vi.mocked(createServiceRoleClient);
       
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       let insertedData: any;
       mockClient.mockReturnValue({
         from: vi.fn(() => ({
@@ -196,7 +196,7 @@ describe('Database Utilities', () => {
             };
           }),
         })),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       } as any);
 
       await getOrCreateUserByGithubId(22222, 'defaultuser');

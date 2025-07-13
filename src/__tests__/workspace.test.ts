@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook } from "@testing-library/react";
-import { useOrganization } from "@/hooks/useOrganization";
+import { useWorkspace } from "@/hooks/useWorkspace";
 import { useAuthStore } from "@/stores/auth.store";
 
 // Mock auth store
@@ -17,7 +17,7 @@ vi.mock("@/lib/supabase/client", () => ({
   })),
 }));
 
-describe("Organization Management", () => {
+describe("Workspace Management", () => {
   const mockUser = {
     id: "test-user-id",
     email: "test@example.com",
@@ -25,15 +25,16 @@ describe("Organization Management", () => {
     avatar_url: null,
     github_id: null,
     github_username: "testuser",
+    google_id: null,
+    created_at: "2024-01-01T00:00:00Z",
+    updated_at: "2024-01-01T00:00:00Z",
   };
 
-  const mockOrganization = {
-    id: "org-123",
-    name: "Test Organization",
-    slug: "test-org",
-    subscription_status: "trial" as const,
-    trial_ends_at: "2024-12-31T23:59:59Z",
-    seats_used: 1,
+  const mockWorkspace = {
+    id: "ws-123",
+    name: "Test Workspace",
+    slug: "test-workspace",
+    created_by: mockUser.id,
     created_at: "2024-01-01T00:00:00Z",
     updated_at: "2024-01-01T00:00:00Z",
   };
@@ -43,12 +44,12 @@ describe("Organization Management", () => {
     localStorage.clear();
   });
 
-  describe("useOrganization hook", () => {
-    it("should return null organization when user is not logged in", () => {
+  describe("useWorkspace hook", () => {
+    it("should return null workspace when user is not logged in", () => {
       vi.mocked(useAuthStore).mockReturnValue({
         user: null,
-        activeOrganization: null,
-        setActiveOrganization: vi.fn(),
+        activeWorkspace: null,
+        setActiveWorkspace: vi.fn(),
         isAuthenticated: false,
         isLoading: false,
         error: null,
@@ -61,20 +62,20 @@ describe("Organization Management", () => {
         initialize: vi.fn(),
       });
 
-      const { result } = renderHook(() => useOrganization());
+      const { result } = renderHook(() => useWorkspace());
 
-      expect(result.current.activeOrganization).toBeNull();
-      expect(result.current.organizations).toEqual([]);
+      expect(result.current.activeWorkspace).toBeNull();
+      expect(result.current.workspaces).toEqual([]);
       expect(result.current.isLoading).toBe(false);
     });
 
-    it("should handle user with organization in auth store", () => {
-      const mockSetActiveOrganization = vi.fn();
+    it("should handle user with workspace in auth store", () => {
+      const mockSetActiveWorkspace = vi.fn();
 
       vi.mocked(useAuthStore).mockReturnValue({
         user: mockUser,
-        activeOrganization: mockOrganization,
-        setActiveOrganization: mockSetActiveOrganization,
+        activeWorkspace: mockWorkspace,
+        setActiveWorkspace: mockSetActiveWorkspace,
         isAuthenticated: true,
         isLoading: false,
         error: null,
@@ -87,22 +88,22 @@ describe("Organization Management", () => {
         initialize: vi.fn(),
       });
 
-      const { result } = renderHook(() => useOrganization());
+      const { result } = renderHook(() => useWorkspace());
 
-      // When user has an active organization, hook should return it
-      expect(result.current.activeOrganization).toEqual(mockOrganization);
-      expect(result.current.setActiveOrganization).toBe(
-        mockSetActiveOrganization,
+      // When user has an active workspace, hook should return it
+      expect(result.current.activeWorkspace).toEqual(mockWorkspace);
+      expect(result.current.setActiveWorkspace).toBe(
+        mockSetActiveWorkspace,
       );
     });
 
-    it("should persist active organization in localStorage", async () => {
-      const mockSetActiveOrganization = vi.fn();
+    it("should persist active workspace in localStorage", async () => {
+      const mockSetActiveWorkspace = vi.fn();
 
       vi.mocked(useAuthStore).mockReturnValue({
         user: mockUser,
-        activeOrganization: mockOrganization,
-        setActiveOrganization: mockSetActiveOrganization,
+        activeWorkspace: mockWorkspace,
+        setActiveWorkspace: mockSetActiveWorkspace,
         isAuthenticated: true,
         isLoading: false,
         error: null,
@@ -115,24 +116,24 @@ describe("Organization Management", () => {
         initialize: vi.fn(),
       });
 
-      const { result } = renderHook(() => useOrganization());
+      const { result } = renderHook(() => useWorkspace());
 
-      result.current.setActiveOrganization(mockOrganization);
+      result.current.setActiveWorkspace(mockWorkspace);
 
-      expect(mockSetActiveOrganization).toHaveBeenCalledWith(mockOrganization);
+      expect(mockSetActiveWorkspace).toHaveBeenCalledWith(mockWorkspace);
     });
   });
 
-  describe("Auth Store Organization Integration", () => {
-    it("should clear active organization from store on logout", () => {
-      // This test verifies that the logout action clears the organization
+  describe("Auth Store Workspace Integration", () => {
+    it("should clear active workspace from store on logout", () => {
+      // This test verifies that the logout action clears the workspace
       // The actual store implementation already handles this
-      const mockSetActiveOrganization = vi.fn();
+      const mockSetActiveWorkspace = vi.fn();
 
       vi.mocked(useAuthStore).mockReturnValue({
         user: mockUser,
-        activeOrganization: mockOrganization,
-        setActiveOrganization: mockSetActiveOrganization,
+        activeWorkspace: mockWorkspace,
+        setActiveWorkspace: mockSetActiveWorkspace,
         isAuthenticated: true,
         isLoading: false,
         error: null,
@@ -140,7 +141,7 @@ describe("Organization Management", () => {
         login: vi.fn(),
         logout: vi.fn(() => {
           // Simulate logout clearing localStorage
-          localStorage.removeItem("activeOrganizationId");
+          localStorage.removeItem("activeWorkspaceId");
           return Promise.resolve();
         }),
         updateUser: vi.fn(),
@@ -149,14 +150,14 @@ describe("Organization Management", () => {
         initialize: vi.fn(),
       });
 
-      // Set organization in localStorage
-      localStorage.setItem("activeOrganizationId", mockOrganization.id);
+      // Set workspace in localStorage
+      localStorage.setItem("activeWorkspaceId", mockWorkspace.id);
 
       // After logout, localStorage should be cleared
       const { logout } = useAuthStore();
       logout();
 
-      expect(localStorage.getItem("activeOrganizationId")).toBeNull();
+      expect(localStorage.getItem("activeWorkspaceId")).toBeNull();
     });
   });
 });

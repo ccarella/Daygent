@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRepositories } from "@/hooks/useRepositories";
-import { useOrganization } from "@/hooks/useOrganization";
+import { useWorkspace } from "@/hooks/useWorkspace";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -34,7 +34,7 @@ import {
 
 export default function RepositoriesPage() {
   const router = useRouter();
-  const { activeOrganization } = useOrganization();
+  const { activeWorkspace } = useWorkspace();
   const {
     repositories,
     pagination,
@@ -103,14 +103,14 @@ export default function RepositoriesPage() {
     fetchRepositories(newPage);
   };
 
-  if (!activeOrganization) {
+  if (!activeWorkspace) {
     return (
       <div className="container mx-auto py-8">
         <Alert className="border-destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>No Organization Selected</AlertTitle>
+          <AlertTitle>No Workspace Selected</AlertTitle>
           <AlertDescription>
-            Please select an organization from the sidebar to manage
+            Please select a workspace from the sidebar to manage
             repositories.
           </AlertDescription>
         </Alert>
@@ -130,7 +130,7 @@ export default function RepositoriesPage() {
         <div>
           <h1 className="text-3xl font-bold">Connect Repositories</h1>
           <p className="text-muted-foreground mt-2">
-            Select GitHub repositories to connect to {activeOrganization.name}
+            Select GitHub repositories to connect to {activeWorkspace.name}
           </p>
         </div>
         <Button

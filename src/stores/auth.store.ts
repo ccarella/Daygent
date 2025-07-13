@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
-import type { AuthStore, User } from "./types";
+import type { AuthStore } from "./types";
+import type { User } from "@/types/user";
+import type { Workspace } from "@/types/workspace";
 import { createClient } from "@/lib/supabase/client";
 
 const supabase = createClient();
@@ -10,7 +12,7 @@ export const useAuthStore = create<AuthStore>()(
     (set) => ({
       // State
       user: null,
-      activeOrganization: null,
+      activeWorkspace: null,
       isAuthenticated: false,
       isLoading: false,
       error: null,
@@ -27,13 +29,13 @@ export const useAuthStore = create<AuthStore>()(
           "setUser",
         ),
 
-      setActiveOrganization: (org) => {
-        set({ activeOrganization: org }, false, "setActiveOrganization");
+      setActiveWorkspace: (workspace) => {
+        set({ activeWorkspace: workspace }, false, "setActiveWorkspace");
         // Store in localStorage for persistence
-        if (org) {
-          localStorage.setItem("activeOrganizationId", org.id);
+        if (workspace) {
+          localStorage.setItem("activeWorkspaceId", workspace.id);
         } else {
-          localStorage.removeItem("activeOrganizationId");
+          localStorage.removeItem("activeWorkspaceId");
         }
       },
 
@@ -109,13 +111,13 @@ export const useAuthStore = create<AuthStore>()(
             throw error;
           }
 
-          // Clear organization data
-          localStorage.removeItem("activeOrganizationId");
+          // Clear workspace data
+          localStorage.removeItem("activeWorkspaceId");
 
           set(
             {
               user: null,
-              activeOrganization: null,
+              activeWorkspace: null,
               isAuthenticated: false,
               isLoading: false,
               error: null,
@@ -406,6 +408,9 @@ export const useAuthStore = create<AuthStore>()(
                 profile?.github_username ||
                 authUser.user_metadata?.user_name ||
                 null,
+              google_id: profile?.google_id || null,
+              created_at: profile?.created_at || new Date().toISOString(),
+              updated_at: profile?.updated_at || new Date().toISOString(),
             };
 
             const totalTime = performance.now() - startTime;
@@ -418,43 +423,45 @@ export const useAuthStore = create<AuthStore>()(
               github_username: user.github_username || "Not set",
             });
 
-            // Fetch user's default organization
-            let activeOrg = null;
+            // Fetch user's workspaces
+            let activeWorkspace = null;
             try {
               console.log(
-                "[Auth Store] Fetching user's default organization...",
+                "[Auth Store] Fetching user's workspaces...",
               );
-              const { data: orgData, error: orgError } = await supabase.rpc(
-                "get_user_default_organization",
-                { user_id: user.id },
-              );
+              const { data: workspaceData, error: workspaceError } = await supabase
+                .from("workspace_members")
+                .select("workspace_id, workspace:workspaces(*)")
+                .eq("user_id", user.id)
+                .limit(1)
+                .single();
 
-              if (orgError) {
+              if (workspaceError) {
                 console.error(
-                  "[Auth Store] Error fetching organization:",
-                  orgError,
+                  "[Auth Store] Error fetching workspace:",
+                  workspaceError,
                 );
-              } else if (orgData && orgData.length > 0) {
-                activeOrg = orgData[0];
+              } else if (workspaceData && workspaceData.workspace) {
+                activeWorkspace = workspaceData.workspace as unknown as Workspace;
                 console.log(
-                  "[Auth Store] Default organization found:",
-                  activeOrg.slug,
+                  "[Auth Store] Default workspace found:",
+                  activeWorkspace.slug,
                 );
-                localStorage.setItem("activeOrganizationId", activeOrg.id);
+                localStorage.setItem("activeWorkspaceId", activeWorkspace.id);
               } else {
-                console.log("[Auth Store] No organization found for user");
+                console.log("[Auth Store] No workspace found for user");
               }
-            } catch (orgError) {
+            } catch (workspaceError) {
               console.error(
-                "[Auth Store] Error in organization fetch:",
-                orgError,
+                "[Auth Store] Error in workspace fetch:",
+                workspaceError,
               );
             }
 
             set(
               {
                 user,
-                activeOrganization: activeOrg,
+                activeWorkspace,
                 isAuthenticated: true,
                 isLoading: false,
                 error: null,
@@ -650,6 +657,9 @@ supabase.auth.onAuthStateChange(async (event, session) => {
           profile?.github_username ||
           session.user.user_metadata?.user_name ||
           null,
+        google_id: profile?.google_id || null,
+        created_at: profile?.created_at || new Date().toISOString(),
+        updated_at: profile?.updated_at || new Date().toISOString(),
       };
 
       console.log("[Auth Store] Setting user from state change:", {
@@ -670,6 +680,9 @@ supabase.auth.onAuthStateChange(async (event, session) => {
         avatar_url: session.user.user_metadata?.avatar_url || null,
         github_id: null,
         github_username: null,
+        google_id: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       };
       console.log("[Auth Store] Setting user with basic info after error");
       setUser(user);

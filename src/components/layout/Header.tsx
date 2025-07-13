@@ -12,14 +12,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuthStore } from "@/stores/auth.store";
-import { useOrganization } from "@/hooks/useOrganization";
+import { useWorkspace } from "@/hooks/useWorkspace";
 import { LogOut, Settings, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export function Header() {
   const router = useRouter();
   const { user, logout } = useAuthStore();
-  const { activeOrganization } = useOrganization();
+  const { activeWorkspace } = useWorkspace();
 
   const handleSignOut = async () => {
     await logout();
@@ -29,16 +29,16 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
-        {/* Logo and Organization */}
+        {/* Logo and Workspace */}
         <div className="flex items-center">
           <Link href="/issues" className="flex items-center space-x-2">
             <span className="text-2xl font-bold text-primary">Daygent</span>
           </Link>
-          {activeOrganization && (
+          {activeWorkspace && (
             <div className="hidden md:flex items-center ml-4 text-sm text-muted-foreground">
               <span className="px-2">/</span>
               <span className="font-medium text-foreground">
-                {activeOrganization.name}
+                {activeWorkspace.name}
               </span>
             </div>
           )}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { useOrganization } from "./useOrganization";
+import { useWorkspace } from "./useWorkspace";
 import type {
   GitHubRepository,
   PaginationInfo,
@@ -30,7 +30,7 @@ interface UseRepositoriesReturn {
 }
 
 export function useRepositories(): UseRepositoriesReturn {
-  const { activeOrganization } = useOrganization();
+  const { activeWorkspace } = useWorkspace();
   const [repositories, setRepositories] = useState<RepositoryWithStatus[]>([]);
   const [pagination, setPagination] = useState<PaginationInfo | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -44,8 +44,8 @@ export function useRepositories(): UseRepositoriesReturn {
 
   const fetchRepositories = useCallback(
     async (page = 1) => {
-      if (!activeOrganization) {
-        setError("No active organization");
+      if (!activeWorkspace) {
+        setError("No active workspace");
         return;
       }
 
@@ -56,7 +56,7 @@ export function useRepositories(): UseRepositoriesReturn {
         const params = new URLSearchParams({
           page: page.toString(),
           per_page: "30",
-          organization_id: activeOrganization.id,
+          workspace_id: activeWorkspace.id,
         });
 
         if (searchQuery) {
@@ -82,7 +82,7 @@ export function useRepositories(): UseRepositoriesReturn {
         setIsLoading(false);
       }
     },
-    [activeOrganization, searchQuery],
+    [activeWorkspace, searchQuery],
   );
 
   const toggleRepoSelection = useCallback((repoId: number) => {
@@ -109,7 +109,7 @@ export function useRepositories(): UseRepositoriesReturn {
   }, []);
 
   const connectSelectedRepositories = useCallback(async () => {
-    if (!activeOrganization || selectedRepos.size === 0) {
+    if (!activeWorkspace || selectedRepos.size === 0) {
       return;
     }
 
@@ -134,7 +134,7 @@ export function useRepositories(): UseRepositoriesReturn {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          organization_id: activeOrganization.id,
+          workspace_id: activeWorkspace.id,
           repositories: reposToConnect,
         }),
       });
@@ -162,7 +162,7 @@ export function useRepositories(): UseRepositoriesReturn {
       setConnectingRepos(new Set());
     }
   }, [
-    activeOrganization,
+    activeWorkspace,
     selectedRepos,
     repositories,
     fetchRepositories,
@@ -171,7 +171,7 @@ export function useRepositories(): UseRepositoriesReturn {
 
   const disconnectRepositories = useCallback(
     async (repositoryIds: string[]) => {
-      if (!activeOrganization || repositoryIds.length === 0) {
+      if (!activeWorkspace || repositoryIds.length === 0) {
         return;
       }
 
@@ -184,7 +184,7 @@ export function useRepositories(): UseRepositoriesReturn {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            organization_id: activeOrganization.id,
+            workspace_id: activeWorkspace.id,
             repository_ids: repositoryIds,
           }),
         });
@@ -207,15 +207,15 @@ export function useRepositories(): UseRepositoriesReturn {
         throw err;
       }
     },
-    [activeOrganization, fetchRepositories, pagination],
+    [activeWorkspace, fetchRepositories, pagination],
   );
 
   useEffect(() => {
-    if (activeOrganization) {
+    if (activeWorkspace) {
       fetchRepositories(1);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeOrganization]);
+  }, [activeWorkspace]);
 
   return {
     repositories,

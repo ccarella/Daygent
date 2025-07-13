@@ -1,6 +1,5 @@
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import {
-  ActivityType,
   IssueSyncData,
   PullRequestSyncData,
   CommentSyncData,
@@ -63,24 +62,22 @@ export async function getOrCreateUserByGithubId(
   return newUser;
 }
 
-// Helper to find project by repository
-export async function getProjectByRepositoryId(repositoryId: string) {
+// Helper to get workspace from repository
+export async function getWorkspaceFromRepository(repositoryId: string) {
   const supabase = await createServiceRoleClient();
   
   const { data, error } = await supabase
-    .from("projects")
-    .select("*")
-    .eq("repository_id", repositoryId)
-    .eq("status", "active")
-    .order("created_at", { ascending: false })
-    .limit(1)
+    .from("repositories")
+    .select("workspace_id")
+    .eq("id", repositoryId)
     .single();
 
-  if (error && error.code !== "PGRST116") { // Not found is ok
-    console.error("[Webhook DB] Error fetching project:", error);
+  if (error) {
+    console.error("[Webhook DB] Error fetching repository workspace:", error);
+    return null;
   }
 
-  return data;
+  return data?.workspace_id;
 }
 
 // Helper to sync issue data
@@ -90,43 +87,11 @@ export async function syncIssue(
 ) {
   const supabase = await createServiceRoleClient();
 
-  // Find project for this repository
-  let project = await getProjectByRepositoryId(repositoryId);
-  if (!project) {
-    console.warn("[Webhook DB] No active project found for repository, creating default project:", repositoryId);
-    
-    // Get repository details to create a default project
-    const { data: repository } = await supabase
-      .from("repositories")
-      .select("name")
-      .eq("id", repositoryId)
-      .single();
-    
-    if (!repository) {
-      console.error("[Webhook DB] Repository not found:", repositoryId);
-      return null;
-    }
-    
-    // Create a default project for the repository
-    const { data: newProject, error: projectError } = await supabase
-      .from("projects")
-      .insert({
-        repository_id: repositoryId,
-        name: `${repository.name} Project`,
-        description: `Default project for ${repository.name} repository`,
-        status: "active",
-        created_by: "00000000-0000-0000-0000-000000000000" // System user ID
-      })
-      .select()
-      .single();
-    
-    if (projectError || !newProject) {
-      console.error("[Webhook DB] Failed to create default project:", projectError);
-      return null;
-    }
-    
-    project = newProject;
-    console.log("[Webhook DB] Created default project:", project.name);
+  // Get workspace from repository
+  const workspaceId = await getWorkspaceFromRepository(repositoryId);
+  if (!workspaceId) {
+    console.error("[Webhook DB] Could not get workspace for repository:", repositoryId);
+    return null;
   }
 
   // Check if issue already exists
@@ -164,17 +129,18 @@ export async function syncIssue(
     const { data, error } = await supabase
       .from("issues")
       .insert({
-        project_id: project.id,
         repository_id: repositoryId,
+        workspace_id: workspaceId,
         github_issue_number: issueData.github_issue_number,
         github_issue_id: issueData.github_issue_id,
         title: issueData.title,
-        original_description: issueData.original_description,
-        status: issueData.status,
-        assigned_to: issueData.assigned_to,
-        created_by: project.created_by, // Use project creator as default
-        updated_at: issueData.updated_at,
-        completed_at: issueData.completed_at,
+        body: issueData.original_description,
+        state: issueData.status === "completed" ? "closed" : "open",
+        author_github_login: null, // Would need to be passed in
+        assignee_github_login: issueData.assigned_to,
+        labels: [],
+        github_created_at: new Date().toISOString(),
+        github_updated_at: issueData.updated_at,
       })
       .select()
       .single();
@@ -315,55 +281,8 @@ export async function updateRepositoryInstallation(
   }
 }
 
-// Helper to log activity
-export async function logActivity(
-  type: ActivityType,
-  metadata: Record<string, unknown>,
-  userId?: string,
-  organizationId?: string,
-  repositoryId?: string,
-  projectId?: string,
-  issueId?: string
-) {
-  const supabase = await createServiceRoleClient();
-
-  // If we don't have organizationId but have repositoryId, fetch it
-  if (!organizationId && repositoryId) {
-    const { data: repo } = await supabase
-      .from("repositories")
-      .select("organization_id")
-      .eq("id", repositoryId)
-      .single();
-    
-    if (repo) {
-      organizationId = repo.organization_id;
-    }
-  }
-
-  // If we still don't have required fields, log and return
-  if (!organizationId || !userId) {
-    console.warn("[Webhook DB] Missing required fields for activity log:", {
-      organizationId,
-      userId,
-      type,
-    });
-    return;
-  }
-
-  const { error } = await supabase.from("activities").insert({
-    organization_id: organizationId,
-    repository_id: repositoryId,
-    project_id: projectId,
-    issue_id: issueId,
-    user_id: userId,
-    type,
-    metadata,
-  });
-
-  if (error) {
-    console.error("[Webhook DB] Error logging activity:", error);
-  }
-}
+// Helper to log activity - removed as activities table doesn't exist in simplified schema
+// export async function logActivity() { ... }
 
 // Helper to parse issue references from text (e.g., "Fixes #123")
 export function parseIssueReferences(text: string): number[] {

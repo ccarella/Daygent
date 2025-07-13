@@ -1,7 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getServerGitHubService } from "@/services/github.server";
-import type { InsertRepository } from "@/lib/database.types";
+// Repository type for inserting
+type InsertRepository = {
+  workspace_id: string;
+  github_id: number;
+  name: string;
+  full_name: string;
+  owner: string;
+  private: boolean;
+  default_branch: string;
+};
 
 interface ConnectRepositoryRequest {
   workspace_id: string;

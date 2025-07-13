@@ -41,9 +41,23 @@ import { useAuthStore } from "../auth.store";
 import { createClient } from "@/lib/supabase/client";
 
 // Get the mocks
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 const { __mocks__ } = createClient as any;
 const { mockSignInWithOAuth, mockSignOut, mockGetUser, mockFrom } = __mocks__;
+
+// Helper function to create a test user with all required properties
+const createTestUser = (overrides = {}) => ({
+  id: "1",
+  email: "test@example.com",
+  name: "Test User",
+  avatar_url: null,
+  github_id: null,
+  github_username: null,
+  google_id: null,
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
+  ...overrides,
+});
 
 describe("Auth Store", () => {
   beforeEach(() => {
@@ -90,9 +104,9 @@ describe("Auth Store", () => {
   it("should handle login error", async () => {
     const mockError = new Error("OAuth failed");
     mockSignInWithOAuth.mockResolvedValue({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       data: null as any,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       error: mockError as any,
     });
 
@@ -117,14 +131,7 @@ describe("Auth Store", () => {
 
     // Set user first
     act(() => {
-      result.current.setUser({
-        id: "1",
-        email: "test@example.com",
-        name: "Test User",
-        avatar_url: null,
-        github_id: null,
-        github_username: null,
-      });
+      result.current.setUser(createTestUser());
     });
 
     expect(result.current.isAuthenticated).toBe(true);
@@ -145,14 +152,7 @@ describe("Auth Store", () => {
 
     // Set initial user
     act(() => {
-      result.current.setUser({
-        id: "1",
-        email: "test@example.com",
-        name: "Test User",
-        avatar_url: null,
-        github_id: null,
-        github_username: null,
-      });
+      result.current.setUser(createTestUser());
     });
 
     // Update user
@@ -163,14 +163,12 @@ describe("Auth Store", () => {
       });
     });
 
-    expect(result.current.user).toEqual({
-      id: "1",
-      email: "test@example.com",
-      name: "Updated Name",
-      avatar_url: "https://example.com/avatar.jpg",
-      github_id: null,
-      github_username: null,
-    });
+    expect(result.current.user).toEqual(
+      createTestUser({
+        name: "Updated Name",
+        avatar_url: "https://example.com/avatar.jpg",
+      })
+    );
   });
 
   it("should initialize auth state", async () => {
@@ -192,7 +190,7 @@ describe("Auth Store", () => {
     };
 
     mockGetUser.mockResolvedValue({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       data: { user: mockUser as any },
       error: null,
     });
@@ -211,14 +209,15 @@ describe("Auth Store", () => {
       await result.current.initialize();
     });
 
-    expect(result.current.user).toEqual({
-      id: "user-123",
-      email: "test@example.com",
-      name: "Test User",
-      avatar_url: "https://example.com/avatar.jpg",
-      github_id: 12345,
-      github_username: "testuser",
-    });
+    expect(result.current.user).toEqual(
+      createTestUser({
+        id: "user-123",
+        name: "Test User",
+        avatar_url: "https://example.com/avatar.jpg",
+        github_id: 12345,
+        github_username: "testuser",
+      })
+    );
     expect(result.current.isAuthenticated).toBe(true);
   });
 
@@ -260,14 +259,13 @@ describe("Auth Store", () => {
 
   it("should set user and authentication state", () => {
     const { result } = renderHook(() => useAuthStore());
-    const testUser = {
+    const testUser = createTestUser({
       id: "123",
       email: "user@example.com",
-      name: "Test User",
       avatar_url: "https://example.com/avatar.jpg",
       github_id: 12345,
       github_username: "testuser",
-    };
+    });
 
     act(() => {
       result.current.setUser(testUser);
