@@ -51,7 +51,6 @@ export async function GET() {
         name: "Test Organization",
         slug: testSlug,
         description: "Test organization created for debugging",
-        plan: "free",
       })
       .select()
       .single();

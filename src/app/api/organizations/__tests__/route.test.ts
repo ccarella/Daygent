@@ -129,7 +129,6 @@ describe("POST /api/organizations", () => {
       name: "Test Organization",
       slug: "test-org",
       description: "Test description",
-      plan: "free",
     };
 
     mockAuthClient.auth.getUser.mockResolvedValue({
@@ -176,7 +175,6 @@ describe("POST /api/organizations", () => {
       name: "Test Organization",
       slug: "test-org",
       description: "Test description",
-      plan: "free",
     });
 
     // Verify user was added as owner
@@ -239,7 +237,6 @@ describe("POST /api/organizations", () => {
       name: "Test",
       slug: "test",
       description: null,
-      plan: "free",
     };
 
     mockAuthClient.auth.getUser.mockResolvedValue({
