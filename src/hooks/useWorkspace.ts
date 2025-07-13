@@ -1,81 +1,65 @@
-import { useAuthStore } from "@/stores/auth.store";
+import { useWorkspaceStore } from "@/stores/workspace.store";
 import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
-import type { Workspace } from "@/types/workspace";
+import { useRouter } from "next/navigation";
 
-const supabase = createClient();
-
-export function useWorkspace() {
-  const { user } = useAuthStore();
-  const [activeWorkspace, setActiveWorkspace] = useState<Workspace | null>(null);
-  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+export function useWorkspace(required = true) {
+  const router = useRouter();
+  const { 
+    currentWorkspace, 
+    workspaces, 
+    isLoading, 
+    error
+  } = useWorkspaceStore();
 
   useEffect(() => {
-    if (!user) {
-      setWorkspaces([]);
-      setIsLoading(false);
+    if (!isLoading && required && !currentWorkspace && workspaces.length === 0) {
+      // No workspace available, redirect to creation
+      router.push("/onboarding/workspace");
+    }
+  }, [currentWorkspace, workspaces, isLoading, required, router]);
+
+  return {
+    workspace: currentWorkspace,
+    workspaces,
+    isLoading,
+    error,
+    hasWorkspace: !!currentWorkspace,
+  };
+}
+
+// Hook for workspace-specific data fetching
+export function useWorkspaceData<T>(
+  fetcher: (workspaceId: string) => Promise<T>
+) {
+  const { workspace } = useWorkspace();
+  const [data, setData] = useState<T | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    if (!workspace) {
+      setData(null);
+      setLoading(false);
       return;
     }
 
-    loadWorkspaces();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
-
-  const loadWorkspaces = async () => {
-    if (!user) return;
-
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from("workspaces")
-        .select(
-          `
-          *,
-          workspace_members!inner(
-            user_id
-          )
-        `,
-        )
-        .eq("workspace_members.user_id", user.id);
-
-      if (error) throw error;
-
-      setWorkspaces(data || []);
-
-      // Set active workspace if not already set
-      if (data && data.length > 0 && !activeWorkspace) {
-        // Check localStorage for saved preference
-        const savedWorkspaceId = localStorage.getItem("activeWorkspaceId");
-        const savedWorkspace = data.find((ws) => ws.id === savedWorkspaceId);
-
-        if (savedWorkspace) {
-          setActiveWorkspace(savedWorkspace);
-        } else {
-          // Default to first workspace (likely the owner one)
-          const ownerWorkspace =
-            data.find((ws) => ws.created_by === user.id) ||
-            data[0];
-          setActiveWorkspace(ownerWorkspace);
-        }
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+      
+      try {
+        const result = await fetcher(workspace.id);
+        setData(result);
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error("Failed to fetch data"));
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error("Error loading workspaces:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    };
 
-  const switchWorkspace = (workspace: Workspace) => {
-    setActiveWorkspace(workspace);
-    localStorage.setItem("activeWorkspaceId", workspace.id);
-  };
+    fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workspace?.id]);
 
-  return {
-    activeWorkspace,
-    workspaces,
-    isLoading,
-    setActiveWorkspace: switchWorkspace,
-    reload: loadWorkspaces,
-  };
+  return { data, loading, error };
 }

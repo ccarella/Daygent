@@ -5,11 +5,15 @@ import { useRepositories } from "../useRepositories";
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
-vi.mock("../useOrganization", () => ({
-  useOrganization: vi.fn(() => ({
-    activeOrganization: {
+vi.mock("@/stores/workspace.store", () => ({
+  useWorkspaceStore: vi.fn(() => ({
+    currentWorkspace: {
       id: "org-123",
-      name: "Test Org",
+      name: "Test Workspace",
+      slug: "test-workspace",
+      created_by: "user-123",
+      created_at: "2024-01-01T00:00:00Z",
+      updated_at: "2024-01-01T00:00:00Z",
     },
   })),
 }));
