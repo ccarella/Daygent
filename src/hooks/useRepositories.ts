@@ -82,11 +82,7 @@ export function useRepositories(): UseRepositoriesReturn {
         setIsLoading(false);
       }
     },
-<<<<<<< HEAD
-    [activeWorkspace, searchQuery],
-=======
     [currentWorkspace, searchQuery],
->>>>>>> origin/feature/issue-119-workspace-store-state-management
   );
 
   const toggleRepoSelection = useCallback((repoId: number) => {

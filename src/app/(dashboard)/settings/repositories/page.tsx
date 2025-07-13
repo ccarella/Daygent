@@ -103,11 +103,7 @@ export default function RepositoriesPage() {
     fetchRepositories(newPage);
   };
 
-<<<<<<< HEAD
-  if (!activeWorkspace) {
-=======
   if (!currentWorkspace) {
->>>>>>> origin/feature/issue-119-workspace-store-state-management
     return (
       <div className="container mx-auto py-8">
         <Alert className="border-destructive">
@@ -134,11 +130,7 @@ export default function RepositoriesPage() {
         <div>
           <h1 className="text-3xl font-bold">Connect Repositories</h1>
           <p className="text-muted-foreground mt-2">
-<<<<<<< HEAD
-            Select GitHub repositories to connect to {activeWorkspace.name}
-=======
             Select GitHub repositories to connect to {currentWorkspace.name}
->>>>>>> origin/feature/issue-119-workspace-store-state-management
           </p>
         </div>
         <Button
