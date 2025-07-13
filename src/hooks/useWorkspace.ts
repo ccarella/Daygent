@@ -6,13 +6,15 @@ import type { Workspace } from "@/types/workspace";
 const supabase = createClient();
 
 export function useWorkspace() {
-  const { user, activeWorkspace, setActiveWorkspace } = useAuthStore();
+  const { user } = useAuthStore();
+  const [activeWorkspace, setActiveWorkspace] = useState<Workspace | null>(null);
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (!user) {
       setWorkspaces([]);
+      setActiveWorkspace(null);
       setIsLoading(false);
       return;
     }
@@ -63,11 +65,21 @@ export function useWorkspace() {
     }
   };
 
+  const handleSetActiveWorkspace = (workspace: Workspace | null) => {
+    setActiveWorkspace(workspace);
+    // Store in localStorage for persistence
+    if (workspace) {
+      localStorage.setItem("activeWorkspaceId", workspace.id);
+    } else {
+      localStorage.removeItem("activeWorkspaceId");
+    }
+  };
+
   return {
     activeWorkspace,
     workspaces,
     isLoading,
-    setActiveWorkspace,
+    setActiveWorkspace: handleSetActiveWorkspace,
     reload: loadWorkspaces,
   };
 }
