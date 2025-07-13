@@ -61,6 +61,19 @@ export async function POST(request: NextRequest) {
             );
           },
         },
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+          detectSessionInUrl: false,
+        },
+        db: {
+          schema: 'public',
+        },
+        global: {
+          headers: {
+            'x-my-custom-header': 'daygent-api',
+          },
+        },
       }
     );
 
