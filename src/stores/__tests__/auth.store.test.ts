@@ -1,11 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 
-// Create a mock module first
+// Mock the Supabase client module
 vi.mock("@/lib/supabase/client", () => {
   const mockSignInWithOAuth = vi.fn();
   const mockSignOut = vi.fn();
   const mockGetUser = vi.fn();
+  const mockGetSession = vi.fn();
   const mockFrom = vi.fn();
   const mockOnAuthStateChange = vi.fn(() => ({
     data: {
@@ -15,35 +16,41 @@ vi.mock("@/lib/supabase/client", () => {
     },
   }));
 
-  return {
-    createClient: vi.fn(() => ({
-      auth: {
-        signInWithOAuth: mockSignInWithOAuth,
-        signOut: mockSignOut,
-        getUser: mockGetUser,
-        onAuthStateChange: mockOnAuthStateChange,
-      },
-      from: mockFrom,
-    })),
-    // Export the mocks so we can access them
-    __mocks__: {
-      mockSignInWithOAuth,
-      mockSignOut,
-      mockGetUser,
-      mockFrom,
-      mockOnAuthStateChange,
+  const mockSupabaseClient = {
+    auth: {
+      signInWithOAuth: mockSignInWithOAuth,
+      signOut: mockSignOut,
+      getUser: mockGetUser,
+      getSession: mockGetSession,
+      onAuthStateChange: mockOnAuthStateChange,
     },
+    from: mockFrom,
+  };
+
+  return {
+    createClient: vi.fn(() => mockSupabaseClient),
+    // Export mocks for test access
+    __mockSignInWithOAuth: mockSignInWithOAuth,
+    __mockSignOut: mockSignOut,
+    __mockGetUser: mockGetUser,
+    __mockGetSession: mockGetSession,
+    __mockFrom: mockFrom,
+    __mockOnAuthStateChange: mockOnAuthStateChange,
   };
 });
 
 // Import after mocking
 import { useAuthStore } from "../auth.store";
-import { createClient } from "@/lib/supabase/client";
+import * as supabaseClient from "@/lib/supabase/client";
 
-// Get the mocks
- 
-const { __mocks__ } = createClient as any;
-const { mockSignInWithOAuth, mockSignOut, mockGetUser, mockFrom } = __mocks__;
+// Get the mock functions
+const {
+  __mockSignInWithOAuth: mockSignInWithOAuth,
+  __mockSignOut: mockSignOut,
+  __mockGetUser: mockGetUser,
+  __mockGetSession: mockGetSession,
+  __mockFrom: mockFrom,
+} = supabaseClient as any;
 
 // Helper function to create a test user with all required properties
 const createTestUser = (overrides = {}) => ({
@@ -80,7 +87,7 @@ describe("Auth Store", () => {
     expect(result.current.error).toBeNull();
   });
 
-  it("should handle OAuth login", async () => {
+  it("should handle OAuth login without redirectTo (backward compatibility)", async () => {
     mockSignInWithOAuth.mockResolvedValue({
       data: { url: "https://github.com/login", provider: "github" },
       error: null,
@@ -99,14 +106,61 @@ describe("Auth Store", () => {
         scopes: "repo read:user user:email",
       },
     });
+    // Should not have next parameter when no redirectTo is provided
+    expect(
+      mockSignInWithOAuth.mock.calls[0][0].options.redirectTo,
+    ).not.toContain("next=");
+  });
+
+  it("should handle OAuth login with redirectTo parameter", async () => {
+    mockSignInWithOAuth.mockResolvedValue({
+      data: { url: "https://github.com/login", provider: "github" },
+      error: null,
+    });
+
+    const { result } = renderHook(() => useAuthStore());
+
+    await act(async () => {
+      await result.current.login("/dashboard");
+    });
+
+    expect(mockSignInWithOAuth).toHaveBeenCalledWith({
+      provider: "github",
+      options: {
+        redirectTo: expect.stringContaining("/auth/callback?next=%2Fdashboard"),
+        scopes: "repo read:user user:email",
+      },
+    });
+  });
+
+  it("should properly encode redirectTo parameter", async () => {
+    mockSignInWithOAuth.mockResolvedValue({
+      data: { url: "https://github.com/login", provider: "github" },
+      error: null,
+    });
+
+    const { result } = renderHook(() => useAuthStore());
+
+    await act(async () => {
+      await result.current.login("/settings?tab=profile");
+    });
+
+    // The URL should be properly encoded
+    expect(mockSignInWithOAuth).toHaveBeenCalledWith({
+      provider: "github",
+      options: {
+        redirectTo: expect.stringContaining(
+          "/auth/callback?next=%2Fsettings%3Ftab%3Dprofile",
+        ),
+        scopes: "repo read:user user:email",
+      },
+    });
   });
 
   it("should handle login error", async () => {
     const mockError = new Error("OAuth failed");
     mockSignInWithOAuth.mockResolvedValue({
-       
       data: null as any,
-       
       error: mockError as any,
     });
 
@@ -167,7 +221,7 @@ describe("Auth Store", () => {
       createTestUser({
         name: "Updated Name",
         avatar_url: "https://example.com/avatar.jpg",
-      })
+      }),
     );
   });
 
@@ -189,8 +243,12 @@ describe("Auth Store", () => {
       github_username: "testuser",
     };
 
+    mockGetSession.mockResolvedValue({
+      data: { session: { expires_at: Date.now() / 1000 + 3600 } },
+      error: null,
+    });
+
     mockGetUser.mockResolvedValue({
-       
       data: { user: mockUser as any },
       error: null,
     });
@@ -198,7 +256,12 @@ describe("Auth Store", () => {
     mockFrom.mockReturnValue({
       select: vi.fn().mockReturnValue({
         eq: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({ data: mockProfile, error: null }),
+          maybeSingle: vi
+            .fn()
+            .mockResolvedValue({ data: mockProfile, error: null }),
+          limit: vi.fn().mockReturnValue({
+            single: vi.fn().mockResolvedValue({ data: null, error: null }),
+          }),
         }),
       }),
     });
@@ -216,7 +279,7 @@ describe("Auth Store", () => {
         avatar_url: "https://example.com/avatar.jpg",
         github_id: 12345,
         github_username: "testuser",
-      })
+      }),
     );
     expect(result.current.isAuthenticated).toBe(true);
   });

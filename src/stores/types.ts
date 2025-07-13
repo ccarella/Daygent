@@ -15,7 +15,7 @@ export interface AuthState {
 export interface AuthActions {
   setUser: (user: User | null) => void;
   setActiveWorkspace: (workspace: Workspace | null) => void;
-  login: () => Promise<void>;
+  login: (redirectTo?: string) => Promise<void>;
   logout: () => Promise<void>;
   updateUser: (updates: Partial<User>) => void;
   clearError: () => void;
