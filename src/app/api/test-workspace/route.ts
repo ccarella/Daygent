@@ -56,24 +56,37 @@ export async function GET() {
       }
     );
 
-    // Test organization creation using the database function
-    const testSlug = `test-org-${Date.now()}`;
-    const { data: orgData, error: orgError } = await serviceRoleClient.rpc(
-      'create_organization_with_owner',
+    // Test workspace creation using the database function
+    const testSlug = `test-workspace-${Date.now()}`;
+    const { data: workspaceId, error: workspaceError } = await serviceRoleClient.rpc(
+      'create_workspace_with_member',
       {
-        p_name: "Test Organization",
+        p_name: "Test Workspace",
         p_slug: testSlug,
-        p_description: "Test organization created for debugging",
         p_user_id: user.id,
       }
     );
 
-    const organization = orgData?.[0];
-
-    if (orgError || !organization) {
+    if (workspaceError || !workspaceId) {
       return NextResponse.json({ 
-        error: "Failed to create organization",
-        details: orgError,
+        error: "Failed to create workspace",
+        details: workspaceError,
+        hasServiceKey,
+        serviceKeyPreview 
+      }, { status: 500 });
+    }
+
+    // Get the created workspace
+    const { data: workspace, error: fetchError } = await serviceRoleClient
+      .from("workspaces")
+      .select("*")
+      .eq("id", workspaceId)
+      .single();
+
+    if (fetchError || !workspace) {
+      return NextResponse.json({ 
+        error: "Workspace created but failed to fetch details",
+        details: fetchError,
         hasServiceKey,
         serviceKeyPreview 
       }, { status: 500 });
@@ -81,7 +94,7 @@ export async function GET() {
 
     return NextResponse.json({ 
       success: true,
-      organization,
+      workspace,
       hasServiceKey,
       serviceKeyPreview,
       userId: user.id 

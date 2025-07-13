@@ -12,10 +12,7 @@ import {
 import type { Database } from "@/lib/database.types";
 
 type Issue = Database["public"]["Tables"]["issues"]["Row"] & {
-  project: { id: string; name: string } | null;
   repository: { id: string; name: string; full_name: string } | null;
-  assigned_user: { id: string; name: string; avatar_url: string | null } | null;
-  created_user: { id: string; name: string; avatar_url: string | null } | null;
 };
 
 interface IssueListProps {

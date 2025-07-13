@@ -53,7 +53,7 @@ describe("Middleware - Onboarding Flow", () => {
     expect(NextResponse.redirect).not.toHaveBeenCalled();
   });
 
-  it("redirects to /onboarding if authenticated user has no organization", async () => {
+  it("redirects to /onboarding if authenticated user has no workspace", async () => {
     const mockUser = { id: "user-123", email: "test@example.com" };
     const mockResponse = {} as NextResponse;
     const mockSupabase = {
@@ -74,14 +74,14 @@ describe("Middleware - Onboarding Flow", () => {
     const request = mockRequest("http://localhost:3000/issues");
     await middleware(request);
 
-    expect(mockSupabase.from).toHaveBeenCalledWith("organization_members");
+    expect(mockSupabase.from).toHaveBeenCalledWith("workspace_members");
     expect(mockSupabase.eq).toHaveBeenCalledWith("user_id", "user-123");
     expect(NextResponse.redirect).toHaveBeenCalledWith(
       new URL("http://localhost:3000/onboarding")
     );
   });
 
-  it("allows access to protected routes if user has organization", async () => {
+  it("allows access to protected routes if user has workspace", async () => {
     const mockUser = { id: "user-123", email: "test@example.com" };
     const mockResponse = {} as NextResponse;
     const mockSupabase = {
@@ -89,7 +89,7 @@ describe("Middleware - Onboarding Flow", () => {
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
       limit: vi.fn().mockResolvedValue({
-        data: [{ organization_id: "org-123" }],
+        data: [{ workspace_id: "workspace-123" }],
         error: null,
       }),
     };
