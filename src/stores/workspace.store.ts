@@ -3,8 +3,8 @@ import { persist } from "zustand/middleware";
 import { createClient } from "@/lib/supabase/client";
 import type { Database } from "@/lib/database.types";
 
-// Using organizations table but aliasing as Workspace for future migration
-type Workspace = Database["public"]["Tables"]["organizations"]["Row"];
+// Using workspaces table
+type Workspace = Database["public"]["Tables"]["workspaces"]["Row"];
 
 interface WorkspaceState {
   // State
@@ -46,12 +46,12 @@ export const useWorkspaceStore = create<WorkspaceState>()(
             return;
           }
 
-          // Get user's workspaces (using organization tables)
+          // Get user's workspaces
           const { data: memberRecords, error } = await supabase
-            .from("organization_members")
+            .from("workspace_members")
             .select(`
-              organization_id,
-              organizations (
+              workspace_id,
+              workspaces (
                 id,
                 name,
                 slug,
@@ -65,8 +65,8 @@ export const useWorkspaceStore = create<WorkspaceState>()(
           if (error) throw error;
 
           const workspaces = memberRecords
-            ?.map(record => record.organizations as unknown as Workspace)
-            .filter(org => org !== null) || [];
+            ?.map(record => record.workspaces as unknown as Workspace)
+            .filter(ws => ws !== null) || [];
 
           set({ workspaces, isLoading: false });
 
@@ -105,27 +105,26 @@ export const useWorkspaceStore = create<WorkspaceState>()(
           
           if (!user) throw new Error("Not authenticated");
 
-          // Call the database function to create workspace with member (using organization function)
-          const { data: workspace, error } = await supabase
-            .rpc("create_organization_with_member", {
+          // Call the database function to create workspace with member
+          const { data: workspaceData, error } = await supabase
+            .rpc("create_workspace_with_owner", {
               p_name: data.name,
               p_slug: data.slug,
               p_user_id: user.id,
             });
 
           if (error) throw error;
-          if (!workspace) throw new Error("Failed to create workspace");
+          if (!workspaceData || !workspaceData[0]) throw new Error("Failed to create workspace");
 
-          // Reload workspaces to get the full object
+          const workspace = workspaceData[0];
+
+          // Reload workspaces to get the full list
           await get().loadWorkspaces();
           
           // Set as current workspace
-          const newWorkspace = get().workspaces.find(w => w.id === workspace);
-          if (newWorkspace) {
-            set({ currentWorkspace: newWorkspace });
-          }
+          set({ currentWorkspace: workspace });
 
-          return newWorkspace!;
+          return workspace;
         } catch (error) {
           console.error("Failed to create workspace:", error);
           set({ 
@@ -146,7 +145,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
           try {
             const supabase = createClient();
             const { data, error } = await supabase
-              .from("organizations")
+              .from("workspaces")
               .select("*")
               .eq("id", workspaceId)
               .single();
