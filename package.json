@@ -20,6 +20,7 @@
     "@anthropic-ai/sdk": "^0.56.0",
     "@apollo/client": "^3.13.8",
     "@hookform/resolvers": "^5.1.1",
+    "@octokit/app": "^16.0.1",
     "@octokit/graphql": "^9.0.1",
     "@octokit/rest": "^22.0.0",
     "@octokit/webhooks-types": "^7.6.1",

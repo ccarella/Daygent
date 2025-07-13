@@ -107,7 +107,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
 
           // Call the database function to create workspace with member
           const { data: workspaceData, error } = await supabase
-            .rpc("create_workspace_with_owner", {
+            .rpc("create_workspace_with_member", {
               p_name: data.name,
               p_slug: data.slug,
               p_user_id: user.id,
@@ -174,7 +174,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         try {
           const supabase = createClient();
           const { data, error } = await supabase
-            .from("organizations")
+            .from("workspaces")
             .select("*")
             .eq("id", currentWorkspace.id)
             .single();
