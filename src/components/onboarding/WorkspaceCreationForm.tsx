@@ -23,8 +23,8 @@ import { toast } from "sonner";
 const formSchema = z.object({
   name: z
     .string()
-    .min(2, "Organization name must be at least 2 characters")
-    .max(50, "Organization name must be less than 50 characters"),
+    .min(2, "Workspace name must be at least 2 characters")
+    .max(50, "Workspace name must be less than 50 characters"),
   slug: z
     .string()
     .min(2, "Slug must be at least 2 characters")
@@ -38,7 +38,7 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
-export function CreateOrganizationForm() {
+export function WorkspaceCreationForm() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingSlug, setIsCheckingSlug] = useState(false);
@@ -86,7 +86,7 @@ export function CreateOrganizationForm() {
 
       setIsCheckingSlug(true);
       try {
-        const response = await fetch(`/api/organizations/check-slug?slug=${encodeURIComponent(slug)}`);
+        const response = await fetch(`/api/workspaces/check-slug?slug=${encodeURIComponent(slug)}`);
         
         if (!response.ok) {
           if (response.status === 401) {
@@ -125,7 +125,7 @@ export function CreateOrganizationForm() {
     setIsLoading(true);
     try {
       // Use API endpoint that has service role access
-      const response = await fetch("/api/organizations", {
+      const response = await fetch("/api/workspaces", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -140,19 +140,19 @@ export function CreateOrganizationForm() {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || "Failed to create organization");
+        throw new Error(result.error || "Failed to create workspace");
       }
 
-      toast.success("Organization created!", {
-        description: "Your workspace is ready. Let's connect your first repository.",
+      toast.success("Workspace created!", {
+        description: "Your workspace is ready. Let's get you started!",
       });
 
-      // Redirect to repository connection
-      router.push("/settings/repositories");
+      // Redirect to welcome slides
+      router.push("/onboarding/welcome");
     } catch (error) {
-      console.error("Error creating organization:", error);
+      console.error("Error creating workspace:", error);
       const errorMessage = error instanceof Error ? error.message : "Something went wrong. Please try again.";
-      toast.error("Error creating organization", {
+      toast.error("Error creating workspace", {
         description: errorMessage,
       });
     } finally {
@@ -168,7 +168,7 @@ export function CreateOrganizationForm() {
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Organization Name</FormLabel>
+              <FormLabel>Workspace Name</FormLabel>
               <FormControl>
                 <Input
                   placeholder="Acme Corp"
@@ -177,7 +177,7 @@ export function CreateOrganizationForm() {
                 />
               </FormControl>
               <FormDescription>
-                The display name for your organization
+                The display name for your workspace
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -215,7 +215,7 @@ export function CreateOrganizationForm() {
                 )}
               </div>
               <FormDescription>
-                Unique identifier for your organization URL
+                Unique identifier for your workspace URL
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -230,7 +230,7 @@ export function CreateOrganizationForm() {
               <FormLabel>Description (optional)</FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="A brief description of your organization"
+                  placeholder="A brief description of your workspace"
                   className="resize-none"
                   rows={3}
                   {...field}
@@ -238,7 +238,7 @@ export function CreateOrganizationForm() {
                 />
               </FormControl>
               <FormDescription>
-                Help others understand what your organization is about
+                Help others understand what your workspace is about
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -247,7 +247,7 @@ export function CreateOrganizationForm() {
 
         <Button type="submit" disabled={isLoading || slugAvailable === false}>
           {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Create Organization
+          Create Workspace
         </Button>
       </form>
     </Form>

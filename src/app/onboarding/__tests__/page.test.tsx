@@ -14,10 +14,10 @@ vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(),
 }));
 
-// Mock the CreateOrganizationForm component
-vi.mock("@/components/onboarding/CreateOrganizationForm", () => ({
-  CreateOrganizationForm: vi.fn(() => (
-    <div data-testid="create-org-form">Create Organization Form</div>
+// Mock the CreateWorkspaceForm component
+vi.mock("@/components/onboarding/CreateWorkspaceForm", () => ({
+  CreateWorkspaceForm: vi.fn(() => (
+    <div data-testid="create-workspace-form">Create Workspace Form</div>
   )),
 }));
 
@@ -32,9 +32,7 @@ describe("OnboardingPage", () => {
       eq: vi.fn().mockReturnThis(),
       limit: vi.fn().mockResolvedValue({ data: [] }),
     };
-    vi.mocked(createClient).mockResolvedValue(
-      mockSupabase as ReturnType<typeof createClient>
-    );
+    vi.mocked(createClient).mockResolvedValue(mockSupabase as any);
 
     // Mock redirect to throw an error to prevent further execution
     vi.mocked(redirect).mockImplementation((url) => {
@@ -46,7 +44,7 @@ describe("OnboardingPage", () => {
     expect(redirect).toHaveBeenCalledWith("/login");
   });
 
-  it("redirects to issues if user already has an organization", async () => {
+  it("redirects to issues if user already has a workspace", async () => {
     const mockUser = { id: "user-123", email: "test@example.com" };
     const mockSupabase = {
       auth: {
@@ -56,12 +54,10 @@ describe("OnboardingPage", () => {
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
       limit: vi.fn().mockResolvedValue({
-        data: [{ organization_id: "org-123" }],
+        data: [{ workspace_id: "workspace-123" }],
       }),
     };
-    vi.mocked(createClient).mockResolvedValue(
-      mockSupabase as ReturnType<typeof createClient>
-    );
+    vi.mocked(createClient).mockResolvedValue(mockSupabase as any);
 
     // Mock redirect to throw an error to prevent further execution
     vi.mocked(redirect).mockImplementation((url) => {
@@ -70,12 +66,12 @@ describe("OnboardingPage", () => {
 
     await expect(OnboardingPage()).rejects.toThrow("Redirecting to /issues");
 
-    expect(mockSupabase.from).toHaveBeenCalledWith("organization_members");
+    expect(mockSupabase.from).toHaveBeenCalledWith("workspace_members");
     expect(mockSupabase.eq).toHaveBeenCalledWith("user_id", "user-123");
     expect(redirect).toHaveBeenCalledWith("/issues");
   });
 
-  it("renders onboarding form if user has no organization", async () => {
+  it("renders onboarding form if user has no workspace", async () => {
     const mockUser = { id: "user-123", email: "test@example.com" };
     const mockSupabase = {
       auth: {
@@ -86,9 +82,7 @@ describe("OnboardingPage", () => {
       eq: vi.fn().mockReturnThis(),
       limit: vi.fn().mockResolvedValue({ data: [] }),
     };
-    vi.mocked(createClient).mockResolvedValue(
-      mockSupabase as ReturnType<typeof createClient>
-    );
+    vi.mocked(createClient).mockResolvedValue(mockSupabase as any);
 
     // Reset redirect mock to not throw
     vi.mocked(redirect).mockReset();
@@ -98,7 +92,9 @@ describe("OnboardingPage", () => {
     const { container } = render(result as React.ReactElement);
 
     expect(container.textContent).toContain("Welcome to Daygent");
-    expect(container.textContent).toContain("Create Your Organization");
-    expect(container.querySelector('[data-testid="create-org-form"]')).toBeTruthy();
+    expect(container.textContent).toContain("Create Your Workspace");
+    expect(
+      container.querySelector('[data-testid="create-workspace-form"]'),
+    ).toBeTruthy();
   });
 });

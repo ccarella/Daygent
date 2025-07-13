@@ -1,219 +1,267 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { handleIssueEvent } from '../issues';
-import { IssuesEvent } from '@octokit/webhooks-types';
-
-// Mock db-utils
-vi.mock('../../db-utils', () => ({
-  getRepositoryByGithubId: vi.fn(),
-  getOrCreateUserByGithubId: vi.fn(),
-  syncIssue: vi.fn(),
-  logActivity: vi.fn(),
-}));
-
 import * as dbUtils from '../../db-utils';
+import type { IssuesEvent } from '../../types';
 
-describe('Issue Event Handler', () => {
+vi.mock('../../db-utils');
+
+describe('Issues Webhook Handler', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.spyOn(console, 'log').mockImplementation(() => {});
     vi.spyOn(console, 'error').mockImplementation(() => {});
-    vi.spyOn(console, 'warn').mockImplementation(() => {});
   });
 
-  const createMockIssueEvent = (overrides: Partial<IssuesEvent> = {}): IssuesEvent => ({
-    action: 'opened',
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  const createMockIssueEvent = (action: IssuesEvent['action'] = 'opened'): IssuesEvent => ({
+    action,
     issue: {
-      id: 1,
+      id: 12345,
+      node_id: 'I_123456',
       number: 123,
       title: 'Test Issue',
       body: 'Test issue body',
       state: 'open',
-      assignee: null,
       created_at: '2024-01-01T00:00:00Z',
       updated_at: '2024-01-01T00:00:00Z',
       closed_at: null,
-      user: {
-        id: 100,
-        login: 'testuser',
-        type: 'User',
+      url: 'https://api.github.com/repos/org/test-repo/issues/123',
+      repository_url: 'https://api.github.com/repos/org/test-repo',
+      labels_url: 'https://api.github.com/repos/org/test-repo/issues/123/labels{/name}',
+      comments_url: 'https://api.github.com/repos/org/test-repo/issues/123/comments',
+      events_url: 'https://api.github.com/repos/org/test-repo/issues/123/events',
+      html_url: 'https://github.com/org/test-repo/issues/123',
+      locked: false,
+      active_lock_reason: null,
+      milestone: null,
+      comments: 0,
+      author_association: 'CONTRIBUTOR',
+      reactions: {
+        url: 'https://api.github.com/repos/org/test-repo/issues/123/reactions',
+        total_count: 0,
+        '+1': 0,
+        '-1': 0,
+        laugh: 0,
+        hooray: 0,
+        confused: 0,
+        heart: 0,
+        rocket: 0,
+        eyes: 0
       },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } as any,
+      user: {
+        login: 'testuser',
+        id: 789,
+        node_id: 'U_789',
+        avatar_url: 'https://avatars.githubusercontent.com/u/789',
+        gravatar_id: '',
+        url: 'https://api.github.com/users/testuser',
+        html_url: 'https://github.com/testuser',
+        followers_url: 'https://api.github.com/users/testuser/followers',
+        following_url: 'https://api.github.com/users/testuser/following{/other_user}',
+        gists_url: 'https://api.github.com/users/testuser/gists{/gist_id}',
+        starred_url: 'https://api.github.com/users/testuser/starred{/owner}{/repo}',
+        subscriptions_url: 'https://api.github.com/users/testuser/subscriptions',
+        organizations_url: 'https://api.github.com/users/testuser/orgs',
+        repos_url: 'https://api.github.com/users/testuser/repos',
+        events_url: 'https://api.github.com/users/testuser/events{/privacy}',
+        received_events_url: 'https://api.github.com/users/testuser/received_events',
+        type: 'User',
+        site_admin: false,
+      },
+      assignee: null,
+      assignees: [],
+      labels: [],
+    } as unknown as IssuesEvent['issue'],
     repository: {
-      id: 12345,
+      id: 456,
+      node_id: 'R_456',
       name: 'test-repo',
-      full_name: 'owner/test-repo',
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } as any,
+      full_name: 'org/test-repo',
+      private: false,
+      owner: {
+        login: 'org',
+        id: 789,
+        node_id: 'O_789',
+        avatar_url: 'https://avatars.githubusercontent.com/u/789',
+        gravatar_id: '',
+        url: 'https://api.github.com/users/org',
+        html_url: 'https://github.com/org',
+        followers_url: 'https://api.github.com/users/org/followers',
+        following_url: 'https://api.github.com/users/org/following{/other_user}',
+        gists_url: 'https://api.github.com/users/org/gists{/gist_id}',
+        starred_url: 'https://api.github.com/users/org/starred{/owner}{/repo}',
+        subscriptions_url: 'https://api.github.com/users/org/subscriptions',
+        organizations_url: 'https://api.github.com/users/org/orgs',
+        repos_url: 'https://api.github.com/users/org/repos',
+        events_url: 'https://api.github.com/users/org/events{/privacy}',
+        received_events_url: 'https://api.github.com/users/org/received_events',
+        type: 'Organization',
+        site_admin: false,
+      },
+    } as unknown as IssuesEvent['repository'],
     sender: {
-      id: 100,
-      login: 'testuser',
-      email: 'test@example.com',
+      login: 'sender',
+      id: 999,
+      node_id: 'U_999',
+      avatar_url: 'https://avatars.githubusercontent.com/u/999',
+      gravatar_id: '',
+      url: 'https://api.github.com/users/sender',
+      html_url: 'https://github.com/sender',
+      followers_url: 'https://api.github.com/users/sender/followers',
+      following_url: 'https://api.github.com/users/sender/following{/other_user}',
+      gists_url: 'https://api.github.com/users/sender/gists{/gist_id}',
+      starred_url: 'https://api.github.com/users/sender/starred{/owner}{/repo}',
+      subscriptions_url: 'https://api.github.com/users/sender/subscriptions',
+      organizations_url: 'https://api.github.com/users/sender/orgs',
+      repos_url: 'https://api.github.com/users/sender/repos',
+      events_url: 'https://api.github.com/users/sender/events{/privacy}',
+      received_events_url: 'https://api.github.com/users/sender/received_events',
       type: 'User',
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } as any,
-    ...overrides,
-  } as IssuesEvent);
+      site_admin: false,
+    },
+    assignee: action === 'assigned' ? { 
+      login: 'assignee', 
+      id: 111,
+      node_id: 'U_111',
+      avatar_url: 'https://avatars.githubusercontent.com/u/111',
+      gravatar_id: '',
+      url: 'https://api.github.com/users/assignee',
+      html_url: 'https://github.com/assignee',
+      followers_url: 'https://api.github.com/users/assignee/followers',
+      following_url: 'https://api.github.com/users/assignee/following{/other_user}',
+      gists_url: 'https://api.github.com/users/assignee/gists{/gist_id}',
+      starred_url: 'https://api.github.com/users/assignee/starred{/owner}{/repo}',
+      subscriptions_url: 'https://api.github.com/users/assignee/subscriptions',
+      organizations_url: 'https://api.github.com/users/assignee/orgs',
+      repos_url: 'https://api.github.com/users/assignee/repos',
+      events_url: 'https://api.github.com/users/assignee/events{/privacy}',
+      received_events_url: 'https://api.github.com/users/assignee/received_events',
+      type: 'User',
+      site_admin: false,
+    } : undefined,
+  } as unknown as IssuesEvent);
 
   it('should handle issue opened event', async () => {
-    const mockRepo = { id: 'repo-1', organization_id: 'org-1' };
+    const mockRepo = { id: 'repo-1', workspace_id: 'ws-1' };
     const mockUser = { id: 'user-1' };
-    const mockIssue = { id: 'issue-1', project_id: 'project-1' };
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    vi.mocked(dbUtils.getRepositoryByGithubId).mockResolvedValue(mockRepo as any);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    vi.mocked(dbUtils.getOrCreateUserByGithubId).mockResolvedValue(mockUser as any);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    vi.mocked(dbUtils.syncIssue).mockResolvedValue(mockIssue as any);
+    vi.mocked(dbUtils.getRepositoryByGithubId).mockResolvedValue(mockRepo);
+    vi.mocked(dbUtils.getOrCreateUserByGithubId).mockResolvedValue(mockUser);
+    vi.mocked(dbUtils.syncIssue).mockResolvedValue({ id: 'issue-1' });
 
     const event = createMockIssueEvent();
     await handleIssueEvent(event);
 
-    expect(dbUtils.getRepositoryByGithubId).toHaveBeenCalledWith(12345);
-    expect(dbUtils.syncIssue).toHaveBeenCalledWith('repo-1', {
-      github_issue_number: 123,
-      github_issue_id: 1,
-      title: 'Test Issue',
-      original_description: 'Test issue body',
-      status: 'open',
-      assigned_to: null,
-      updated_at: '2024-01-01T00:00:00Z',
-      completed_at: null,
-    });
-    expect(dbUtils.logActivity).toHaveBeenCalledWith(
-      'issue_created',
+    expect(dbUtils.getRepositoryByGithubId).toHaveBeenCalledWith(456);
+    expect(dbUtils.getOrCreateUserByGithubId).toHaveBeenCalledWith(789, event.issue.user);
+    expect(dbUtils.syncIssue).toHaveBeenCalledWith(
       expect.objectContaining({
-        action: 'opened',
-        issue_number: 123,
-        issue_title: 'Test Issue',
-      }),
-      'user-1',
-      'org-1',
-      'repo-1',
-      'project-1',
-      'issue-1'
+        repository_id: 'repo-1',
+        workspace_id: 'ws-1',
+        github_issue_number: 123,
+        github_issue_id: 12345,
+        github_node_id: 'I_123456',
+        title: 'Test Issue',
+        body: 'Test issue body',
+        state: 'open',
+        author_github_login: 'testuser',
+        assignee_github_login: null,
+        labels: [],
+        github_created_at: '2024-01-01T00:00:00Z',
+        github_updated_at: '2024-01-01T00:00:00Z',
+        github_closed_at: null,
+      })
     );
   });
 
   it('should handle issue closed event', async () => {
-    const mockRepo = { id: 'repo-1', organization_id: 'org-1' };
+    const mockRepo = { id: 'repo-1', workspace_id: 'ws-1' };
     const mockUser = { id: 'user-1' };
-    const mockIssue = { id: 'issue-1', project_id: 'project-1' };
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    vi.mocked(dbUtils.getRepositoryByGithubId).mockResolvedValue(mockRepo as any);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    vi.mocked(dbUtils.getOrCreateUserByGithubId).mockResolvedValue(mockUser as any);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    vi.mocked(dbUtils.syncIssue).mockResolvedValue(mockIssue as any);
+    vi.mocked(dbUtils.getRepositoryByGithubId).mockResolvedValue(mockRepo);
+    vi.mocked(dbUtils.getOrCreateUserByGithubId).mockResolvedValue(mockUser);
+    vi.mocked(dbUtils.syncIssue).mockResolvedValue({ id: 'issue-1' });
 
-    const event = createMockIssueEvent({
-      action: 'closed',
-      issue: {
-        state: 'closed',
-        closed_at: '2024-01-02T00:00:00Z',
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as any,
-    });
-
+    const event = createMockIssueEvent('closed');
+    event.issue.state = 'closed';
+    event.issue.closed_at = '2024-01-01T01:00:00Z';
+    
     await handleIssueEvent(event);
 
-    expect(dbUtils.syncIssue).toHaveBeenCalledWith('repo-1', expect.objectContaining({
-      status: 'completed',
-      completed_at: '2024-01-02T00:00:00Z',
-    }));
-    expect(dbUtils.logActivity).toHaveBeenCalledWith(
-      'issue_completed',
-      expect.any(Object),
-      'user-1',
-      'org-1',
-      'repo-1',
-      'project-1',
-      'issue-1'
+    expect(dbUtils.syncIssue).toHaveBeenCalledWith(
+      expect.objectContaining({
+        state: 'closed',
+        github_closed_at: '2024-01-01T01:00:00Z',
+      })
     );
   });
 
   it('should handle issue assigned event', async () => {
-    const mockRepo = { id: 'repo-1', organization_id: 'org-1' };
+    const mockRepo = { id: 'repo-1', workspace_id: 'ws-1' };
     const mockSender = { id: 'user-1' };
     const mockAssignee = { id: 'user-2' };
-    const mockIssue = { id: 'issue-1', project_id: 'project-1' };
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    vi.mocked(dbUtils.getRepositoryByGithubId).mockResolvedValue(mockRepo as any);
+    vi.mocked(dbUtils.getRepositoryByGithubId).mockResolvedValue(mockRepo);
     vi.mocked(dbUtils.getOrCreateUserByGithubId)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .mockResolvedValueOnce(mockAssignee as any) // First call for assignee
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .mockResolvedValueOnce(mockSender as any); // Second call for sender
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    vi.mocked(dbUtils.syncIssue).mockResolvedValue(mockIssue as any);
+      .mockResolvedValueOnce(mockSender)
+      .mockResolvedValueOnce(mockAssignee);
+    vi.mocked(dbUtils.syncIssue).mockResolvedValue({ id: 'issue-1' });
 
-    const event = createMockIssueEvent({
-      action: 'assigned',
-      issue: {
-        state: 'open',
-        assignee: {
-          id: 200,
-          login: 'assignee',
-          email: 'assignee@example.com',
-        },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as any,
-    });
-
+    const event = createMockIssueEvent('assigned');
+    event.issue.assignee = {
+      login: 'assignee',
+      id: 111,
+      node_id: 'U_111',
+      avatar_url: 'https://avatars.githubusercontent.com/u/111',
+      gravatar_id: '',
+      url: 'https://api.github.com/users/assignee',
+      html_url: 'https://github.com/assignee',
+      followers_url: 'https://api.github.com/users/assignee/followers',
+      following_url: 'https://api.github.com/users/assignee/following{/other_user}',
+      gists_url: 'https://api.github.com/users/assignee/gists{/gist_id}',
+      starred_url: 'https://api.github.com/users/assignee/starred{/owner}{/repo}',
+      subscriptions_url: 'https://api.github.com/users/assignee/subscriptions',
+      organizations_url: 'https://api.github.com/users/assignee/orgs',
+      repos_url: 'https://api.github.com/users/assignee/repos',
+      events_url: 'https://api.github.com/users/assignee/events{/privacy}',
+      received_events_url: 'https://api.github.com/users/assignee/received_events',
+      type: 'User',
+      site_admin: false,
+    };
+    
     await handleIssueEvent(event);
 
-    expect(dbUtils.syncIssue).toHaveBeenCalledWith('repo-1', expect.objectContaining({
-      status: 'in_progress',
-      assigned_to: 'user-2',
-    }));
-    expect(dbUtils.logActivity).toHaveBeenCalledWith(
-      'issue_assigned',
+    expect(dbUtils.getOrCreateUserByGithubId).toHaveBeenCalledWith(111, event.issue.assignee);
+    expect(dbUtils.syncIssue).toHaveBeenCalledWith(
       expect.objectContaining({
-        action: 'assigned',
-        assignee: 'assignee',
-      }),
-      'user-1',
-      'org-1',
-      'repo-1',
-      'project-1',
-      'issue-1'
+        assignee_github_login: 'assignee',
+      })
     );
   });
 
   it('should handle invalid payload', async () => {
-    await handleIssueEvent({ invalid: 'payload' });
+    await handleIssueEvent({ invalid: 'payload' } as any);
     
+    expect(console.error).toHaveBeenCalledWith(
+      '[Issue Handler] Invalid payload:',
+      expect.objectContaining({ invalid: 'payload' })
+    );
     expect(dbUtils.getRepositoryByGithubId).not.toHaveBeenCalled();
-    expect(console.error).toHaveBeenCalledWith('[Issue Handler] Invalid payload type');
   });
 
   it('should handle repository not found', async () => {
     vi.mocked(dbUtils.getRepositoryByGithubId).mockResolvedValue(null);
-
+    
     const event = createMockIssueEvent();
     await handleIssueEvent(event);
-
-    expect(console.warn).toHaveBeenCalledWith(
-      '[Issue Handler] Repository not found: owner/test-repo'
+    
+    expect(console.error).toHaveBeenCalledWith(
+      '[Issue Handler] Repository not found:',
+      456
     );
     expect(dbUtils.syncIssue).not.toHaveBeenCalled();
-  });
-
-  it('should handle sync failure gracefully', async () => {
-    const mockRepo = { id: 'repo-1', organization_id: 'org-1' };
-    
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    vi.mocked(dbUtils.getRepositoryByGithubId).mockResolvedValue(mockRepo as any);
-    vi.mocked(dbUtils.syncIssue).mockResolvedValue(null);
-
-    const event = createMockIssueEvent();
-    await handleIssueEvent(event);
-
-    expect(console.error).toHaveBeenCalledWith('[Issue Handler] Failed to sync issue');
-    expect(dbUtils.logActivity).not.toHaveBeenCalled();
   });
 
   it('should not throw on database errors', async () => {

@@ -14,15 +14,17 @@ vi.mock("@supabase/ssr", () => ({
 }));
 
 vi.mock("next/headers", () => ({
-  cookies: vi.fn(() => Promise.resolve({
-    get: vi.fn(),
-    set: vi.fn(),
-    delete: vi.fn(),
-    getAll: vi.fn(() => []),
-  })),
+  cookies: vi.fn(() =>
+    Promise.resolve({
+      get: vi.fn(),
+      set: vi.fn(),
+      delete: vi.fn(),
+      getAll: vi.fn(() => []),
+    }),
+  ),
 }));
 
-describe("GET /api/organizations/check-slug", () => {
+describe("GET /api/workspaces/check-slug", () => {
   const mockAuthClient = {
     auth: {
       getUser: vi.fn(),
@@ -50,12 +52,14 @@ describe("GET /api/organizations/check-slug", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(createClient).mockResolvedValue(mockAuthClient as ReturnType<typeof createClient>);
-    vi.mocked(createServerClient).mockReturnValue(mockServiceClient as ReturnType<typeof createServerClient>);
+    vi.mocked(createClient).mockResolvedValue(mockAuthClient as any);
+    vi.mocked(createServerClient).mockReturnValue(mockServiceClient as any);
   });
 
   it("should return 400 if slug is missing", async () => {
-    const request = new NextRequest("http://localhost:3000/api/organizations/check-slug");
+    const request = new NextRequest(
+      "http://localhost:3000/api/workspaces/check-slug",
+    );
     const response = await GET(request);
     const data = await response.json();
 
@@ -64,7 +68,9 @@ describe("GET /api/organizations/check-slug", () => {
   });
 
   it("should return 400 if slug is too short", async () => {
-    const request = new NextRequest("http://localhost:3000/api/organizations/check-slug?slug=a");
+    const request = new NextRequest(
+      "http://localhost:3000/api/workspaces/check-slug?slug=a",
+    );
     const response = await GET(request);
     const data = await response.json();
 
@@ -73,7 +79,9 @@ describe("GET /api/organizations/check-slug", () => {
   });
 
   it("should return 400 for invalid slug format", async () => {
-    const request = new NextRequest("http://localhost:3000/api/organizations/check-slug?slug=Test-Org");
+    const request = new NextRequest(
+      "http://localhost:3000/api/workspaces/check-slug?slug=Test-Org",
+    );
     const response = await GET(request);
     const data = await response.json();
 
@@ -87,7 +95,9 @@ describe("GET /api/organizations/check-slug", () => {
       error: new Error("Unauthorized"),
     });
 
-    const request = new NextRequest("http://localhost:3000/api/organizations/check-slug?slug=test-org");
+    const request = new NextRequest(
+      "http://localhost:3000/api/workspaces/check-slug?slug=test-org",
+    );
     const response = await GET(request);
     const data = await response.json();
 
@@ -106,13 +116,15 @@ describe("GET /api/organizations/check-slug", () => {
       error: null,
     });
 
-    const request = new NextRequest("http://localhost:3000/api/organizations/check-slug?slug=new-org");
+    const request = new NextRequest(
+      "http://localhost:3000/api/workspaces/check-slug?slug=new-org",
+    );
     const response = await GET(request);
     const data = await response.json();
 
     expect(response.status).toBe(200);
     expect(data.available).toBe(true);
-    expect(mockServiceClient.from).toHaveBeenCalledWith("organizations");
+    expect(mockServiceClient.from).toHaveBeenCalledWith("workspaces");
     expect(mockServiceClient.eq).toHaveBeenCalledWith("slug", "new-org");
   });
 
@@ -127,7 +139,9 @@ describe("GET /api/organizations/check-slug", () => {
       error: null,
     });
 
-    const request = new NextRequest("http://localhost:3000/api/organizations/check-slug?slug=existing-org");
+    const request = new NextRequest(
+      "http://localhost:3000/api/workspaces/check-slug?slug=existing-org",
+    );
     const response = await GET(request);
     const data = await response.json();
 
@@ -146,7 +160,9 @@ describe("GET /api/organizations/check-slug", () => {
       error: new Error("Database error"),
     });
 
-    const request = new NextRequest("http://localhost:3000/api/organizations/check-slug?slug=test-org");
+    const request = new NextRequest(
+      "http://localhost:3000/api/workspaces/check-slug?slug=test-org",
+    );
     const response = await GET(request);
     const data = await response.json();
 
@@ -166,9 +182,17 @@ describe("GET /api/organizations/check-slug", () => {
     });
 
     // Valid slugs
-    const validSlugs = ["test", "test-org", "my-awesome-org", "org123", "123org"];
+    const validSlugs = [
+      "test",
+      "test-workspace",
+      "my-awesome-workspace",
+      "workspace123",
+      "123workspace",
+    ];
     for (const slug of validSlugs) {
-      const request = new NextRequest(`http://localhost:3000/api/organizations/check-slug?slug=${slug}`);
+      const request = new NextRequest(
+        `http://localhost:3000/api/workspaces/check-slug?slug=${slug}`,
+      );
       const response = await GET(request);
       const data = await response.json();
       expect(response.status).toBe(200);
@@ -176,9 +200,18 @@ describe("GET /api/organizations/check-slug", () => {
     }
 
     // Invalid slugs
-    const invalidSlugs = ["Test", "test org", "test_org", "test-", "-test", "test--org"];
+    const invalidSlugs = [
+      "Test",
+      "test org",
+      "test_org",
+      "test-",
+      "-test",
+      "test--org",
+    ];
     for (const slug of invalidSlugs) {
-      const request = new NextRequest(`http://localhost:3000/api/organizations/check-slug?slug=${slug}`);
+      const request = new NextRequest(
+        `http://localhost:3000/api/workspaces/check-slug?slug=${slug}`,
+      );
       const response = await GET(request);
       const data = await response.json();
       expect(response.status).toBe(400);

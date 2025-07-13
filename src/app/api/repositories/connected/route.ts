@@ -4,11 +4,11 @@ import { createClient } from "@/lib/supabase/server";
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
-    const organization_id = searchParams.get("organization_id");
+    const workspace_id = searchParams.get("workspace_id");
 
-    if (!organization_id) {
+    if (!workspace_id) {
       return NextResponse.json(
-        { error: "Organization ID is required" },
+        { error: "Workspace ID is required" },
         { status: 400 },
       );
     }
@@ -24,26 +24,26 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Verify user is a member of the organization
+    // Verify user is a member of the workspace
     const { data: memberData, error: memberError } = await supabase
-      .from("organization_members")
-      .select("role")
-      .eq("organization_id", organization_id)
+      .from("workspace_members")
+      .select("user_id")
+      .eq("workspace_id", workspace_id)
       .eq("user_id", user.id)
       .single();
 
     if (memberError || !memberData) {
       return NextResponse.json(
-        { error: "You are not a member of this organization" },
+        { error: "You are not a member of this workspace" },
         { status: 403 },
       );
     }
 
-    // Fetch connected repositories for the organization
+    // Fetch connected repositories for the workspace
     const { data: repositories, error: repoError } = await supabase
       .from("repositories")
       .select("id, name, full_name")
-      .eq("organization_id", organization_id)
+      .eq("workspace_id", workspace_id)
       .order("name", { ascending: true });
 
     if (repoError) {

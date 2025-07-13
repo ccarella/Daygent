@@ -29,14 +29,15 @@ export default async function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6 lg:px-8">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold tracking-tight">
-            Welcome to Daygent
-          </h1>
-          <p className="mt-2 text-lg text-muted-foreground">
-            Let&apos;s set up your workspace to start managing projects
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="max-w-2xl w-full">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold mb-4">Welcome to Daygent</h1>
+          <p className="text-xl text-muted-foreground mb-2">
+            Let's get you set up with your workspace
+          </p>
+          <p className="text-sm text-muted-foreground">
+            This is where you'll manage your GitHub repositories and issues
           </p>
         </div>
 

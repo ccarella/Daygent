@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { CreateOrganizationForm } from "../CreateOrganizationForm";
+import { CreateWorkspaceForm } from "../CreateWorkspaceForm";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -25,7 +25,7 @@ vi.mock("sonner", () => ({
 // Mock fetch
 global.fetch = vi.fn();
 
-describe("CreateOrganizationForm", () => {
+describe("CreateWorkspaceForm", () => {
   const mockPush = vi.fn();
   const mockSupabaseClient = {
     from: vi.fn().mockReturnThis(),
@@ -46,122 +46,141 @@ describe("CreateOrganizationForm", () => {
       replace: vi.fn(),
       prefetch: vi.fn(),
     } as ReturnType<typeof useRouter>);
-    vi.mocked(createClient).mockReturnValue(
-      mockSupabaseClient as ReturnType<typeof createClient>
-    );
+    vi.mocked(createClient).mockReturnValue(mockSupabaseClient as any);
   });
 
   it("renders form fields correctly", () => {
-    render(<CreateOrganizationForm />);
+    render(<CreateWorkspaceForm />);
 
-    expect(screen.getByLabelText(/organization name/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/workspace name/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/url slug/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/description/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /create organization/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /create workspace/i }),
+    ).toBeInTheDocument();
   });
 
-  it("auto-generates slug from organization name", async () => {
-    render(<CreateOrganizationForm />);
+  it("auto-generates slug from workspace name", async () => {
+    render(<CreateWorkspaceForm />);
     const user = userEvent.setup();
 
-    const nameInput = screen.getByLabelText(/organization name/i);
+    const nameInput = screen.getByLabelText(/workspace name/i);
     const slugInput = screen.getByLabelText(/url slug/i);
 
-    await user.type(nameInput, "Test Organization");
+    await user.type(nameInput, "Test Workspace");
 
     await waitFor(() => {
-      expect(slugInput).toHaveValue("test-organization");
+      expect(slugInput).toHaveValue("test-workspace");
     });
   });
 
   it("validates form fields", async () => {
-    render(<CreateOrganizationForm />);
+    render(<CreateWorkspaceForm />);
     const user = userEvent.setup();
 
-    const submitButton = screen.getByRole("button", { name: /create organization/i });
+    const submitButton = screen.getByRole("button", {
+      name: /create workspace/i,
+    });
     await user.click(submitButton);
 
     await waitFor(() => {
-      expect(screen.getByText(/organization name must be at least 2 characters/i)).toBeInTheDocument();
-      expect(screen.getByText(/slug must be at least 2 characters/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/workspace name must be at least 2 characters/i),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText(/slug must be at least 2 characters/i),
+      ).toBeInTheDocument();
     });
   });
 
   it("checks slug availability", async () => {
     // Mock slug is available
-    mockSupabaseClient.maybeSingle.mockResolvedValue({ data: null, error: null });
+    mockSupabaseClient.maybeSingle.mockResolvedValue({
+      data: null,
+      error: null,
+    });
 
-    render(<CreateOrganizationForm />);
+    render(<CreateWorkspaceForm />);
     const user = userEvent.setup();
 
     const slugInput = screen.getByLabelText(/url slug/i);
     await user.type(slugInput, "available-slug");
 
     await waitFor(() => {
-      expect(mockSupabaseClient.from).toHaveBeenCalledWith("organizations");
-      expect(mockSupabaseClient.eq).toHaveBeenCalledWith("slug", "available-slug");
+      expect(mockSupabaseClient.from).toHaveBeenCalledWith("workspaces");
+      expect(mockSupabaseClient.eq).toHaveBeenCalledWith(
+        "slug",
+        "available-slug",
+      );
     });
   });
 
   it("shows error when slug is taken", async () => {
     // Mock slug is taken
     mockSupabaseClient.maybeSingle.mockResolvedValue({
-      data: { id: "existing-org" },
+      data: { id: "existing-workspace" },
       error: null,
     });
 
-    render(<CreateOrganizationForm />);
+    render(<CreateWorkspaceForm />);
     const user = userEvent.setup();
 
-    const nameInput = screen.getByLabelText(/organization name/i);
+    const nameInput = screen.getByLabelText(/workspace name/i);
     const slugInput = screen.getByLabelText(/url slug/i);
     await user.type(nameInput, "Test");
     await user.clear(slugInput);
     await user.type(slugInput, "taken-slug");
 
     await waitFor(() => {
-      const submitButton = screen.getByRole("button", { name: /create organization/i });
+      const submitButton = screen.getByRole("button", {
+        name: /create workspace/i,
+      });
       expect(submitButton).toBeDisabled();
     });
   });
 
-  it("creates organization successfully", async () => {
+  it("creates workspace successfully", async () => {
     // Mock slug availability check
-    mockSupabaseClient.maybeSingle.mockResolvedValue({ data: null, error: null });
-    
+    mockSupabaseClient.maybeSingle.mockResolvedValue({
+      data: null,
+      error: null,
+    });
+
     // Mock successful API response
     vi.mocked(fetch).mockResolvedValueOnce({
       ok: true,
       json: async () => ({
-        organization: {
-          id: "new-org-id",
-          name: "New Organization",
-          slug: "new-organization",
-          description: "Test description"
-        }
+        workspace: {
+          id: "new-workspace-id",
+          name: "New Workspace",
+          slug: "new-workspace",
+          description: "Test description",
+        },
       }),
     } as Response);
 
-    render(<CreateOrganizationForm />);
+    render(<CreateWorkspaceForm />);
     const user = userEvent.setup();
 
-    const nameInput = screen.getByLabelText(/organization name/i);
+    const nameInput = screen.getByLabelText(/workspace name/i);
     const descriptionInput = screen.getByLabelText(/description/i);
-    await user.type(nameInput, "New Organization");
+    await user.type(nameInput, "New Workspace");
     await user.type(descriptionInput, "Test description");
 
-    const submitButton = screen.getByRole("button", { name: /create organization/i });
+    const submitButton = screen.getByRole("button", {
+      name: /create workspace/i,
+    });
     await user.click(submitButton);
 
     await waitFor(() => {
-      expect(fetch).toHaveBeenCalledWith("/api/organizations", {
+      expect(fetch).toHaveBeenCalledWith("/api/workspaces", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          name: "New Organization",
-          slug: "new-organization",
+          name: "New Workspace",
+          slug: "new-workspace",
           description: "Test description",
         }),
       });
@@ -169,42 +188,48 @@ describe("CreateOrganizationForm", () => {
 
     await waitFor(() => {
       expect(toast.success).toHaveBeenCalledWith(
-        "Organization created!",
+        "Workspace created!",
         expect.objectContaining({
-          description: "Your workspace is ready. Let's connect your first repository.",
-        })
+          description:
+            "Your workspace is ready. Let's connect your first repository.",
+        }),
       );
       expect(mockPush).toHaveBeenCalledWith("/settings/repositories");
     });
   });
 
-  it("handles organization creation error", async () => {
+  it("handles workspace creation error", async () => {
     // Mock slug availability check
-    mockSupabaseClient.maybeSingle.mockResolvedValue({ data: null, error: null });
-    
+    mockSupabaseClient.maybeSingle.mockResolvedValue({
+      data: null,
+      error: null,
+    });
+
     // Mock error response
     vi.mocked(fetch).mockResolvedValueOnce({
       ok: false,
       json: async () => ({
-        error: "Database error"
+        error: "Database error",
       }),
     } as Response);
 
-    render(<CreateOrganizationForm />);
+    render(<CreateWorkspaceForm />);
     const user = userEvent.setup();
 
-    const nameInput = screen.getByLabelText(/organization name/i);
-    await user.type(nameInput, "Test Organization");
+    const nameInput = screen.getByLabelText(/workspace name/i);
+    await user.type(nameInput, "Test Workspace");
 
-    const submitButton = screen.getByRole("button", { name: /create organization/i });
+    const submitButton = screen.getByRole("button", {
+      name: /create workspace/i,
+    });
     await user.click(submitButton);
 
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith(
-        "Error creating organization",
+        "Error creating workspace",
         expect.objectContaining({
           description: "Database error",
-        })
+        }),
       );
       expect(mockPush).not.toHaveBeenCalled();
     });
@@ -212,23 +237,35 @@ describe("CreateOrganizationForm", () => {
 
   it("disables form during submission", async () => {
     // Mock slug availability check
-    mockSupabaseClient.maybeSingle.mockResolvedValue({ data: null, error: null });
-    
+    mockSupabaseClient.maybeSingle.mockResolvedValue({
+      data: null,
+      error: null,
+    });
+
     // Mock slow API response
     vi.mocked(fetch).mockImplementation(
-      () => new Promise((resolve) => setTimeout(() => resolve({
-        ok: true,
-        json: async () => ({ organization: { id: "org-id" } }),
-      } as Response), 100))
+      () =>
+        new Promise((resolve) =>
+          setTimeout(
+            () =>
+              resolve({
+                ok: true,
+                json: async () => ({ workspace: { id: "workspace-id" } }),
+              } as Response),
+            100,
+          ),
+        ),
     );
 
-    render(<CreateOrganizationForm />);
+    render(<CreateWorkspaceForm />);
     const user = userEvent.setup();
 
-    const nameInput = screen.getByLabelText(/organization name/i);
-    await user.type(nameInput, "Test Organization");
+    const nameInput = screen.getByLabelText(/workspace name/i);
+    await user.type(nameInput, "Test Workspace");
 
-    const submitButton = screen.getByRole("button", { name: /create organization/i });
+    const submitButton = screen.getByRole("button", {
+      name: /create workspace/i,
+    });
     await user.click(submitButton);
 
     // Check that inputs are disabled during submission

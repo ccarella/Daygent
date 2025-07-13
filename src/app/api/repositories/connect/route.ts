@@ -1,10 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getServerGitHubService } from "@/services/github.server";
-import type { InsertRepository } from "@/lib/database.types";
+// Repository type for inserting
+type InsertRepository = {
+  workspace_id: string;
+  github_id: number;
+  name: string;
+  full_name: string;
+  owner: string;
+  private: boolean;
+  default_branch: string;
+};
 
 interface ConnectRepositoryRequest {
-  organization_id: string;
+  workspace_id: string;
   repositories: Array<{
     github_id: number;
     name: string;
@@ -17,9 +26,9 @@ interface ConnectRepositoryRequest {
 export async function POST(request: NextRequest) {
   try {
     const body: ConnectRepositoryRequest = await request.json();
-    const { organization_id, repositories } = body;
+    const { workspace_id, repositories } = body;
 
-    if (!organization_id || !repositories || repositories.length === 0) {
+    if (!workspace_id || !repositories || repositories.length === 0) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 },
@@ -37,15 +46,15 @@ export async function POST(request: NextRequest) {
     }
 
     const { data: memberData, error: memberError } = await supabase
-      .from("organization_members")
-      .select("role")
-      .eq("organization_id", organization_id)
+      .from("workspace_members")
+      .select("id")
+      .eq("workspace_id", workspace_id)
       .eq("user_id", user.id)
       .single();
 
     if (memberError || !memberData) {
       return NextResponse.json(
-        { error: "You are not a member of this organization" },
+        { error: "You are not a member of this workspace" },
         { status: 403 },
       );
     }
@@ -77,10 +86,11 @@ export async function POST(request: NextRequest) {
         }
 
         reposToInsert.push({
-          organization_id,
+          workspace_id,
           github_id: repo.github_id,
           name: repo.name,
           full_name: repo.full_name,
+          owner: repo.full_name.split("/")[0],
           private: repo.private,
           default_branch: repo.default_branch,
         });
@@ -106,7 +116,7 @@ export async function POST(request: NextRequest) {
     const { data: existingRepos } = await supabase
       .from("repositories")
       .select("github_id")
-      .eq("organization_id", organization_id)
+      .eq("workspace_id", workspace_id)
       .in(
         "github_id",
         reposToInsert.map((r) => r.github_id),
@@ -141,22 +151,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { error: activityError } = await supabase.from("activities").insert({
-      organization_id,
-      user_id: user.id,
-      action: "repositories.connected",
-      resource_type: "repository",
-      resource_id: insertedRepos?.[0]?.id,
-      metadata: {
-        count: insertedRepos?.length || 0,
-        repository_names:
-          insertedRepos?.map((r: { full_name: string }) => r.full_name) || [],
-      },
-    });
-
-    if (activityError) {
-      console.error("Error creating activity log:", activityError);
-    }
+    // Activity tracking removed - activities table no longer exists
 
     return NextResponse.json({
       message: "Repositories connected successfully",

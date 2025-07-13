@@ -8,6 +8,54 @@ interface CreateWorkspaceRequest {
   slug: string;
 }
 
+export async function GET() {
+  try {
+    const supabase = await createClient();
+    
+    // Get authenticated user
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Get user's workspaces through workspace_members
+    const { data: workspaceData, error: workspacesError } = await supabase
+      .from("workspace_members")
+      .select(
+        `
+        workspace_id,
+        workspace:workspaces(*)
+      `
+      )
+      .eq("user_id", user.id);
+
+    if (workspacesError) {
+      console.error("Error fetching workspaces:", workspacesError);
+      return NextResponse.json(
+        { error: "Failed to fetch workspaces" },
+        { status: 500 }
+      );
+    }
+
+    // Extract workspaces from the joined data
+    const workspaces = workspaceData
+      ?.map((item: { workspace: unknown }) => item.workspace)
+      .filter((ws): ws is NonNullable<typeof ws> => ws !== null) || [];
+
+    return NextResponse.json({ workspaces });
+  } catch (error) {
+    console.error("Error fetching workspaces:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch workspaces" },
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body: CreateWorkspaceRequest = await request.json();
@@ -133,46 +181,6 @@ export async function POST(request: NextRequest) {
     console.error("Error in workspace creation:", error);
     return NextResponse.json(
       { error: "Failed to create workspace" },
-      { status: 500 }
-    );
-  }
-}
-
-export async function GET() {
-  try {
-    // Get authenticated user
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Get workspaces the user is a member of
-    const { data: workspaces, error } = await supabase
-      .from("workspaces")
-      .select(`
-        *,
-        workspace_members!inner(user_id)
-      `)
-      .eq("workspace_members.user_id", user.id);
-
-    if (error) {
-      console.error("Error fetching workspaces:", error);
-      return NextResponse.json(
-        { error: "Failed to fetch workspaces" },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({ workspaces });
-  } catch (error) {
-    console.error("Error in workspace fetch:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch workspaces" },
       { status: 500 }
     );
   }

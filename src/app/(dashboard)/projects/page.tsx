@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useOrganization } from "@/hooks/useOrganization";
+import { useWorkspace } from "@/hooks/useWorkspace";
 import { CreateProjectModal } from "@/components/projects/create-project-modal";
 import { Button } from "@/components/ui/button";
 import {
@@ -35,7 +35,7 @@ interface Project {
 }
 
 export default function ProjectsPage() {
-  const { activeOrganization, isLoading: orgLoading } = useOrganization();
+  const { activeWorkspace, isLoading: orgLoading } = useWorkspace();
   const [projects, setProjects] = useState<Project[]>([]);
   const [repositories, setRepositories] = useState<Repository[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -43,15 +43,15 @@ export default function ProjectsPage() {
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!activeOrganization) return;
+      if (!activeWorkspace) return;
 
       setIsLoading(true);
       setError(null);
 
       try {
         const [projectsResponse, reposResponse] = await Promise.all([
-          fetch(`/api/projects?organization_id=${activeOrganization.id}`),
-          fetch(`/api/repositories/connected?organization_id=${activeOrganization.id}`),
+          fetch(`/api/projects?workspace_id=${activeWorkspace.id}`),
+          fetch(`/api/repositories/connected?workspace_id=${activeWorkspace.id}`),
         ]);
 
         if (!projectsResponse.ok || !reposResponse.ok) {
@@ -71,10 +71,10 @@ export default function ProjectsPage() {
       }
     };
 
-    if (activeOrganization && !orgLoading) {
+    if (activeWorkspace && !orgLoading) {
       fetchData();
     }
-  }, [activeOrganization, orgLoading]);
+  }, [activeWorkspace, orgLoading]);
 
   if (orgLoading) {
     return (
@@ -90,12 +90,12 @@ export default function ProjectsPage() {
     );
   }
 
-  if (!activeOrganization) {
+  if (!activeWorkspace) {
     return (
       <Alert className="max-w-2xl">
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>
-          Please select an organization to view projects.
+          Please select a workspace to view projects.
         </AlertDescription>
       </Alert>
     );
@@ -113,7 +113,7 @@ export default function ProjectsPage() {
         {repositories.length > 0 && (
           <CreateProjectModal
             repositories={repositories}
-            organizationId={activeOrganization.id}
+            workspaceId={activeWorkspace.id}
           />
         )}
       </div>
@@ -148,7 +148,7 @@ export default function ProjectsPage() {
             ) : (
               <CreateProjectModal
                 repositories={repositories}
-                organizationId={activeOrganization.id}
+                workspaceId={activeWorkspace.id}
               />
             )}
           </div>

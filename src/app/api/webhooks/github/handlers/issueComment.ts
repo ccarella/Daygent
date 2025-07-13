@@ -3,7 +3,6 @@ import {
   getRepositoryByGithubId,
   getOrCreateUserByGithubId,
   syncIssueComment,
-  logActivity,
 } from "../db-utils";
 
 export async function handleIssueCommentEvent(payload: unknown): Promise<void> {
@@ -68,24 +67,7 @@ export async function handleIssueCommentEvent(payload: unknown): Promise<void> {
       return;
     }
 
-    // Log activity
-    const metadata: Record<string, unknown> = {
-      action,
-      issue_number: issue.number,
-      issue_title: issue.title,
-      comment_id: comment.id,
-      comment_preview: commentContent.substring(0, 100),
-    };
-
-    await logActivity(
-      "issue_commented",
-      metadata,
-      senderUser.id,
-      repo.organization_id,
-      repo.id,
-      undefined, // We don't have project_id easily accessible here
-      syncedComment.issue_id
-    );
+    // Activity logging removed - no activities table
 
     console.log(`[Issue Comment Handler] Successfully processed ${action} for comment ${comment.id}`);
   } catch (error) {

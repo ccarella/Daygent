@@ -3,79 +3,34 @@ import type { NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 import { createServerClient } from "@supabase/ssr";
 
-// Route configuration for better maintainability
-const routeConfig = {
-  // Routes that don't require authentication
-  publicRoutes: [
-    "/",
-    "/login",
-    "/api/auth/callback",
-    "/design-test",
-    "/components",
-  ],
-
-  // API routes that don't require authentication (webhooks)
-  publicApiRoutes: ["/api/webhooks"],
-
-  // Routes that authenticated users shouldn't access
-  authRestrictedRoutes: ["/login"],
-};
-
-// Helper function to check if a path matches any route pattern
-function matchesRoute(pathname: string, routes: string[]): boolean {
-  return routes.some((route) => {
-    // Exact match
-    if (pathname === route) return true;
-
-    // Prefix match for paths ending with /*
-    if (route.endsWith("/*")) {
-      const prefix = route.slice(0, -2);
-      return pathname.startsWith(prefix);
-    }
-
-    // Prefix match for paths like /api/webhooks
-    if (pathname.startsWith(route + "/")) return true;
-
-    return false;
-  });
-}
+const PUBLIC_PATHS = ["/", "/login", "/signup", "/auth/callback"];
+const ONBOARDING_PATHS = ["/onboarding", "/onboarding/profile", "/onboarding/workspace", "/onboarding/welcome"];
 
 export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  
+  // Allow public paths
+  if (PUBLIC_PATHS.includes(pathname)) {
+    return NextResponse.next();
+  }
+
   // Update the session and get the response
   const { response, user } = await updateSession(request);
 
-  const pathname = request.nextUrl.pathname;
-
-  // Check if the current route is public
-  const isPublicRoute = matchesRoute(pathname, routeConfig.publicRoutes);
-  const isPublicApiRoute = matchesRoute(pathname, routeConfig.publicApiRoutes);
-  const isAuthRestrictedRoute = matchesRoute(
-    pathname,
-    routeConfig.authRestrictedRoutes,
-  );
-
-  // Redirect unauthenticated users to login (except for public routes)
-  if (!user && !isPublicRoute && !isPublicApiRoute) {
+  if (!user) {
+    // Not authenticated - redirect to login
     const redirectUrl = new URL("/login", request.url);
-    // Preserve the intended destination
-    redirectUrl.searchParams.set("next", pathname + request.nextUrl.search);
+    redirectUrl.searchParams.set("next", pathname);
     return NextResponse.redirect(redirectUrl);
   }
 
-  // Redirect authenticated users away from auth-restricted routes
-  if (user && isAuthRestrictedRoute) {
-    // Check if there's a 'next' parameter to redirect to
-    const next = request.nextUrl.searchParams.get("next") || "/issues";
-    return NextResponse.redirect(new URL(next, request.url));
+  // Allow onboarding paths for authenticated users
+  if (ONBOARDING_PATHS.some(path => pathname.startsWith(path))) {
+    return response;
   }
 
-  // Check if authenticated user has a workspace (skip for public/error/onboarding routes)
-  if (
-    user &&
-    !isPublicRoute &&
-    !pathname.startsWith("/auth/error") &&
-    pathname !== "/onboarding"
-  ) {
+  // For dashboard routes, check workspace membership
+  if (!pathname.startsWith("/auth/error")) {
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -91,26 +46,15 @@ export async function middleware(request: NextRequest) {
       },
     );
 
-    try {
-      const { data: workspaces, error } = await supabase
-        .from("workspace_members")
-        .select("workspace_id")
-        .eq("user_id", user.id)
-        .limit(1);
+    const { data: workspaces } = await supabase
+      .from("workspace_members")
+      .select("workspace_id")
+      .eq("user_id", user.id)
+      .limit(1);
 
-      if (error) {
-        console.error(
-          "[Middleware] Error checking workspace membership:",
-          error,
-        );
-      } else if (!workspaces || workspaces.length === 0) {
-        console.log(
-          "[Middleware] User has no workspace, redirecting to onboarding",
-        );
-        return NextResponse.redirect(new URL("/onboarding", request.url));
-      }
-    } catch (error) {
-      console.error("[Middleware] Failed to check workspace:", error);
+    if (!workspaces || workspaces.length === 0) {
+      // No workspace - redirect to workspace creation
+      return NextResponse.redirect(new URL("/onboarding", request.url));
     }
   }
 

@@ -3,7 +3,7 @@
 
 // Test 1: Check if repositories are loaded
 async function checkRepositories() {
-  const response = await fetch('/api/repositories?organization_id=' + getOrgId());
+  const response = await fetch('/api/repositories?workspace_id=' + getWorkspaceId());
   const data = await response.json();
   console.log('Available repositories:', data.repositories);
   return data.repositories?.length > 0;
@@ -12,7 +12,7 @@ async function checkRepositories() {
 // Test 2: Create a test project
 async function createTestProject(repoId) {
   const testData = {
-    organization_id: getOrgId(),
+    workspace_id: getWorkspaceId(),
     repository_id: repoId,
     name: `Test Project ${Date.now()}`,
     description: 'Created via production test script'
@@ -31,21 +31,22 @@ async function createTestProject(repoId) {
 
 // Test 3: Verify project creation
 async function verifyProjects() {
-  const response = await fetch('/api/projects?organization_id=' + getOrgId());
+  const response = await fetch('/api/projects?workspace_id=' + getWorkspaceId());
   const data = await response.json();
   console.log('Current projects:', data.projects);
   return data.projects;
 }
 
-// Helper to get organization ID from the page
-function getOrgId() {
-  // This assumes the org ID is available in your app's state
+// Helper to get workspace ID from the page
+function getWorkspaceId() {
+  // This assumes the workspace ID is available in your app's state
   // Adjust based on your implementation
-  return localStorage.getItem('activeOrganizationId') || 
-         prompt('Enter organization ID:');
+  return localStorage.getItem('activeWorkspaceId') || 
+         prompt('Enter workspace ID:');
 }
 
 // Run all tests
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function runTests() {
   console.log('🧪 Starting project creation tests...');
   

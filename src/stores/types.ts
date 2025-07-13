@@ -1,17 +1,12 @@
-import type { Organization } from "@/types/organization";
+import type { Workspace } from "@/types/workspace";
+import type { User } from "@/types/user";
 
-export interface User {
-  id: string;
-  email: string;
-  name: string | null;
-  avatar_url: string | null;
-  github_id: number | null;
-  github_username: string | null;
-}
+// Re-export imported types
+export type { Workspace, User };
 
 export interface AuthState {
   user: User | null;
-  activeOrganization: Organization | null;
+  activeWorkspace: Workspace | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
@@ -19,8 +14,8 @@ export interface AuthState {
 
 export interface AuthActions {
   setUser: (user: User | null) => void;
-  setActiveOrganization: (org: Organization | null) => void;
-  login: () => Promise<void>;
+  setActiveWorkspace: (workspace: Workspace | null) => void;
+  login: (redirectTo?: string) => Promise<void>;
   logout: () => Promise<void>;
   updateUser: (updates: Partial<User>) => void;
   clearError: () => void;

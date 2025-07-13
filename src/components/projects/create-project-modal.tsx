@@ -59,13 +59,13 @@ interface Repository {
 
 interface CreateProjectModalProps {
   repositories: Repository[];
-  organizationId: string;
+  workspaceId: string;
   trigger?: React.ReactNode;
 }
 
 export function CreateProjectModal({
   repositories,
-  organizationId,
+  workspaceId,
   trigger,
 }: CreateProjectModalProps) {
   const [open, setOpen] = useState(false);
@@ -110,7 +110,7 @@ export function CreateProjectModal({
         },
         body: JSON.stringify({
           ...values,
-          organization_id: organizationId,
+          workspace_id: workspaceId,
         }),
       });
 

@@ -14,6 +14,7 @@ export function useWorkspace() {
   useEffect(() => {
     if (!user) {
       setWorkspaces([]);
+      setActiveWorkspace(null);
       setIsLoading(false);
       return;
     }
@@ -28,35 +29,33 @@ export function useWorkspace() {
     setIsLoading(true);
     try {
       const { data, error } = await supabase
-        .from("workspaces")
+        .from("workspace_members")
         .select(
           `
-          *,
-          workspace_members!inner(
-            user_id
-          )
+          workspace_id,
+          workspace:workspaces(*)
         `,
         )
-        .eq("workspace_members.user_id", user.id);
+        .eq("user_id", user.id);
 
       if (error) throw error;
 
-      setWorkspaces(data || []);
+      const workspacesList = data
+        ?.map((item: { workspace: unknown }) => item.workspace as Workspace | null)
+        .filter((ws): ws is Workspace => ws !== null) || [];
+      setWorkspaces(workspacesList);
 
       // Set active workspace if not already set
-      if (data && data.length > 0 && !activeWorkspace) {
+      if (workspacesList.length > 0 && !activeWorkspace) {
         // Check localStorage for saved preference
         const savedWorkspaceId = localStorage.getItem("activeWorkspaceId");
-        const savedWorkspace = data.find((ws) => ws.id === savedWorkspaceId);
+        const savedWorkspace = workspacesList.find((ws) => ws?.id === savedWorkspaceId);
 
         if (savedWorkspace) {
           setActiveWorkspace(savedWorkspace);
         } else {
-          // Default to first workspace (likely the owner one)
-          const ownerWorkspace =
-            data.find((ws) => ws.created_by === user.id) ||
-            data[0];
-          setActiveWorkspace(ownerWorkspace);
+          // Default to first workspace
+          setActiveWorkspace(workspacesList[0]);
         }
       }
     } catch (error) {
@@ -66,16 +65,21 @@ export function useWorkspace() {
     }
   };
 
-  const switchWorkspace = (workspace: Workspace) => {
+  const handleSetActiveWorkspace = (workspace: Workspace | null) => {
     setActiveWorkspace(workspace);
-    localStorage.setItem("activeWorkspaceId", workspace.id);
+    // Store in localStorage for persistence
+    if (workspace) {
+      localStorage.setItem("activeWorkspaceId", workspace.id);
+    } else {
+      localStorage.removeItem("activeWorkspaceId");
+    }
   };
 
   return {
     activeWorkspace,
     workspaces,
     isLoading,
-    setActiveWorkspace: switchWorkspace,
+    setActiveWorkspace: handleSetActiveWorkspace,
     reload: loadWorkspaces,
   };
 }

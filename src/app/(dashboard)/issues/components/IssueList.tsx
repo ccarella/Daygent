@@ -9,13 +9,10 @@ import {
   ChevronsLeft,
   ChevronsRight,
 } from "lucide-react";
-import type { Database } from "@/lib/database.types";
+import type { Issue as WorkspaceIssue } from "@/types/workspace";
 
-type Issue = Database["public"]["Tables"]["issues"]["Row"] & {
-  project: { id: string; name: string } | null;
+type Issue = WorkspaceIssue & {
   repository: { id: string; name: string; full_name: string } | null;
-  assigned_user: { id: string; name: string; avatar_url: string | null } | null;
-  created_user: { id: string; name: string; avatar_url: string | null } | null;
 };
 
 interface IssueListProps {
