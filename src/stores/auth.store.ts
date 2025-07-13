@@ -3,6 +3,7 @@ import { devtools } from "zustand/middleware";
 import type { User } from "@/types/user";
 import { createClient } from "@/lib/supabase/client";
 import type { Session } from "@supabase/supabase-js";
+import { useWorkspaceStore } from "./workspace.store";
 
 interface AuthState {
   user: User | null;
@@ -122,6 +123,10 @@ export const useAuthStore = create<AuthState>()(
             false,
             "logout/success",
           );
+          
+          // Clear workspace store too
+          const { reset } = useWorkspaceStore.getState();
+          reset();
         } catch (error) {
           logger.error('Logout failed:', error);
           set(
@@ -191,6 +196,12 @@ export const useAuthStore = create<AuthState>()(
             false,
             "checkSession/success",
           );
+          
+          // Load workspaces if authenticated
+          if (user) {
+            const { loadWorkspaces } = useWorkspaceStore.getState();
+            loadWorkspaces();
+          }
         } catch (error) {
           logger.error('Error checking session:', error);
           set(
@@ -249,6 +260,10 @@ supabase.auth.onAuthStateChange(async (event, session) => {
       };
 
       setUser(user);
+      
+      // Load workspaces
+      const { loadWorkspaces } = useWorkspaceStore.getState();
+      loadWorkspaces();
     } catch (error) {
       logger.error('Error in auth state change handler:', error);
       // Still set basic user info even if profile fetch fails
@@ -271,3 +286,8 @@ supabase.auth.onAuthStateChange(async (event, session) => {
     setUser(null);
   }
 });
+
+// Initialize auth on app load
+if (typeof window !== 'undefined') {
+  useAuthStore.getState().checkSession();
+}

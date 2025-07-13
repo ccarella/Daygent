@@ -4,7 +4,7 @@ import { updateSession } from "@/lib/supabase/middleware";
 import { createServerClient } from "@supabase/ssr";
 
 const PUBLIC_PATHS = ["/", "/login", "/signup", "/auth/callback"];
-const ONBOARDING_PATHS = ["/onboarding/profile", "/onboarding/workspace", "/onboarding/welcome"];
+const ONBOARDING_PATHS = ["/onboarding", "/onboarding/profile", "/onboarding/workspace", "/onboarding/welcome"];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -30,7 +30,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // For dashboard routes, check workspace membership
-  if (pathname.startsWith("/dashboard") || pathname.match(/^\/[^\/]+\/(issues|repositories|settings)/)) {
+  if (!pathname.startsWith("/auth/error")) {
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -54,7 +54,7 @@ export async function middleware(request: NextRequest) {
 
     if (!workspaces || workspaces.length === 0) {
       // No workspace - redirect to workspace creation
-      return NextResponse.redirect(new URL("/onboarding/workspace", request.url));
+      return NextResponse.redirect(new URL("/onboarding", request.url));
     }
   }
 

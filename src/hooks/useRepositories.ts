@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { useWorkspace } from "./useWorkspace";
+import { useWorkspaceStore } from "@/stores/workspace.store";
 import type {
   GitHubRepository,
   PaginationInfo,
@@ -30,7 +30,7 @@ interface UseRepositoriesReturn {
 }
 
 export function useRepositories(): UseRepositoriesReturn {
-  const { activeWorkspace } = useWorkspace();
+  const { currentWorkspace } = useWorkspaceStore();
   const [repositories, setRepositories] = useState<RepositoryWithStatus[]>([]);
   const [pagination, setPagination] = useState<PaginationInfo | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -44,7 +44,7 @@ export function useRepositories(): UseRepositoriesReturn {
 
   const fetchRepositories = useCallback(
     async (page = 1) => {
-      if (!activeWorkspace) {
+      if (!currentWorkspace) {
         setError("No active workspace");
         return;
       }
@@ -56,7 +56,7 @@ export function useRepositories(): UseRepositoriesReturn {
         const params = new URLSearchParams({
           page: page.toString(),
           per_page: "30",
-          workspace_id: activeWorkspace.id,
+          workspace_id: currentWorkspace.id,
         });
 
         if (searchQuery) {
@@ -82,7 +82,11 @@ export function useRepositories(): UseRepositoriesReturn {
         setIsLoading(false);
       }
     },
+<<<<<<< HEAD
     [activeWorkspace, searchQuery],
+=======
+    [currentWorkspace, searchQuery],
+>>>>>>> origin/feature/issue-119-workspace-store-state-management
   );
 
   const toggleRepoSelection = useCallback((repoId: number) => {
@@ -109,7 +113,7 @@ export function useRepositories(): UseRepositoriesReturn {
   }, []);
 
   const connectSelectedRepositories = useCallback(async () => {
-    if (!activeWorkspace || selectedRepos.size === 0) {
+    if (!currentWorkspace || selectedRepos.size === 0) {
       return;
     }
 
@@ -134,7 +138,7 @@ export function useRepositories(): UseRepositoriesReturn {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          workspace_id: activeWorkspace.id,
+          workspace_id: currentWorkspace.id,
           repositories: reposToConnect,
         }),
       });
@@ -162,7 +166,7 @@ export function useRepositories(): UseRepositoriesReturn {
       setConnectingRepos(new Set());
     }
   }, [
-    activeWorkspace,
+    currentWorkspace,
     selectedRepos,
     repositories,
     fetchRepositories,
@@ -171,7 +175,7 @@ export function useRepositories(): UseRepositoriesReturn {
 
   const disconnectRepositories = useCallback(
     async (repositoryIds: string[]) => {
-      if (!activeWorkspace || repositoryIds.length === 0) {
+      if (!currentWorkspace || repositoryIds.length === 0) {
         return;
       }
 
@@ -184,7 +188,7 @@ export function useRepositories(): UseRepositoriesReturn {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            workspace_id: activeWorkspace.id,
+            workspace_id: currentWorkspace.id,
             repository_ids: repositoryIds,
           }),
         });
@@ -207,15 +211,15 @@ export function useRepositories(): UseRepositoriesReturn {
         throw err;
       }
     },
-    [activeWorkspace, fetchRepositories, pagination],
+    [currentWorkspace, fetchRepositories, pagination],
   );
 
   useEffect(() => {
-    if (activeWorkspace) {
+    if (currentWorkspace) {
       fetchRepositories(1);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeWorkspace]);
+  }, [currentWorkspace]);
 
   return {
     repositories,

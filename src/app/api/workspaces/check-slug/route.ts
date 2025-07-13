@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+<<<<<<< HEAD
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
@@ -11,6 +12,17 @@ export async function GET(request: NextRequest) {
     if (!slug || slug.length < 2) {
       return NextResponse.json(
         { error: "Slug must be at least 2 characters long" },
+=======
+
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const slug = searchParams.get("slug");
+
+    if (!slug) {
+      return NextResponse.json(
+        { error: "Slug parameter is required" },
+>>>>>>> origin/feature/issue-119-workspace-store-state-management
         { status: 400 }
       );
     }
@@ -19,13 +31,23 @@ export async function GET(request: NextRequest) {
     const slugRegex = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
     if (!slugRegex.test(slug)) {
       return NextResponse.json(
+<<<<<<< HEAD
         { error: "Invalid slug format" },
+=======
+        { available: false, error: "Invalid slug format" },
+>>>>>>> origin/feature/issue-119-workspace-store-state-management
         { status: 400 }
       );
     }
 
+<<<<<<< HEAD
     // Get authenticated user
     const supabase = await createClient();
+=======
+    const supabase = await createClient();
+
+    // Check if user is authenticated
+>>>>>>> origin/feature/issue-119-workspace-store-state-management
     const {
       data: { user },
       error: authError,
@@ -35,6 +57,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+<<<<<<< HEAD
     // Validate environment variables
     if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
       console.error("SUPABASE_SERVICE_ROLE_KEY is not configured");
@@ -79,7 +102,7 @@ export async function GET(request: NextRequest) {
 
     // Check if slug exists using the database function
     const { data: available, error } = await serviceRoleClient.rpc(
-      'is_workspace_slug_available',
+      'check_workspace_slug_available',
       { p_slug: slug }
     );
 

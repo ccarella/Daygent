@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRepositories } from "@/hooks/useRepositories";
-import { useWorkspace } from "@/hooks/useWorkspace";
+import { useWorkspaceStore } from "@/stores/workspace.store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -34,7 +34,7 @@ import {
 
 export default function RepositoriesPage() {
   const router = useRouter();
-  const { activeWorkspace } = useWorkspace();
+  const { currentWorkspace } = useWorkspaceStore();
   const {
     repositories,
     pagination,
@@ -103,7 +103,11 @@ export default function RepositoriesPage() {
     fetchRepositories(newPage);
   };
 
+<<<<<<< HEAD
   if (!activeWorkspace) {
+=======
+  if (!currentWorkspace) {
+>>>>>>> origin/feature/issue-119-workspace-store-state-management
     return (
       <div className="container mx-auto py-8">
         <Alert className="border-destructive">
@@ -130,7 +134,11 @@ export default function RepositoriesPage() {
         <div>
           <h1 className="text-3xl font-bold">Connect Repositories</h1>
           <p className="text-muted-foreground mt-2">
+<<<<<<< HEAD
             Select GitHub repositories to connect to {activeWorkspace.name}
+=======
+            Select GitHub repositories to connect to {currentWorkspace.name}
+>>>>>>> origin/feature/issue-119-workspace-store-state-management
           </p>
         </div>
         <Button

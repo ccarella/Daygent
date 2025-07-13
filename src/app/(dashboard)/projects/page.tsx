@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useWorkspace } from "@/hooks/useWorkspace";
+import { useWorkspaceStore } from "@/stores/workspace.store";
 import { CreateProjectModal } from "@/components/projects/create-project-modal";
 import { Button } from "@/components/ui/button";
 import {
@@ -35,7 +35,7 @@ interface Project {
 }
 
 export default function ProjectsPage() {
-  const { activeWorkspace, isLoading: orgLoading } = useWorkspace();
+  const { currentWorkspace, isLoading: workspaceLoading } = useWorkspaceStore();
   const [projects, setProjects] = useState<Project[]>([]);
   const [repositories, setRepositories] = useState<Repository[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -43,15 +43,15 @@ export default function ProjectsPage() {
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!activeWorkspace) return;
+      if (!currentWorkspace) return;
 
       setIsLoading(true);
       setError(null);
 
       try {
         const [projectsResponse, reposResponse] = await Promise.all([
-          fetch(`/api/projects?workspace_id=${activeWorkspace.id}`),
-          fetch(`/api/repositories/connected?workspace_id=${activeWorkspace.id}`),
+          fetch(`/api/projects?workspace_id=${currentWorkspace.id}`),
+          fetch(`/api/repositories/connected?workspace_id=${currentWorkspace.id}`),
         ]);
 
         if (!projectsResponse.ok || !reposResponse.ok) {
@@ -71,12 +71,12 @@ export default function ProjectsPage() {
       }
     };
 
-    if (activeWorkspace && !orgLoading) {
+    if (currentWorkspace && !workspaceLoading) {
       fetchData();
     }
-  }, [activeWorkspace, orgLoading]);
+  }, [currentWorkspace, workspaceLoading]);
 
-  if (orgLoading) {
+  if (workspaceLoading) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-8 w-48" />
@@ -90,7 +90,7 @@ export default function ProjectsPage() {
     );
   }
 
-  if (!activeWorkspace) {
+  if (!currentWorkspace) {
     return (
       <Alert className="max-w-2xl">
         <AlertCircle className="h-4 w-4" />
@@ -113,7 +113,7 @@ export default function ProjectsPage() {
         {repositories.length > 0 && (
           <CreateProjectModal
             repositories={repositories}
-            workspaceId={activeWorkspace.id}
+            workspaceId={currentWorkspace.id}
           />
         )}
       </div>
@@ -148,7 +148,7 @@ export default function ProjectsPage() {
             ) : (
               <CreateProjectModal
                 repositories={repositories}
-                workspaceId={activeWorkspace.id}
+                workspaceId={currentWorkspace.id}
               />
             )}
           </div>
