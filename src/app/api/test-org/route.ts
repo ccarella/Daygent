@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Log environment check
     const hasServiceKey = !!process.env.SUPABASE_SERVICE_ROLE_KEY;
