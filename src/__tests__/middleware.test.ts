@@ -37,7 +37,7 @@ describe("Middleware - Onboarding Flow", () => {
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "test-anon-key");
   });
 
-  it("allows access to /onboarding without organization check", async () => {
+  it("allows access to /onboarding without workspace check", async () => {
     const mockUser = {
       id: "user-123",
       email: "test@example.com",
