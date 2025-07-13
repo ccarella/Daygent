@@ -8,6 +8,54 @@ interface CreateWorkspaceRequest {
   slug: string;
 }
 
+export async function GET() {
+  try {
+    const supabase = await createClient();
+    
+    // Get authenticated user
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Get user's workspaces through workspace_members
+    const { data: workspaceData, error: workspacesError } = await supabase
+      .from("workspace_members")
+      .select(
+        `
+        workspace_id,
+        workspace:workspaces(*)
+      `
+      )
+      .eq("user_id", user.id);
+
+    if (workspacesError) {
+      console.error("Error fetching workspaces:", workspacesError);
+      return NextResponse.json(
+        { error: "Failed to fetch workspaces" },
+        { status: 500 }
+      );
+    }
+
+    // Extract workspaces from the joined data
+    const workspaces = workspaceData
+      ?.map((item: { workspace: unknown }) => item.workspace)
+      .filter((ws): ws is NonNullable<typeof ws> => ws !== null) || [];
+
+    return NextResponse.json({ workspaces });
+  } catch (error) {
+    console.error("Error fetching workspaces:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch workspaces" },
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body: CreateWorkspaceRequest = await request.json();
