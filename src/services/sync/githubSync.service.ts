@@ -8,7 +8,6 @@ import {
 import { 
   GitHubIssue, 
   mapGitHubIssueToSyncData,
-  extractPriorityFromLabels,
   generateSyncSummary
 } from "./issueMapper";
 
