@@ -56,17 +56,27 @@ export default function WelcomePage() {
           const { data: { user } } = await supabase.auth.getUser();
           
           if (user) {
-            const { data: workspaces } = await supabase
+            const { data: memberRecords } = await supabase
               .from("workspace_members")
-              .select("workspace:workspaces(*)")
+              .select(`
+                workspace_id,
+                workspaces (
+                  id,
+                  name,
+                  slug,
+                  created_by,
+                  created_at,
+                  updated_at
+                )
+              `)
               .eq("user_id", user.id)
               .order("created_at", { ascending: false })
               .limit(1);
             
-            if (workspaces && workspaces.length > 0) {
-              const workspaceRecord = workspaces[0];
-              if ('workspace' in workspaceRecord && workspaceRecord.workspace && typeof workspaceRecord.workspace === 'object' && 'id' in workspaceRecord.workspace) {
-                workspace = workspaceRecord.workspace as Workspace;
+            if (memberRecords && memberRecords.length > 0) {
+              const record = memberRecords[0];
+              if (record.workspaces) {
+                workspace = record.workspaces as unknown as Workspace;
               }
             }
           }
