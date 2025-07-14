@@ -66,14 +66,26 @@ export async function middleware(request: NextRequest) {
   const pathSegments = pathname.split("/").filter(Boolean);
   const workspaceSlug = pathSegments[0];
 
+  // Define proper type for membership with workspace
+  interface WorkspaceMembership {
+    workspace: {
+      id: string;
+      slug: string;
+      name: string;
+    } | null;
+  }
+
   // Check if the path has a workspace slug
   const hasWorkspaceSlug = memberships.some(
-    (m: any) => m.workspace && m.workspace.slug === workspaceSlug
+    (m) => {
+      const membership = m as WorkspaceMembership;
+      return membership.workspace && membership.workspace.slug === workspaceSlug;
+    }
   );
 
   // If the path doesn't start with a valid workspace slug, redirect to the first workspace
   if (!hasWorkspaceSlug) {
-    const firstMembership = memberships[0] as any;
+    const firstMembership = memberships[0] as WorkspaceMembership;
     if (firstMembership?.workspace) {
       // Redirect to workspace-scoped version of the requested page
       const newPath = `/${firstMembership.workspace.slug}${pathname}`;

@@ -123,13 +123,13 @@ describe("Button", () => {
     it("should render as a different element when asChild is true", () => {
       render(
         <Button asChild>
-          <a href="/home">Home Link</a>
+          <a href="https://example.com">Home Link</a>
         </Button>,
       );
 
       const link = screen.getByRole("link", { name: "Home Link" });
       expect(link).toBeInTheDocument();
-      expect(link).toHaveAttribute("href", "/home");
+      expect(link).toHaveAttribute("href", "https://example.com");
       expect(link).toHaveAttribute("data-slot", "button");
       expect(screen.queryByRole("button")).not.toBeInTheDocument();
     });
@@ -137,7 +137,7 @@ describe("Button", () => {
     it("should apply button styles to child element", () => {
       render(
         <Button asChild variant="default" size="lg">
-          <a href="/about">About</a>
+          <a href="https://example.com/about">About</a>
         </Button>,
       );
 
