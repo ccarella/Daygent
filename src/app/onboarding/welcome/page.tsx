@@ -7,9 +7,6 @@ import { Card } from "@/components/ui/card";
 import { ChevronRight, Code, GitBranch, Zap, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useWorkspaceStore } from "@/stores/workspace.store";
-import type { Database } from "@/lib/database.types";
-
-type Workspace = Database["public"]["Tables"]["workspaces"]["Row"];
 
 const slides = [
   {
