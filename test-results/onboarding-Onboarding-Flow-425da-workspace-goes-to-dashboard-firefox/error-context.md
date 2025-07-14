@@ -1,28 +1,21 @@
 # Page snapshot
 
 ```yaml
-- main:
-    - img "Next.js logo"
-    - heading "Auth Store Example" [level=2]
-    - heading "Welcome to our app!" [level=3]
-    - paragraph: Please sign in to continue.
-    - button "Sign in with GitHub"
-    - list:
-        - listitem: Zustand state management configured with TypeScript
-        - listitem: Check Redux DevTools to see the auth store in action
-    - link "Vercel logomark Deploy now":
-        - /url: https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app
-        - img "Vercel logomark"
-        - text: Deploy now
-    - link "Read our docs":
-        - /url: https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app
-- contentinfo:
-    - link "Learn":
-        - /url: https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app
-    - link "Examples":
-        - /url: https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app
-    - link "Go to nextjs.org →":
-        - /url: https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app
+- heading "Daygent" [level=1]
+- paragraph: Manage Software Engineering Agents in your product development process
+- link "Sign In":
+    - /url: /login
+- link "Sign Up":
+    - /url: /signup
+- heading "Built for AI-Driven Development" [level=2]
+- paragraph: Seamlessly integrate AI agents into your development workflow
+- text: AI-Powered Issue Management Transform simple ideas into detailed, actionable issues optimized for AI development agents GitHub Integration Sync seamlessly with your GitHub repositories and manage pull requests with AI assistance Real-time Collaboration Work together with your team and AI agents in real-time with instant updates and notifications Smart Project Tracking Monitor AI agent performance, track token usage, and gain insights into your development process
+- heading "Ready to supercharge your development?" [level=2]
+- paragraph: Join developers who are building faster with AI agents
+- link "Get Started Free":
+    - /url: /signup
+- link "Sign In":
+    - /url: /login
 - region "Notifications alt+T"
 - alert
 - button "Open Next.js Dev Tools":
