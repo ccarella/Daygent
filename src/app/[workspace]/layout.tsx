@@ -6,8 +6,9 @@ export default async function WorkspaceLayout({
   params,
 }: {
   children: React.ReactNode;
-  params: { workspace: string };
+  params: Promise<{ workspace: string }>;
 }) {
+  const { workspace: workspaceSlug } = await params;
   const supabase = await createClient();
   
   // Check if user is authenticated
@@ -20,7 +21,7 @@ export default async function WorkspaceLayout({
   const { data: workspace } = await supabase
     .from("workspaces")
     .select("*")
-    .eq("slug", params.workspace)
+    .eq("slug", workspaceSlug)
     .single();
 
   if (!workspace) {
