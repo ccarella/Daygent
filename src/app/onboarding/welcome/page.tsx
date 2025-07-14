@@ -63,7 +63,7 @@ export default function WelcomePage() {
             if (workspaces && workspaces.length > 0) {
               const workspaceRecord = workspaces[0];
               if ('workspace' in workspaceRecord && workspaceRecord.workspace && typeof workspaceRecord.workspace === 'object' && 'id' in workspaceRecord.workspace) {
-                workspace = workspaceRecord.workspace as typeof workspace;
+                workspace = workspaceRecord.workspace as any;
               }
             }
           }
