@@ -48,6 +48,7 @@ describe("WelcomePage", () => {
     (useRouter as any).mockReturnValue({ push: mockPush });
     (useWorkspaceStore as any).mockReturnValue({
       currentWorkspace: { id: "test-workspace-id", slug: "test-workspace" },
+      workspaces: [{ id: "test-workspace-id", slug: "test-workspace" }],
       loadWorkspaces: mockLoadWorkspaces.mockResolvedValue(undefined),
     });
   });
@@ -129,6 +130,7 @@ describe("WelcomePage", () => {
   it("redirects to workspace creation if no workspace found", async () => {
     (useWorkspaceStore as any).mockReturnValue({
       currentWorkspace: null,
+      workspaces: [],
       loadWorkspaces: mockLoadWorkspaces,
     });
 
