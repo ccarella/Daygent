@@ -10,7 +10,7 @@ const syncSchema = z.object({
 // POST /api/repositories/[id]/sync-issues - Sync issues from GitHub
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient();
@@ -22,6 +22,9 @@ export async function POST(
 
     const body = await request.json();
     const { full_sync } = syncSchema.parse(body);
+    
+    // Await params
+    const { id } = await params;
 
     // Get repository with workspace info
     const { data: repository, error: repoError } = await supabase
@@ -30,7 +33,7 @@ export async function POST(
         *,
         workspace:workspaces(id)
       `)
-      .eq("id", params.id)
+      .eq("id", id)
       .single();
 
     if (repoError || !repository) {
@@ -53,7 +56,7 @@ export async function POST(
     const { data: syncStatus } = await supabase
       .from("sync_status")
       .select("sync_in_progress")
-      .eq("repository_id", params.id)
+      .eq("repository_id", id)
       .single();
 
     if (syncStatus?.sync_in_progress) {
@@ -67,7 +70,7 @@ export async function POST(
     await supabase
       .from("sync_status")
       .upsert({
-        repository_id: params.id,
+        repository_id: id,
         sync_in_progress: true,
       });
 
@@ -85,7 +88,7 @@ export async function POST(
         last_issue_sync: new Date().toISOString(),
         last_issue_cursor: result.cursor,
       })
-      .eq("repository_id", params.id);
+      .eq("repository_id", id);
 
     return NextResponse.json({
       success: true,
@@ -98,10 +101,11 @@ export async function POST(
     
     // Mark sync as failed
     const supabase = await createClient();
+    const { id } = await params;
     await supabase
       .from("sync_status")
       .update({ sync_in_progress: false })
-      .eq("repository_id", params.id);
+      .eq("repository_id", id);
 
     return NextResponse.json(
       { error: "Failed to sync issues" },
@@ -209,7 +213,7 @@ async function syncRepositoryIssues(
 // GET /api/repositories/[id]/sync-status - Get sync status
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient();
@@ -219,11 +223,14 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Await params
+    const { id } = await params;
+    
     // Get repository to verify access
     const { data: repository } = await supabase
       .from("repositories")
       .select("workspace_id")
-      .eq("id", params.id)
+      .eq("id", id)
       .single();
 
     if (!repository) {
@@ -246,7 +253,7 @@ export async function GET(
     const { data: syncStatus, error } = await supabase
       .from("sync_status")
       .select("*")
-      .eq("repository_id", params.id)
+      .eq("repository_id", id)
       .single();
 
     if (error && error.code !== "PGRST116") { // PGRST116 is "not found"

@@ -92,11 +92,15 @@ The project uses Husky and lint-staged to ensure code quality. Commits must foll
 - 🔄 GitHub repository connection
 - 🔄 Issue creation and management
 - 🔄 AI-powered issue expansion
-- 🔄 GitHub webhook integration
+
+### Recently Completed
+- ✅ GitHub webhook integration
+- ✅ GitHub issue sync functionality
+- ✅ Bulk issue import with pagination
+- ✅ Sync status tracking
 
 ### Not Started
 - ❌ Kanban board for issues
-- ❌ GitHub sync functionality
 - ❌ Stripe subscription management
 - ❌ AI usage tracking
 - ❌ Real-time updates with Supabase Realtime
@@ -160,6 +164,14 @@ NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 
+# GitHub App (required for issue sync and webhooks)
+GITHUB_APP_ID=your_app_id
+GITHUB_APP_CLIENT_ID=your_client_id
+GITHUB_APP_CLIENT_SECRET=your_client_secret
+GITHUB_APP_WEBHOOK_SECRET=your_webhook_secret
+GITHUB_APP_PRIVATE_KEY=your_base64_encoded_private_key
+GITHUB_APP_NAME=your_app_name
+
 # OAuth (configure in Supabase dashboard)
 # GitHub and Google OAuth settings are in supabase/config.toml
 ```
@@ -168,6 +180,11 @@ SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 - All three Supabase environment variables above are **required** in production
 - The `SUPABASE_SERVICE_ROLE_KEY` is critical for organization creation and administrative operations
 - Without it, users will get 500 errors when trying to create organizations
+- GitHub App environment variables are required for:
+  - Issue synchronization functionality
+  - Webhook processing
+  - GitHub App installations
+- The `GITHUB_APP_PRIVATE_KEY` should be base64 encoded for storage
 - See [VERCEL_ENV_FIX.md](./VERCEL_ENV_FIX.md) for troubleshooting deployment issues
 
 ## Development Workflow

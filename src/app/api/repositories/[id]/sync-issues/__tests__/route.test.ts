@@ -159,7 +159,7 @@ describe("/api/repositories/[id]/sync-issues", () => {
         body: JSON.stringify({ full_sync: false }),
       });
 
-      const response = await POST(request, { params: { id: "repo-123" } });
+      const response = await POST(request, { params: Promise.resolve({ id: "repo-123" }) });
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -181,7 +181,7 @@ describe("/api/repositories/[id]/sync-issues", () => {
         body: JSON.stringify({ full_sync: false }),
       });
 
-      const response = await POST(request, { params: { id: "repo-123" } });
+      const response = await POST(request, { params: Promise.resolve({ id: "repo-123" }) });
       const data = await response.json();
 
       expect(response.status).toBe(401);
@@ -213,7 +213,7 @@ describe("/api/repositories/[id]/sync-issues", () => {
         body: JSON.stringify({ full_sync: false }),
       });
 
-      const response = await POST(request, { params: { id: "repo-123" } });
+      const response = await POST(request, { params: Promise.resolve({ id: "repo-123" }) });
       const data = await response.json();
 
       expect(response.status).toBe(404);
@@ -280,7 +280,7 @@ describe("/api/repositories/[id]/sync-issues", () => {
         body: JSON.stringify({ full_sync: false }),
       });
 
-      const response = await POST(request, { params: { id: "repo-123" } });
+      const response = await POST(request, { params: Promise.resolve({ id: "repo-123" }) });
       const data = await response.json();
 
       expect(response.status).toBe(409);
@@ -340,7 +340,7 @@ describe("/api/repositories/[id]/sync-issues", () => {
 
       const request = new NextRequest("http://localhost:3000/api/repositories/repo-123/sync-status");
 
-      const response = await GET(request, { params: { id: "repo-123" } });
+      const response = await GET(request, { params: Promise.resolve({ id: "repo-123" }) });
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -392,7 +392,7 @@ describe("/api/repositories/[id]/sync-issues", () => {
 
       const request = new NextRequest("http://localhost:3000/api/repositories/repo-123/sync-status");
 
-      const response = await GET(request, { params: { id: "repo-123" } });
+      const response = await GET(request, { params: Promise.resolve({ id: "repo-123" }) });
       const data = await response.json();
 
       expect(response.status).toBe(200);
