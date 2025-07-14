@@ -7,6 +7,9 @@ import { Card } from "@/components/ui/card";
 import { ChevronRight, Code, GitBranch, Zap, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useWorkspaceStore } from "@/stores/workspace.store";
+import type { Database } from "@/lib/database.types";
+
+type Workspace = Database["public"]["Tables"]["workspaces"]["Row"];
 
 const slides = [
   {
@@ -63,7 +66,7 @@ export default function WelcomePage() {
             if (workspaces && workspaces.length > 0) {
               const workspaceRecord = workspaces[0];
               if ('workspace' in workspaceRecord && workspaceRecord.workspace && typeof workspaceRecord.workspace === 'object' && 'id' in workspaceRecord.workspace) {
-                workspace = workspaceRecord.workspace as any;
+                workspace = workspaceRecord.workspace as Workspace;
               }
             }
           }
