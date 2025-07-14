@@ -11,14 +11,12 @@ function AuthCallbackContent() {
   const code = searchParams.get("code");
 
   useEffect(() => {
-    if (code) {
-      // The auth has already been handled by the API route,
-      // we just need to redirect to the dashboard
-      router.push("/dashboard");
-    } else {
+    if (!code) {
       // No code, something went wrong
       router.push("/login?error=auth_callback_error");
     }
+    // If we have a code, the server-side route handler will handle the redirect
+    // We don't need to do anything here - just show the loading state
   }, [code, router]);
 
   return (
