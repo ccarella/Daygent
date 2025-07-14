@@ -17,7 +17,8 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: "Daygent",
-  description: "Project Management for working with software developer agents",
+  description:
+    "Manage Software Engineering Agents in your product development process",
 };
 
 export default function RootLayout({
