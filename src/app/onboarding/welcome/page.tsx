@@ -7,6 +7,9 @@ import { Card } from "@/components/ui/card";
 import { ChevronRight, Code, GitBranch, Zap, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useWorkspaceStore } from "@/stores/workspace.store";
+import type { Database } from "@/lib/database.types";
+
+type Workspace = Database["public"]["Tables"]["workspaces"]["Row"];
 
 const slides = [
   {
@@ -65,7 +68,7 @@ export default function WelcomePage() {
               workspace = workspaces[0];
             } else {
               // Fallback: Query for workspaces where user is a member
-              const { data: memberData, error: memberError } = await supabase
+              const { data: memberData } = await supabase
                 .from("workspace_members")
                 .select(`
                   workspace_id,
@@ -77,7 +80,7 @@ export default function WelcomePage() {
                 .single();
               
               if (memberData?.workspaces) {
-                workspace = memberData.workspaces as any;
+                workspace = memberData.workspaces as Workspace;
               }
             }
           }
