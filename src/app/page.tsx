@@ -1,108 +1,145 @@
-import Image from "next/image";
-import { AuthStatus } from "@/components/auth-status";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { GitBranch, Bot, Users, BarChart3 } from "lucide-react";
 
-export default function Home() {
+export default function LandingPage() {
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-
-        <div className="w-full max-w-md border rounded-lg shadow-sm">
-          <h2 className="text-lg font-semibold p-4 border-b">
-            Auth Store Example
-          </h2>
-          <AuthStatus />
+    <div className="min-h-screen bg-background">
+      {/* Hero Section */}
+      <section className="relative overflow-hidden">
+        <div className="container mx-auto px-4 py-16 sm:py-24 lg:py-32">
+          <div className="mx-auto max-w-2xl text-center">
+            <h1 className="text-4xl font-bold tracking-tight sm:text-6xl lg:text-7xl">
+              Daygent
+            </h1>
+            <p className="mt-6 text-lg leading-8 text-muted-foreground sm:text-xl">
+              Manage Software Engineering Agents in your product development
+              process
+            </p>
+            <div className="mt-10 flex items-center justify-center gap-4">
+              <Button asChild size="lg">
+                <Link href="/login">Sign In</Link>
+              </Button>
+              <Button asChild variant="outline" size="lg">
+                <Link href="/signup">Sign Up</Link>
+              </Button>
+            </div>
+          </div>
         </div>
+      </section>
 
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Zustand state management configured with TypeScript
-          </li>
-          <li className="tracking-[-.01em]">
-            Check Redux DevTools to see the auth store in action
-          </li>
-        </ol>
+      {/* Features Section */}
+      <section className="py-16 sm:py-24">
+        <div className="container mx-auto px-4">
+          <div className="mx-auto max-w-2xl text-center mb-12">
+            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+              Built for AI-Driven Development
+            </h2>
+            <p className="mt-4 text-lg text-muted-foreground">
+              Seamlessly integrate AI agents into your development workflow
+            </p>
+          </div>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+          <div className="mx-auto max-w-6xl">
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              <Card>
+                <CardHeader>
+                  <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                    <Bot className="h-5 w-5 text-primary" />
+                  </div>
+                  <CardTitle className="text-xl">
+                    AI-Powered Issue Management
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription>
+                    Transform simple ideas into detailed, actionable issues
+                    optimized for AI development agents
+                  </CardDescription>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                    <GitBranch className="h-5 w-5 text-primary" />
+                  </div>
+                  <CardTitle className="text-xl">GitHub Integration</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription>
+                    Sync seamlessly with your GitHub repositories and manage
+                    pull requests with AI assistance
+                  </CardDescription>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                    <Users className="h-5 w-5 text-primary" />
+                  </div>
+                  <CardTitle className="text-xl">
+                    Real-time Collaboration
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription>
+                    Work together with your team and AI agents in real-time with
+                    instant updates and notifications
+                  </CardDescription>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                    <BarChart3 className="h-5 w-5 text-primary" />
+                  </div>
+                  <CardTitle className="text-xl">
+                    Smart Project Tracking
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription>
+                    Monitor AI agent performance, track token usage, and gain
+                    insights into your development process
+                  </CardDescription>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-16 sm:py-24">
+        <div className="container mx-auto px-4">
+          <div className="mx-auto max-w-2xl text-center">
+            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+              Ready to supercharge your development?
+            </h2>
+            <p className="mt-4 text-lg text-muted-foreground">
+              Join developers who are building faster with AI agents
+            </p>
+            <div className="mt-10 flex items-center justify-center gap-4">
+              <Button asChild size="lg">
+                <Link href="/signup">Get Started Free</Link>
+              </Button>
+              <Button asChild variant="ghost" size="lg">
+                <Link href="/login">Sign In</Link>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
