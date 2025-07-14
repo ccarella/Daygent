@@ -34,8 +34,8 @@ export default async function ProfileSetupPage() {
     }
   }
 
-  if (profile?.name && profile?.avatar_url) {
-    // Profile complete, move to workspace creation
+  if (profile?.profile_completed) {
+    // Profile already marked as complete, move to workspace creation
     redirect("/onboarding/workspace");
   }
 

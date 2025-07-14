@@ -32,7 +32,7 @@ export async function GET(request: Request) {
       );
     }
 
-    // Check if user profile exists
+    // Check if user profile exists and is completed
     const { data: profile } = await supabase
       .from("users")
       .select("*")
@@ -40,8 +40,8 @@ export async function GET(request: Request) {
       .single();
 
     // Determine redirect based on user state
-    if (!profile) {
-      // New user - needs profile setup
+    if (!profile || !profile.profile_completed) {
+      // New user or incomplete profile - needs profile setup
       return NextResponse.redirect(
         new URL("/onboarding/profile", requestUrl.origin),
       );
