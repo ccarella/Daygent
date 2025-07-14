@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Check, X } from "lucide-react";
 import { toast } from "sonner";
+import { useWorkspaceStore } from "@/stores/workspace.store";
 
 const formSchema = z.object({
   name: z
@@ -43,6 +44,7 @@ export function WorkspaceCreationForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingSlug, setIsCheckingSlug] = useState(false);
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
+  const { createWorkspace } = useWorkspaceStore();
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -124,24 +126,12 @@ export function WorkspaceCreationForm() {
 
     setIsLoading(true);
     try {
-      // Use API endpoint that has service role access
-      const response = await fetch("/api/workspaces", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: data.name,
-          slug: data.slug,
-          description: data.description || null,
-        }),
+      // Use the workspace store to create workspace
+      // This ensures the store is updated with the new workspace
+      await createWorkspace({
+        name: data.name,
+        slug: data.slug,
       });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || "Failed to create workspace");
-      }
 
       toast.success("Workspace created!", {
         description: "Your workspace is ready. Let's get you started!",

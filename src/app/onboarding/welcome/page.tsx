@@ -31,7 +31,7 @@ export default function WelcomePage() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isConnecting, setIsConnecting] = useState(false);
   const [isLoadingWorkspace, setIsLoadingWorkspace] = useState(true);
-  const { currentWorkspace, loadWorkspaces } = useWorkspaceStore();
+  const { currentWorkspace, workspaces, loadWorkspaces } = useWorkspaceStore();
 
   useEffect(() => {
     // Ensure we have the latest workspace data
@@ -42,6 +42,7 @@ export default function WelcomePage() {
     };
     loadData();
   }, [loadWorkspaces]);
+
 
   const handleNext = async () => {
     if (currentSlide < slides.length - 1) {
@@ -59,17 +60,25 @@ export default function WelcomePage() {
           const { data: { user } } = await supabase.auth.getUser();
           
           if (user) {
-            // Simplified query - directly fetch the workspace
-            const { data: workspaceData } = await supabase
-              .from("workspaces")
-              .select("*")
-              .eq("created_by", user.id)
-              .order("created_at", { ascending: false })
-              .limit(1)
-              .single();
-            
-            if (workspaceData) {
-              workspace = workspaceData;
+            // First check if we have workspaces in the store
+            if (workspaces && workspaces.length > 0) {
+              workspace = workspaces[0];
+            } else {
+              // Fallback: Query for workspaces where user is a member
+              const { data: memberData, error: memberError } = await supabase
+                .from("workspace_members")
+                .select(`
+                  workspace_id,
+                  workspaces (*)
+                `)
+                .eq("user_id", user.id)
+                .order("created_at", { ascending: false })
+                .limit(1)
+                .single();
+              
+              if (memberData?.workspaces) {
+                workspace = memberData.workspaces as any;
+              }
             }
           }
         }
@@ -148,7 +157,7 @@ export default function WelcomePage() {
         onClick={handleNext} 
         className="w-full"
         size="lg"
-        disabled={isConnecting || (currentSlide === slides.length - 1 && isLoadingWorkspace)}
+        disabled={isConnecting || (currentSlide === slides.length - 1 && (isLoadingWorkspace || (!currentWorkspace && !workspaces?.length)))}
       >
         {isConnecting ? (
           <>
@@ -160,7 +169,7 @@ export default function WelcomePage() {
             Next
             <ChevronRight className="ml-2 h-4 w-4" />
           </>
-        ) : isLoadingWorkspace ? (
+        ) : (currentSlide === slides.length - 1 && (isLoadingWorkspace || (!currentWorkspace && !workspaces?.length))) ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             Loading workspace...
