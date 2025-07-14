@@ -60,6 +60,11 @@ export async function getGitHubAppService(workspaceId: string): Promise<GitHubSe
   }
 }
 
+export async function getInstallationOctokit(installationId: number) {
+  const app = getGitHubApp();
+  return await app.getInstallationOctokit(installationId);
+}
+
 // Fallback to user token if no installation exists
 export async function getServerGitHubService(workspaceId?: string): Promise<GitHubService | null> {
   // If workspace ID is provided, try to use GitHub App first
