@@ -7,9 +7,6 @@ import { Card } from "@/components/ui/card";
 import { ChevronRight, Code, GitBranch, Zap, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useWorkspaceStore } from "@/stores/workspace.store";
-import type { Database } from "@/lib/database.types";
-
-type Workspace = Database["public"]["Tables"]["workspaces"]["Row"];
 
 const slides = [
   {
@@ -33,11 +30,17 @@ export default function WelcomePage() {
   const router = useRouter();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isConnecting, setIsConnecting] = useState(false);
+  const [isLoadingWorkspace, setIsLoadingWorkspace] = useState(true);
   const { currentWorkspace, loadWorkspaces } = useWorkspaceStore();
 
   useEffect(() => {
     // Ensure we have the latest workspace data
-    loadWorkspaces();
+    const loadData = async () => {
+      setIsLoadingWorkspace(true);
+      await loadWorkspaces();
+      setIsLoadingWorkspace(false);
+    };
+    loadData();
   }, [loadWorkspaces]);
 
   const handleNext = async () => {
@@ -56,28 +59,17 @@ export default function WelcomePage() {
           const { data: { user } } = await supabase.auth.getUser();
           
           if (user) {
-            const { data: memberRecords } = await supabase
-              .from("workspace_members")
-              .select(`
-                workspace_id,
-                workspaces (
-                  id,
-                  name,
-                  slug,
-                  created_by,
-                  created_at,
-                  updated_at
-                )
-              `)
-              .eq("user_id", user.id)
+            // Simplified query - directly fetch the workspace
+            const { data: workspaceData } = await supabase
+              .from("workspaces")
+              .select("*")
+              .eq("created_by", user.id)
               .order("created_at", { ascending: false })
-              .limit(1);
+              .limit(1)
+              .single();
             
-            if (memberRecords && memberRecords.length > 0) {
-              const record = memberRecords[0];
-              if (record.workspaces) {
-                workspace = record.workspaces as unknown as Workspace;
-              }
+            if (workspaceData) {
+              workspace = workspaceData;
             }
           }
         }
@@ -156,7 +148,7 @@ export default function WelcomePage() {
         onClick={handleNext} 
         className="w-full"
         size="lg"
-        disabled={isConnecting}
+        disabled={isConnecting || (currentSlide === slides.length - 1 && isLoadingWorkspace)}
       >
         {isConnecting ? (
           <>
@@ -167,6 +159,11 @@ export default function WelcomePage() {
           <>
             Next
             <ChevronRight className="ml-2 h-4 w-4" />
+          </>
+        ) : isLoadingWorkspace ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Loading workspace...
           </>
         ) : (
           "Connect with GitHub"
