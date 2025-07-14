@@ -3,20 +3,30 @@ import type { NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 import { createServerClient } from "@supabase/ssr";
 
-const PUBLIC_PATHS = ["/", "/login", "/signup", "/auth/callback", "/auth/error"];
-const ONBOARDING_PATHS = ["/onboarding", "/onboarding/profile", "/onboarding/workspace", "/onboarding/welcome"];
+const PUBLIC_PATHS = [
+  "/",
+  "/login",
+  "/signup",
+  "/auth/callback",
+  "/auth/error",
+];
+const ONBOARDING_PATHS = [
+  "/onboarding/profile",
+  "/onboarding/workspace",
+  "/onboarding/welcome",
+];
 const API_PATHS = ["/api"];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  
+
   // Allow public paths
   if (PUBLIC_PATHS.includes(pathname)) {
     return NextResponse.next();
   }
 
   // Allow API paths
-  if (API_PATHS.some(path => pathname.startsWith(path))) {
+  if (API_PATHS.some((path) => pathname.startsWith(path))) {
     return NextResponse.next();
   }
 
@@ -31,7 +41,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Allow onboarding paths for authenticated users
-  if (ONBOARDING_PATHS.some(path => pathname.startsWith(path))) {
+  if (ONBOARDING_PATHS.some((path) => pathname.startsWith(path))) {
     return response;
   }
 
@@ -61,7 +71,7 @@ export async function middleware(request: NextRequest) {
         .from("workspace_members")
         .select("workspace_id")
         .eq("user_id", user.id)
-        .then(({ data }) => data?.map(m => m.workspace_id) || [])
+        .then(({ data }) => data?.map((m) => m.workspace_id) || []),
     );
 
   if (!workspaces || workspaces.length === 0) {
@@ -74,9 +84,7 @@ export async function middleware(request: NextRequest) {
   const workspaceSlug = pathSegments[0];
 
   // Check if the path has a workspace slug
-  const hasWorkspaceSlug = workspaces.some(
-    (w) => w.slug === workspaceSlug
-  );
+  const hasWorkspaceSlug = workspaces.some((w) => w.slug === workspaceSlug);
 
   // If the path doesn't start with a valid workspace slug, redirect to the first workspace
   if (!hasWorkspaceSlug) {
