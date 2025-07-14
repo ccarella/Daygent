@@ -9,9 +9,10 @@ const inviteMemberSchema = z.object({
 // GET /api/workspaces/[id]/members - List workspace members
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
@@ -23,7 +24,7 @@ export async function GET(
     const { data: member } = await supabase
       .from("workspace_members")
       .select("workspace_id")
-      .eq("workspace_id", params.id)
+      .eq("workspace_id", id)
       .eq("user_id", user.id)
       .single();
 
@@ -44,7 +45,7 @@ export async function GET(
           avatar_url
         )
       `)
-      .eq("workspace_id", params.id);
+      .eq("workspace_id", id);
 
     if (error) throw error;
 
@@ -61,9 +62,10 @@ export async function GET(
 // POST /api/workspaces/[id]/members - Invite member
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
@@ -75,7 +77,7 @@ export async function POST(
     const { data: member } = await supabase
       .from("workspace_members")
       .select("workspace_id")
-      .eq("workspace_id", params.id)
+      .eq("workspace_id", id)
       .eq("user_id", user.id)
       .single();
 
@@ -104,7 +106,7 @@ export async function POST(
     const { data: existingMember } = await supabase
       .from("workspace_members")
       .select("user_id")
-      .eq("workspace_id", params.id)
+      .eq("workspace_id", id)
       .eq("user_id", invitedUser.id)
       .single();
 
@@ -119,7 +121,7 @@ export async function POST(
     const { error } = await supabase
       .from("workspace_members")
       .insert({
-        workspace_id: params.id,
+        workspace_id: id,
         user_id: invitedUser.id,
       });
 
@@ -149,9 +151,10 @@ export async function POST(
 // DELETE /api/workspaces/[id]/members/[userId] - Remove member
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     
@@ -166,7 +169,7 @@ export async function DELETE(
     const { data: member } = await supabase
       .from("workspace_members")
       .select("workspace_id")
-      .eq("workspace_id", params.id)
+      .eq("workspace_id", id)
       .eq("user_id", user.id)
       .single();
 
@@ -179,7 +182,7 @@ export async function DELETE(
       const { data: workspace } = await supabase
         .from("workspaces")
         .select("created_by")
-        .eq("id", params.id)
+        .eq("id", id)
         .single();
 
       if (!workspace || workspace.created_by !== user.id) {
@@ -194,7 +197,7 @@ export async function DELETE(
     const { error } = await supabase
       .from("workspace_members")
       .delete()
-      .eq("workspace_id", params.id)
+      .eq("workspace_id", id)
       .eq("user_id", userIdToRemove);
 
     if (error) throw error;

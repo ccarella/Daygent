@@ -10,9 +10,10 @@ const updateWorkspaceSchema = z.object({
 // GET /api/workspaces/[id] - Get workspace details
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
@@ -24,7 +25,7 @@ export async function GET(
     const { data: member } = await supabase
       .from("workspace_members")
       .select("workspace_id")
-      .eq("workspace_id", params.id)
+      .eq("workspace_id", id)
       .eq("user_id", user.id)
       .single();
 
@@ -35,7 +36,7 @@ export async function GET(
     const { data: workspace, error } = await supabase
       .from("workspaces")
       .select("*")
-      .eq("id", params.id)
+      .eq("id", id)
       .single();
 
     if (error || !workspace) {
@@ -55,9 +56,10 @@ export async function GET(
 // PATCH /api/workspaces/[id] - Update workspace
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
@@ -69,7 +71,7 @@ export async function PATCH(
     const { data: member } = await supabase
       .from("workspace_members")
       .select("workspace_id")
-      .eq("workspace_id", params.id)
+      .eq("workspace_id", id)
       .eq("user_id", user.id)
       .single();
 
@@ -86,7 +88,7 @@ export async function PATCH(
         .from("workspaces")
         .select("id")
         .eq("slug", validatedData.slug)
-        .neq("id", params.id)
+        .neq("id", id)
         .single();
 
       if (existing) {
@@ -100,7 +102,7 @@ export async function PATCH(
     const { data: workspace, error } = await supabase
       .from("workspaces")
       .update(validatedData)
-      .eq("id", params.id)
+      .eq("id", id)
       .select()
       .single();
 
@@ -127,9 +129,10 @@ export async function PATCH(
 // DELETE /api/workspaces/[id] - Delete workspace (owner only)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
@@ -141,7 +144,7 @@ export async function DELETE(
     const { data: workspace } = await supabase
       .from("workspaces")
       .select("created_by")
-      .eq("id", params.id)
+      .eq("id", id)
       .single();
 
     if (!workspace || workspace.created_by !== user.id) {
@@ -154,7 +157,7 @@ export async function DELETE(
     const { error } = await supabase
       .from("workspaces")
       .delete()
-      .eq("id", params.id);
+      .eq("id", id);
 
     if (error) throw error;
 
