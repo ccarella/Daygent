@@ -79,9 +79,9 @@ describe('Middleware', () => {
         user: { id: 'user-123' },
       });
       
-      await middleware(request);
+      const result = await middleware(request);
       
-      expect(response).toEqual({ type: 'next' });
+      expect(result).toEqual({ type: 'next' });
     }
   });
 
