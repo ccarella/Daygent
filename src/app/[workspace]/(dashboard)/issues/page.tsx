@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { IssueList } from "./components/IssueList";
 import { IssueFilters } from "./components/IssueFilters";
 import { IssueSorting } from "./components/IssueSorting";
+import { IssuesEmptyState } from "@/components/issues/empty-state";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import Link from "next/link";
@@ -23,7 +24,10 @@ interface IssuesPageProps {
 
 const ITEMS_PER_PAGE = 25;
 
-export default async function IssuesPage({ params, searchParams }: IssuesPageProps) {
+export default async function IssuesPage({
+  params,
+  searchParams,
+}: IssuesPageProps) {
   const { workspace: workspaceSlug } = await params;
   const searchParamsResolved = await searchParams;
   const supabase = await createClient();
@@ -67,7 +71,7 @@ export default async function IssuesPage({ params, searchParams }: IssuesPagePro
       assigned_user:users!issues_assigned_to_fkey(id, name, avatar_url),
       created_user:users!issues_created_by_fkey(id, name, avatar_url)
     `,
-      { count: "exact" }
+      { count: "exact" },
     )
     .eq("workspace_id", workspace.id);
 
@@ -76,7 +80,10 @@ export default async function IssuesPage({ params, searchParams }: IssuesPagePro
     query = query.eq("status", searchParamsResolved.status);
   }
 
-  if (searchParamsResolved.priority && searchParamsResolved.priority !== "all") {
+  if (
+    searchParamsResolved.priority &&
+    searchParamsResolved.priority !== "all"
+  ) {
     query = query.eq("priority", searchParamsResolved.priority);
   }
 
@@ -127,6 +134,16 @@ export default async function IssuesPage({ params, searchParams }: IssuesPagePro
 
   const totalPages = Math.ceil((count || 0) / ITEMS_PER_PAGE);
 
+  // Check if this is truly an empty state (no issues and no filters applied)
+  const hasFilters =
+    searchParamsResolved.status ||
+    searchParamsResolved.priority ||
+    searchParamsResolved.project ||
+    searchParamsResolved.assignee ||
+    searchParamsResolved.enhanced === "true";
+
+  const isEmptyState = count === 0 && !hasFilters;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -136,27 +153,38 @@ export default async function IssuesPage({ params, searchParams }: IssuesPagePro
             View and manage your project issues
           </p>
         </div>
-        <Button asChild>
-          <Link href={`/${workspaceSlug}/issues/new`}>
-            <Plus className="mr-2 h-4 w-4" />
-            New Issue
-          </Link>
-        </Button>
+        {!isEmptyState && (
+          <Button asChild>
+            <Link href={`/${workspaceSlug}/issues/new`}>
+              <Plus className="mr-2 h-4 w-4" />
+              New Issue
+            </Link>
+          </Button>
+        )}
       </div>
 
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <IssueFilters projects={projects || []} />
-        <IssueSorting />
-      </div>
-
-      <Suspense fallback={<div>Loading issues...</div>}>
-        <IssueList
-          issues={issues || []}
-          totalCount={count || 0}
-          currentPage={page}
-          totalPages={totalPages}
+      {isEmptyState ? (
+        <IssuesEmptyState
+          workspaceId={workspace.id}
+          workspaceSlug={workspaceSlug}
         />
-      </Suspense>
+      ) : (
+        <>
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <IssueFilters projects={projects || []} />
+            <IssueSorting />
+          </div>
+
+          <Suspense fallback={<div>Loading issues...</div>}>
+            <IssueList
+              issues={issues || []}
+              totalCount={count || 0}
+              currentPage={page}
+              totalPages={totalPages}
+            />
+          </Suspense>
+        </>
+      )}
     </div>
   );
 }
