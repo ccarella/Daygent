@@ -1,6 +1,5 @@
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import {
-  IssueSyncData,
   PullRequestSyncData,
   CommentSyncData,
 } from "./types";
@@ -80,79 +79,6 @@ export async function getWorkspaceFromRepository(repositoryId: string) {
   return data?.workspace_id;
 }
 
-// Helper to sync issue data
-export async function syncIssue(
-  repositoryId: string,
-  issueData: IssueSyncData
-) {
-  const supabase = await createServiceRoleClient();
-
-  // Get workspace from repository
-  const workspaceId = await getWorkspaceFromRepository(repositoryId);
-  if (!workspaceId) {
-    console.error("[Webhook DB] Could not get workspace for repository:", repositoryId);
-    return null;
-  }
-
-  // Check if issue already exists
-  const { data: existingIssue } = await supabase
-    .from("issues")
-    .select("*")
-    .eq("repository_id", repositoryId)
-    .eq("github_issue_number", issueData.github_issue_number)
-    .single();
-
-  if (existingIssue) {
-    // Update existing issue
-    const { data, error } = await supabase
-      .from("issues")
-      .update({
-        title: issueData.title,
-        original_description: issueData.original_description,
-        status: issueData.status,
-        assigned_to: issueData.assigned_to,
-        updated_at: issueData.updated_at,
-        completed_at: issueData.completed_at,
-      })
-      .eq("id", existingIssue.id)
-      .select()
-      .single();
-
-    if (error) {
-      console.error("[Webhook DB] Error updating issue:", error);
-      return null;
-    }
-
-    return data;
-  } else {
-    // Create new issue
-    const { data, error } = await supabase
-      .from("issues")
-      .insert({
-        repository_id: repositoryId,
-        workspace_id: workspaceId,
-        github_issue_number: issueData.github_issue_number,
-        github_issue_id: issueData.github_issue_id,
-        title: issueData.title,
-        body: issueData.original_description,
-        state: issueData.status === "completed" ? "closed" : "open",
-        author_github_login: null, // Would need to be passed in
-        assignee_github_login: issueData.assigned_to,
-        labels: [],
-        github_created_at: new Date().toISOString(),
-        github_updated_at: issueData.updated_at,
-      })
-      .select()
-      .single();
-
-    if (error) {
-      console.error("[Webhook DB] Error creating issue:", error);
-      return null;
-    }
-
-    return data;
-  }
-}
 
 // Helper to sync issue comment
 export async function syncIssueComment(

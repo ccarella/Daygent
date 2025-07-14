@@ -1,9 +1,8 @@
-import { isIssuesEvent, IssueSyncData } from "../types";
+import { isIssuesEvent } from "../types";
 import {
   getRepositoryByGithubId,
-  getOrCreateUserByGithubId,
-  syncIssue,
 } from "../db-utils";
+import { createServiceRoleClient } from "@/lib/supabase/server";
 
 export async function handleIssueEvent(payload: unknown): Promise<void> {
   if (!isIssuesEvent(payload)) {
@@ -11,7 +10,7 @@ export async function handleIssueEvent(payload: unknown): Promise<void> {
     return;
   }
 
-  const { action, issue, repository, sender } = payload;
+  const { action, issue, repository } = payload;
   
   console.log(`[Issue Handler] Processing ${action} for issue #${issue.number}`);
 
@@ -23,65 +22,84 @@ export async function handleIssueEvent(payload: unknown): Promise<void> {
       return;
     }
 
-    // Map GitHub issue state to our status
-    let status: IssueSyncData["status"] = "open";
-    let completedAt: string | null = null;
+    const supabase = await createServiceRoleClient();
 
-    switch (issue.state) {
+    // Handle different actions
+    switch (action) {
+      case "opened":
+      case "edited":
+      case "reopened":
       case "closed":
-        status = "completed";
-        completedAt = issue.closed_at || new Date().toISOString();
+        // Upsert issue
+        const { error } = await supabase
+          .from("issues")
+          .upsert({
+            repository_id: repo.id,
+            workspace_id: repo.workspace_id,
+            github_issue_number: issue.number,
+            github_issue_id: issue.id,
+            github_node_id: issue.node_id,
+            title: issue.title,
+            body: issue.body || "",
+            state: issue.state,
+            author_github_login: issue.user?.login,
+            assignee_github_login: issue.assignee?.login,
+            labels: issue.labels?.map((label: { name: string; color: string; description?: string | null }) => ({
+              name: label.name,
+              color: label.color,
+              description: label.description || undefined,
+            })) || [],
+            github_created_at: issue.created_at,
+            github_updated_at: issue.updated_at,
+            github_closed_at: issue.closed_at,
+          });
+
+        if (error) {
+          console.error("[Issue Handler] Failed to upsert issue:", error);
+          return;
+        }
         break;
-      case "open":
-        if (issue.assignee) {
-          status = "in_progress";
+
+      case "assigned":
+      case "unassigned":
+        // Update assignee
+        const { error: assignError } = await supabase
+          .from("issues")
+          .update({
+            assignee_github_login: issue.assignee?.login,
+            github_updated_at: issue.updated_at,
+          })
+          .eq("repository_id", repo.id)
+          .eq("github_issue_number", issue.number);
+
+        if (assignError) {
+          console.error("[Issue Handler] Failed to update assignee:", assignError);
+          return;
+        }
+        break;
+
+      case "labeled":
+      case "unlabeled":
+        // Update labels
+        const { error: labelError } = await supabase
+          .from("issues")
+          .update({
+            labels: issue.labels?.map((label: { name: string; color: string; description?: string | null }) => ({
+              name: label.name,
+              color: label.color,
+              description: label.description || undefined,
+            })) || [],
+            github_updated_at: issue.updated_at,
+          })
+          .eq("repository_id", repo.id)
+          .eq("github_issue_number", issue.number);
+
+        if (labelError) {
+          console.error("[Issue Handler] Failed to update labels:", labelError);
+          return;
         }
         break;
     }
-
-    // Get or create assignee user if assigned
-    let assignedToUserId: string | null = null;
-    if (issue.assignee) {
-      const assignee = await getOrCreateUserByGithubId(
-        issue.assignee.id,
-        issue.assignee.login,
-        issue.assignee.email
-      );
-      assignedToUserId = assignee?.id || null;
-    }
-
-    // Prepare issue data for sync
-    const issueData: IssueSyncData = {
-      github_issue_number: issue.number,
-      github_issue_id: issue.id,
-      title: issue.title,
-      original_description: issue.body || null,
-      status,
-      assigned_to: assignedToUserId,
-      updated_at: issue.updated_at,
-      completed_at: completedAt,
-    };
-
-    // Sync issue to database
-    const syncedIssue = await syncIssue(repo.id, issueData);
-    if (!syncedIssue) {
-      console.error("[Issue Handler] Failed to sync issue");
-      return;
-    }
-
-    // Get or create sender user for activity logging
-    const senderUser = await getOrCreateUserByGithubId(
-      sender.id,
-      sender.login,
-      sender.email
-    );
-
-    if (!senderUser) {
-      console.error("[Issue Handler] Failed to get/create sender user");
-      return;
-    }
-
-    // Activity logging removed - no activities table
 
     console.log(`[Issue Handler] Successfully processed ${action} for issue #${issue.number}`);
   } catch (error) {
