@@ -18,7 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import {
   Search,
   GitBranch,
@@ -36,6 +36,8 @@ import {
 
 export default function RepositoriesPage() {
   const router = useRouter();
+  const params = useParams();
+  const workspaceSlug = params.workspace as string;
   const { currentWorkspace } = useWorkspaceStore();
   const {
     repositories,
@@ -179,7 +181,7 @@ export default function RepositoriesPage() {
               <Github className="h-8 w-8" />
               <p>Connect your GitHub account to get started</p>
             </div>
-            <Button onClick={() => router.push("/settings/github")}>
+            <Button onClick={() => router.push(`/${workspaceSlug}/settings/github`)}>
               <Github className="mr-2 h-4 w-4" />
               Connect GitHub Account
             </Button>
@@ -409,11 +411,11 @@ export default function RepositoriesPage() {
       )}
 
       <div className="flex justify-end gap-4">
-        <Button variant="outline" onClick={() => router.push("/projects/new")}>
+        <Button variant="outline" onClick={() => router.push(`/${workspaceSlug}/projects/new`)}>
           Skip for Now
         </Button>
         {repositories.some((r) => r.is_connected) && (
-          <Button onClick={() => router.push("/projects/new")}>
+          <Button onClick={() => router.push(`/${workspaceSlug}/projects/new`)}>
             Continue to Projects
           </Button>
         )}

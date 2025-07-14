@@ -27,7 +27,9 @@ export function Sidebar({ isOpen, onToggle, pathname }: SidebarProps) {
       )}
     >
       <div className="flex h-full flex-col">
-        <div className="flex h-12 items-center justify-end px-4 border-b">
+        <div className="flex h-12 items-center justify-between px-4 border-b">
+          {/* Spacer to keep toggle button on the right */}
+          <div className="flex-1" />
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>

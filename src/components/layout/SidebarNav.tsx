@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { NAV_ITEMS } from "@/lib/navigation";
+import { useWorkspaceStore } from "@/stores/workspace.store";
 
 interface SidebarNavProps {
   isOpen: boolean;
@@ -13,6 +14,7 @@ interface SidebarNavProps {
 export function SidebarNav({ isOpen, pathname }: SidebarNavProps) {
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
   const navRefs = useRef<(HTMLAnchorElement | null)[]>([]);
+  const { currentWorkspace } = useWorkspaceStore();
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -61,12 +63,16 @@ export function SidebarNav({ isOpen, pathname }: SidebarNavProps) {
     >
       {NAV_ITEMS.map((item, index) => {
         const Icon = item.icon;
-        const isActive = pathname.startsWith(item.href);
+        // Build workspace-based href
+        const href = currentWorkspace 
+          ? `/${currentWorkspace.slug}${item.href}`
+          : item.href;
+        const isActive = pathname === href || pathname.startsWith(href + "/");
 
         return (
           <Link
             key={item.href}
-            href={item.href}
+            href={href}
             ref={(el) => {
               navRefs.current[index] = el;
             }}

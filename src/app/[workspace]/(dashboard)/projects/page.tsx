@@ -17,6 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { GitBranch, FolderOpen, AlertCircle } from "lucide-react";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 
 interface Repository {
   id: string;
@@ -35,6 +36,8 @@ interface Project {
 }
 
 export default function ProjectsPage() {
+  const params = useParams();
+  const workspaceSlug = params.workspace as string;
   const { currentWorkspace, isLoading: workspaceLoading } = useWorkspaceStore();
   const [projects, setProjects] = useState<Project[]>([]);
   const [repositories, setRepositories] = useState<Repository[]>([]);
@@ -143,7 +146,7 @@ export default function ProjectsPage() {
             </p>
             {repositories.length === 0 ? (
               <Button asChild>
-                <Link href="/settings/repositories">Connect Repository</Link>
+                <Link href={`/${workspaceSlug}/settings/repositories`}>Connect Repository</Link>
               </Button>
             ) : (
               <CreateProjectModal
@@ -183,7 +186,7 @@ export default function ProjectsPage() {
               </CardContent>
               <CardFooter>
                 <Button asChild variant="outline" className="w-full">
-                  <Link href={`/projects/${project.id}`}>View Project</Link>
+                  <Link href={`/${workspaceSlug}/projects/${project.id}`}>View Project</Link>
                 </Button>
               </CardFooter>
             </Card>
