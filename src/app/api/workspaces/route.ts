@@ -1,136 +1,67 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
+import { z } from "zod";
 
-interface CreateWorkspaceRequest {
-  name: string;
-  slug: string;
-}
+const createWorkspaceSchema = z.object({
+  name: z.string().min(1).max(100),
+  slug: z.string().min(3).max(50).regex(/^[a-z0-9-]+$/),
+});
 
+// POST /api/workspaces - Create new workspace
 export async function POST(request: NextRequest) {
   try {
-    const body: CreateWorkspaceRequest = await request.json();
-    const { name, slug } = body;
+    const body = await request.json();
+    const validatedData = createWorkspaceSchema.parse(body);
 
-    if (!name || !slug) {
-      return NextResponse.json(
-        { error: "Name and slug are required" },
-        { status: 400 }
-      );
-    }
-
-    // Get authenticated user
     const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Validate environment variables
-    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      console.error("SUPABASE_SERVICE_ROLE_KEY is not configured");
-      console.error("Available env vars:", Object.keys(process.env).filter(key => key.includes('SUPABASE')).sort());
-      return NextResponse.json(
-        { error: "Server configuration error: Service role key missing" },
-        { status: 500 }
-      );
-    }
-
-    // Log service role key info (first few chars only for security)
-    console.log("Service role key present, starts with:", process.env.SUPABASE_SERVICE_ROLE_KEY.substring(0, 20) + "...");
-
-    // Create a service role client to bypass RLS
-    const cookieStore = await cookies();
-    const serviceRoleClient = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll();
-          },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options),
-            );
-          },
-        },
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-          detectSessionInUrl: false,
-        },
-        db: {
-          schema: 'public',
-        },
-        global: {
-          headers: {
-            'x-my-custom-header': 'daygent-api',
-          },
-        },
-      }
-    );
-
-    // Check if slug is already taken
-    const { data: existingWorkspace } = await serviceRoleClient
+    // Check if slug is available
+    const { data: existing } = await supabase
       .from("workspaces")
-      .select("slug")
-      .eq("slug", slug)
+      .select("id")
+      .eq("slug", validatedData.slug)
       .single();
 
-    if (existingWorkspace) {
+    if (existing) {
       return NextResponse.json(
-        { error: "Workspace slug is already taken" },
+        { error: "Workspace slug already taken" },
         { status: 400 }
       );
     }
 
-    // Create workspace using database function that bypasses RLS
-    console.log("Creating workspace with data:", { name, slug });
-    
-    const { data: workspaceData, error: workspaceError } = await serviceRoleClient.rpc(
-      'create_workspace_with_owner',
-      {
-        p_name: name,
-        p_slug: slug,
+    // Create workspace using database function
+    const { data: workspaceId, error } = await supabase
+      .rpc("create_workspace_with_member", {
+        p_name: validatedData.name,
+        p_slug: validatedData.slug,
         p_user_id: user.id,
-      }
-    );
-
-    const workspace = workspaceData?.[0];
-
-    if (workspaceError || !workspace) {
-      console.error("Error creating workspace:", workspaceError);
-      console.error("Workspace creation failed - Details:", {
-        error: workspaceError,
-        errorMessage: workspaceError?.message,
-        errorDetails: workspaceError?.details,
-        errorHint: workspaceError?.hint,
-        errorCode: workspaceError?.code,
       });
+
+    if (error) throw error;
+
+    // Fetch the created workspace
+    const { data: workspace } = await supabase
+      .from("workspaces")
+      .select("*")
+      .eq("id", workspaceId)
+      .single();
+
+    return NextResponse.json({ workspace }, { status: 201 });
+  } catch (error) {
+    console.error("Failed to create workspace:", error);
+    
+    if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { 
-          error: "Failed to create workspace",
-          details: workspaceError?.message || "Unknown error",
-          code: workspaceError?.code,
-        },
-        { status: 500 }
+        { error: "Invalid request data", details: error.issues },
+        { status: 400 }
       );
     }
 
-    // The database function already handles:
-    // 1. Creating the workspace
-    // 2. Adding the user as member
-    // So we can just return the result
-
-    return NextResponse.json({ workspace });
-  } catch (error) {
-    console.error("Error in workspace creation:", error);
     return NextResponse.json(
       { error: "Failed to create workspace" },
       { status: 500 }
@@ -138,47 +69,38 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// GET /api/workspaces - List user's workspaces
 export async function GET() {
   try {
     const supabase = await createClient();
-    
-    // Get authenticated user
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get user's workspaces through workspace_members
-    const { data: workspaceData, error: workspacesError } = await supabase
+    const { data: members, error } = await supabase
       .from("workspace_members")
-      .select(
-        `
+      .select(`
         workspace_id,
-        workspace:workspaces(*)
-      `
-      )
+        workspaces (
+          id,
+          name,
+          slug,
+          created_by,
+          created_at,
+          updated_at
+        )
+      `)
       .eq("user_id", user.id);
 
-    if (workspacesError) {
-      console.error("Error fetching workspaces:", workspacesError);
-      return NextResponse.json(
-        { error: "Failed to fetch workspaces" },
-        { status: 500 }
-      );
-    }
+    if (error) throw error;
 
-    // Extract workspaces from the joined data
-    const workspaces = workspaceData
-      ?.map((item: { workspace: unknown }) => item.workspace)
-      .filter((ws): ws is NonNullable<typeof ws> => ws !== null) || [];
+    const workspaces = members?.map(m => m.workspaces).filter(Boolean) || [];
 
     return NextResponse.json({ workspaces });
   } catch (error) {
-    console.error("Error fetching workspaces:", error);
+    console.error("Failed to fetch workspaces:", error);
     return NextResponse.json(
       { error: "Failed to fetch workspaces" },
       { status: 500 }
