@@ -50,6 +50,7 @@ export async function PATCH(request: Request) {
           email: user.email!,
           name,
           avatar_url,
+          profile_completed: true,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
@@ -62,6 +63,7 @@ export async function PATCH(request: Request) {
         .update({
           name,
           avatar_url,
+          profile_completed: true,
           updated_at: new Date().toISOString(),
         })
         .eq("id", user.id)
