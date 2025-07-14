@@ -26,12 +26,22 @@ vi.mock("sonner", () => ({
 // Mock fetch
 global.fetch = vi.fn();
 
+// Mock Next.js router
+const mockRouter = {
+  refresh: vi.fn(),
+};
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => mockRouter,
+}));
+
 describe("IssuesEmptyState", () => {
   const mockWorkspaceId = "test-workspace-id";
   const mockWorkspaceSlug = "test-workspace";
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockRouter.refresh.mockClear();
   });
 
   it("should show loading state initially", () => {
@@ -121,10 +131,14 @@ describe("IssuesEmptyState", () => {
       ),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /Import from repo-one/i }),
+      screen.getByRole("button", {
+        name: "Import issues from repo-one repository",
+      }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /Import from repo-two/i }),
+      screen.getByRole("button", {
+        name: "Import issues from repo-two repository",
+      }),
     ).toBeInTheDocument();
   });
 
@@ -176,12 +190,7 @@ describe("IssuesEmptyState", () => {
       }),
     } as Response);
 
-    // Mock window.location.reload
-    const reloadMock = vi.fn();
-    Object.defineProperty(window, "location", {
-      value: { reload: reloadMock },
-      writable: true,
-    });
+    // Router refresh will be called after successful sync
 
     const { user } = render(
       <IssuesEmptyState
@@ -192,12 +201,16 @@ describe("IssuesEmptyState", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByRole("button", { name: /Import from repo-one/i }),
+        screen.getByRole("button", {
+          name: "Import issues from repo-one repository",
+        }),
       ).toBeInTheDocument();
     });
 
     await user.click(
-      screen.getByRole("button", { name: /Import from repo-one/i }),
+      screen.getByRole("button", {
+        name: "Import issues from repo-one repository",
+      }),
     );
 
     await waitFor(() => {
@@ -217,7 +230,7 @@ describe("IssuesEmptyState", () => {
       expect(toast.success).toHaveBeenCalledWith(
         "Successfully imported 10 issues",
       );
-      expect(reloadMock).toHaveBeenCalled();
+      expect(mockRouter.refresh).toHaveBeenCalled();
     });
   });
 
@@ -251,12 +264,16 @@ describe("IssuesEmptyState", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByRole("button", { name: /Import from repo-one/i }),
+        screen.getByRole("button", {
+          name: "Import issues from repo-one repository",
+        }),
       ).toBeInTheDocument();
     });
 
     await user.click(
-      screen.getByRole("button", { name: /Import from repo-one/i }),
+      screen.getByRole("button", {
+        name: "Import issues from repo-one repository",
+      }),
     );
 
     await waitFor(() => {
@@ -306,18 +323,147 @@ describe("IssuesEmptyState", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByRole("button", { name: /Import from repo-one/i }),
+        screen.getByRole("button", {
+          name: "Import issues from repo-one repository",
+        }),
       ).toBeInTheDocument();
     });
 
     await user.click(
-      screen.getByRole("button", { name: /Import from repo-one/i }),
+      screen.getByRole("button", {
+        name: "Import issues from repo-one repository",
+      }),
     );
 
     // Check loading state
     expect(screen.getByText(/Importing from repo-one.../i)).toBeInTheDocument();
+    // The button should still have the same aria-label but be disabled
     expect(
-      screen.getByRole("button", { name: /Importing from repo-one.../i }),
+      screen.getByRole("button", {
+        name: "Import issues from repo-one repository",
+      }),
+    ).toBeDisabled();
+  });
+
+  it("should handle rate limit errors with specific message", async () => {
+    const mockRepositories = [
+      { id: "repo-1", name: "repo-one", full_name: "org/repo-one" },
+    ];
+
+    mockFrom.mockReturnValue({
+      select: mockSelect.mockReturnValue({
+        eq: mockEq.mockResolvedValue({
+          data: mockRepositories,
+          error: null,
+        }),
+      }),
+    });
+
+    // Mock rate limit response
+    const mockFetch = vi.mocked(fetch);
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 429,
+      json: async () => ({ error: "Rate limit exceeded" }),
+    } as Response);
+
+    const { user } = render(
+      <IssuesEmptyState
+        workspaceId={mockWorkspaceId}
+        workspaceSlug={mockWorkspaceSlug}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", {
+          name: "Import issues from repo-one repository",
+        }),
+      ).toBeInTheDocument();
+    });
+
+    await user.click(
+      screen.getByRole("button", {
+        name: "Import issues from repo-one repository",
+      }),
+    );
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith(
+        "GitHub rate limit exceeded. Please try again later.",
+      );
+    });
+  });
+
+  it("should disable all buttons when any sync is in progress", async () => {
+    const mockRepositories = [
+      { id: "repo-1", name: "repo-one", full_name: "org/repo-one" },
+      { id: "repo-2", name: "repo-two", full_name: "org/repo-two" },
+    ];
+
+    mockFrom.mockReturnValue({
+      select: mockSelect.mockReturnValue({
+        eq: mockEq.mockResolvedValue({
+          data: mockRepositories,
+          error: null,
+        }),
+      }),
+    });
+
+    // Mock a delayed response
+    const mockFetch = vi.mocked(fetch);
+    mockFetch.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          setTimeout(() => {
+            resolve({
+              ok: true,
+              json: async () => ({
+                success: true,
+                synced: 5,
+                updated: 0,
+                cursor: null,
+              }),
+            } as Response);
+          }, 100);
+        }),
+    );
+
+    const { user } = render(
+      <IssuesEmptyState
+        workspaceId={mockWorkspaceId}
+        workspaceSlug={mockWorkspaceSlug}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", {
+          name: "Import issues from repo-one repository",
+        }),
+      ).toBeInTheDocument();
+    });
+
+    // Click the first button
+    await user.click(
+      screen.getByRole("button", {
+        name: "Import issues from repo-one repository",
+      }),
+    );
+
+    // Check that both buttons are disabled
+    // The syncing button should show loading text
+    expect(screen.getByText(/Importing from repo-one.../i)).toBeInTheDocument();
+    // Both buttons should be disabled (checking by aria-label)
+    expect(
+      screen.getByRole("button", {
+        name: "Import issues from repo-one repository",
+      }),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole("button", {
+        name: "Import issues from repo-two repository",
+      }),
     ).toBeDisabled();
   });
 });

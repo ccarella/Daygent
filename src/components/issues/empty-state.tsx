@@ -7,11 +7,23 @@ import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 interface Repository {
   id: string;
   name: string;
   full_name: string;
+}
+
+interface SyncResponse {
+  success: boolean;
+  synced: number;
+  updated: number;
+  cursor: string | null;
+}
+
+interface ErrorResponse {
+  error: string;
 }
 
 interface EmptyStateProps {
@@ -26,6 +38,7 @@ export function IssuesEmptyState({
   const [repositories, setRepositories] = useState<Repository[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState<string | null>(null);
+  const router = useRouter();
   const supabase = createClient();
 
   useEffect(() => {
@@ -37,13 +50,19 @@ export function IssuesEmptyState({
           .eq("workspace_id", workspaceId);
 
         if (error) {
-          console.error("Error loading repositories:", error);
+          console.error("Error loading repositories for workspace:", {
+            workspaceId,
+            error,
+          });
           toast.error("Failed to load repositories");
         } else {
           setRepositories(data || []);
         }
       } catch (err) {
-        console.error("Error loading repositories:", err);
+        console.error("Error loading repositories for workspace:", {
+          workspaceId,
+          error: err,
+        });
         toast.error("Failed to load repositories");
       } finally {
         setLoading(false);
@@ -55,6 +74,7 @@ export function IssuesEmptyState({
 
   const handleSync = async (repositoryId: string) => {
     setSyncing(repositoryId);
+    const repository = repositories.find((r) => r.id === repositoryId);
 
     try {
       const response = await fetch(
@@ -69,18 +89,37 @@ export function IssuesEmptyState({
       );
 
       if (!response.ok) {
-        const error = await response.json();
+        const error: ErrorResponse = await response.json();
+
+        // Handle specific error codes
+        if (response.status === 429) {
+          throw new Error(
+            "GitHub rate limit exceeded. Please try again later.",
+          );
+        } else if (response.status === 401) {
+          throw new Error(
+            "GitHub authentication failed. Please reconnect your repository.",
+          );
+        } else if (response.status === 403) {
+          throw new Error("You don't have permission to sync this repository.");
+        }
+
         throw new Error(error.error || "Failed to sync issues");
       }
 
-      const result = await response.json();
+      const result: SyncResponse = await response.json();
 
       toast.success(`Successfully imported ${result.synced} issues`);
 
-      // Refresh the page to show the imported issues
-      window.location.reload();
+      // Use Next.js router to refresh the page data
+      router.refresh();
     } catch (err) {
-      console.error("Error syncing issues:", err);
+      console.error("Error syncing repository issues:", {
+        repositoryId,
+        repositoryName: repository?.name,
+        workspaceId,
+        error: err,
+      });
       toast.error(err instanceof Error ? err.message : "Failed to sync issues");
     } finally {
       setSyncing(null);
@@ -133,9 +172,10 @@ export function IssuesEmptyState({
             <Button
               key={repo.id}
               onClick={() => handleSync(repo.id)}
-              disabled={syncing === repo.id}
+              disabled={syncing !== null}
               variant="default"
               className="w-full"
+              aria-label={`Import issues from ${repo.name} repository`}
             >
               {syncing === repo.id ? (
                 <>
