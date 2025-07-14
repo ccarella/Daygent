@@ -37,7 +37,7 @@ describe("Middleware - Onboarding Flow", () => {
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "test-anon-key");
   });
 
-  it("allows access to /onboarding without workspace check", async () => {
+  it("allows access to /onboarding/profile without workspace check", async () => {
     const mockUser = {
       id: "user-123",
       email: "test@example.com",
@@ -53,7 +53,7 @@ describe("Middleware - Onboarding Flow", () => {
       user: mockUser,
     });
 
-    const request = mockRequest("http://localhost:3000/onboarding");
+    const request = mockRequest("http://localhost:3000/onboarding/profile");
     const result = await middleware(request);
 
     expect(result).toBe(mockResponse);
