@@ -51,20 +51,20 @@ export async function middleware(request: NextRequest) {
     },
   );
 
-  // Get user's workspaces - using join to get workspace details
-  const { data: memberships } = await supabase
-    .from("workspace_members")
-    .select(`
-      workspace_id,
-      workspaces (
-        id,
-        slug,
-        name
-      )
-    `)
-    .eq("user_id", user.id);
+  // Get user's workspaces
+  const { data: workspaces } = await supabase
+    .from("workspaces")
+    .select("id, slug, name")
+    .in(
+      "id",
+      await supabase
+        .from("workspace_members")
+        .select("workspace_id")
+        .eq("user_id", user.id)
+        .then(({ data }) => data?.map(m => m.workspace_id) || [])
+    );
 
-  if (!memberships || memberships.length === 0) {
+  if (!workspaces || workspaces.length === 0) {
     // No workspace - redirect to workspace creation
     return NextResponse.redirect(new URL("/onboarding/workspace", request.url));
   }
@@ -73,30 +73,17 @@ export async function middleware(request: NextRequest) {
   const pathSegments = pathname.split("/").filter(Boolean);
   const workspaceSlug = pathSegments[0];
 
-  // Define proper type for membership with workspace
-  interface WorkspaceMembership {
-    workspace_id: string;
-    workspaces: {
-      id: string;
-      slug: string;
-      name: string;
-    } | null;
-  }
-
-  // Type the memberships array
-  const typedMemberships = memberships as WorkspaceMembership[];
-
   // Check if the path has a workspace slug
-  const hasWorkspaceSlug = typedMemberships.some(
-    (m) => m.workspaces && m.workspaces.slug === workspaceSlug
+  const hasWorkspaceSlug = workspaces.some(
+    (w) => w.slug === workspaceSlug
   );
 
   // If the path doesn't start with a valid workspace slug, redirect to the first workspace
   if (!hasWorkspaceSlug) {
-    const firstMembership = typedMemberships[0];
-    if (firstMembership?.workspaces) {
+    const firstWorkspace = workspaces[0];
+    if (firstWorkspace) {
       // Redirect to workspace-scoped version of the requested page
-      const newPath = `/${firstMembership.workspaces.slug}${pathname}`;
+      const newPath = `/${firstWorkspace.slug}${pathname}`;
       return NextResponse.redirect(new URL(newPath, request.url));
     }
   }
