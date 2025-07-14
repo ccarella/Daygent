@@ -9,8 +9,31 @@ export async function GET(request: NextRequest) {
   const state = searchParams.get("state");
 
   if (!installationId || !code || !state) {
+    // Try to get workspace from state for proper redirect
+    if (state) {
+      const [workspaceId] = state.split(":");
+      if (workspaceId) {
+        try {
+          const supabase = await createClient();
+          const { data: workspace } = await supabase
+            .from("workspaces")
+            .select("slug")
+            .eq("id", workspaceId)
+            .single();
+          
+          if (workspace) {
+            return NextResponse.redirect(
+              new URL(`/${workspace.slug}/settings/github?error=missing_params`, request.url)
+            );
+          }
+        } catch {
+          // Fall through to default redirect
+        }
+      }
+    }
+    
     return NextResponse.redirect(
-      new URL("/settings/github?error=missing_params", request.url)
+      new URL("/?error=missing_params", request.url)
     );
   }
 
@@ -35,8 +58,21 @@ export async function GET(request: NextRequest) {
       .single();
 
     if (!sessionData) {
+      // Try to get workspace for proper redirect
+      const { data: workspace } = await supabase
+        .from("workspaces")
+        .select("slug")
+        .eq("id", workspaceId)
+        .single();
+      
+      if (workspace) {
+        return NextResponse.redirect(
+          new URL(`/${workspace.slug}/settings/github?error=invalid_workspace`, request.url)
+        );
+      }
+      
       return NextResponse.redirect(
-        new URL("/settings/github?error=invalid_workspace", request.url)
+        new URL("/?error=invalid_workspace", request.url)
       );
     }
 
@@ -60,8 +96,14 @@ export async function GET(request: NextRequest) {
 
     if (!tokenResponse.ok) {
       console.error("Failed to exchange code for token:", await tokenResponse.text());
+      const { data: workspace } = await supabase
+        .from("workspaces")
+        .select("slug")
+        .eq("id", workspaceId)
+        .single();
+      
       return NextResponse.redirect(
-        new URL("/settings/github?error=token_exchange_failed", request.url)
+        new URL(workspace ? `/${workspace.slug}/settings/github?error=token_exchange_failed` : "/?error=token_exchange_failed", request.url)
       );
     }
 
@@ -70,8 +112,14 @@ export async function GET(request: NextRequest) {
 
     if (!accessToken) {
       console.error("No access token in response:", tokenData);
+      const { data: workspace } = await supabase
+        .from("workspaces")
+        .select("slug")
+        .eq("id", workspaceId)
+        .single();
+      
       return NextResponse.redirect(
-        new URL("/settings/github?error=no_access_token", request.url)
+        new URL(workspace ? `/${workspace.slug}/settings/github?error=no_access_token` : "/?error=no_access_token", request.url)
       );
     }
 
@@ -88,8 +136,14 @@ export async function GET(request: NextRequest) {
 
     if (!installationResponse.ok) {
       console.error("Failed to get installation details:", await installationResponse.text());
+      const { data: workspace } = await supabase
+        .from("workspaces")
+        .select("slug")
+        .eq("id", workspaceId)
+        .single();
+      
       return NextResponse.redirect(
-        new URL("/settings/github?error=installation_fetch_failed", request.url)
+        new URL(workspace ? `/${workspace.slug}/settings/github?error=installation_fetch_failed` : "/?error=installation_fetch_failed", request.url)
       );
     }
 
@@ -111,19 +165,64 @@ export async function GET(request: NextRequest) {
 
     if (insertError) {
       console.error("Failed to store installation:", insertError);
+      const { data: workspace } = await supabase
+        .from("workspaces")
+        .select("slug")
+        .eq("id", workspaceId)
+        .single();
+      
       return NextResponse.redirect(
-        new URL("/settings/github?error=storage_failed", request.url)
+        new URL(workspace ? `/${workspace.slug}/settings/github?error=storage_failed` : "/?error=storage_failed", request.url)
       );
     }
 
-    // Redirect to settings page with success
+    // Get workspace details for slug
+    const { data: workspace } = await supabase
+      .from("workspaces")
+      .select("slug")
+      .eq("id", workspaceId)
+      .single();
+
+    if (!workspace) {
+      return NextResponse.redirect(
+        new URL("/?error=workspace_not_found", request.url)
+      );
+    }
+
+    // Redirect to workspace-specific issues page
     return NextResponse.redirect(
-      new URL("/settings/github?success=true", request.url)
+      new URL(`/${workspace.slug}/issues`, request.url)
     );
   } catch (error) {
     console.error("GitHub App installation callback error:", error);
+    // Get workspace for error redirect
+    try {
+      const supabase = await createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        const { data: workspaces } = await supabase
+          .from("workspace_members")
+          .select("workspace:workspaces(slug)")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(1);
+        
+        if (workspaces && workspaces.length > 0) {
+          const workspaceRecord = workspaces[0];
+          if ('workspace' in workspaceRecord && workspaceRecord.workspace && 'slug' in workspaceRecord.workspace) {
+            return NextResponse.redirect(
+              new URL(`/${workspaceRecord.workspace.slug}/settings/github?error=unexpected`, request.url)
+            );
+          }
+        }
+      }
+    } catch {
+      // Fallback to root if we can't get workspace
+    }
+    
     return NextResponse.redirect(
-      new URL("/settings/github?error=unexpected", request.url)
+      new URL("/?error=github_connect_failed", request.url)
     );
   }
 }
