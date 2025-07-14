@@ -1,10 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ChevronRight, Code, GitBranch, Zap } from "lucide-react";
+import { ChevronRight, Code, GitBranch, Zap, Loader2 } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import { useWorkspaceStore } from "@/stores/workspace.store";
+import type { Database } from "@/lib/database.types";
+
+type Workspace = Database["public"]["Tables"]["workspaces"]["Row"];
 
 const slides = [
   {
@@ -27,12 +32,92 @@ const slides = [
 export default function WelcomePage() {
   const router = useRouter();
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const { currentWorkspace, loadWorkspaces } = useWorkspaceStore();
 
-  const handleNext = () => {
+  useEffect(() => {
+    // Ensure we have the latest workspace data
+    loadWorkspaces();
+  }, [loadWorkspaces]);
+
+  const handleNext = async () => {
     if (currentSlide < slides.length - 1) {
       setCurrentSlide(currentSlide + 1);
     } else {
-      router.push("/settings/repositories");
+      // Connect with GitHub
+      setIsConnecting(true);
+      
+      try {
+        // Get current workspace if not already loaded
+        let workspace = currentWorkspace;
+        
+        if (!workspace) {
+          const supabase = createClient();
+          const { data: { user } } = await supabase.auth.getUser();
+          
+          if (user) {
+            const { data: memberRecords } = await supabase
+              .from("workspace_members")
+              .select(`
+                workspace_id,
+                workspaces (
+                  id,
+                  name,
+                  slug,
+                  created_by,
+                  created_at,
+                  updated_at
+                )
+              `)
+              .eq("user_id", user.id)
+              .order("created_at", { ascending: false })
+              .limit(1);
+            
+            if (memberRecords && memberRecords.length > 0) {
+              const record = memberRecords[0];
+              if (record.workspaces) {
+                workspace = record.workspaces as unknown as Workspace;
+              }
+            }
+          }
+        }
+
+        if (!workspace) {
+          // If no workspace found, redirect to workspace creation
+          router.push("/onboarding/workspace");
+          return;
+        }
+
+        // Initiate GitHub App installation
+        const response = await fetch("/api/github/install", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            workspace_id: workspace.id,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to initiate GitHub connection");
+        }
+
+        const { install_url } = await response.json();
+        
+        // Redirect to GitHub App installation page
+        window.location.href = install_url;
+      } catch (error) {
+        console.error("Error connecting GitHub:", error);
+        // On error, redirect to the dashboard
+        if (currentWorkspace) {
+          router.push(`/${currentWorkspace.slug}/issues`);
+        } else {
+          router.push("/");
+        }
+      } finally {
+        setIsConnecting(false);
+      }
     }
   };
 
@@ -71,8 +156,14 @@ export default function WelcomePage() {
         onClick={handleNext} 
         className="w-full"
         size="lg"
+        disabled={isConnecting}
       >
-        {currentSlide < slides.length - 1 ? (
+        {isConnecting ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Connecting...
+          </>
+        ) : currentSlide < slides.length - 1 ? (
           <>
             Next
             <ChevronRight className="ml-2 h-4 w-4" />
