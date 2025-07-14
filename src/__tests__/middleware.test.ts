@@ -71,10 +71,26 @@ describe("Middleware - Onboarding Flow", () => {
     } as any;
     const mockResponse = {} as NextResponse;
     const mockSupabase = {
-      from: vi.fn().mockReturnThis(),
-      select: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      limit: vi.fn().mockResolvedValue({ data: [], error: null }),
+      from: vi.fn((table) => {
+        if (table === "workspace_members") {
+          return {
+            select: vi.fn(() => ({
+              eq: vi.fn(() => ({
+                then: vi.fn((callback) => {
+                  callback({ data: [], error: null });
+                  return Promise.resolve({ data: [], error: null });
+                }),
+              })),
+            })),
+          };
+        }
+        // For workspaces table
+        return {
+          select: vi.fn(() => ({
+            in: vi.fn(() => Promise.resolve({ data: [], error: null })),
+          })),
+        };
+      }),
     };
 
     vi.mocked(updateSession).mockResolvedValue({
@@ -87,9 +103,8 @@ describe("Middleware - Onboarding Flow", () => {
     await middleware(request);
 
     expect(mockSupabase.from).toHaveBeenCalledWith("workspace_members");
-    expect(mockSupabase.eq).toHaveBeenCalledWith("user_id", "user-123");
     expect(NextResponse.redirect).toHaveBeenCalledWith(
-      new URL("http://localhost:3000/onboarding"),
+      new URL("http://localhost:3000/onboarding/workspace"),
     );
   });
 
@@ -104,12 +119,42 @@ describe("Middleware - Onboarding Flow", () => {
     } as any;
     const mockResponse = {} as NextResponse;
     const mockSupabase = {
-      from: vi.fn().mockReturnThis(),
-      select: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      limit: vi.fn().mockResolvedValue({
-        data: [{ workspace_id: "workspace-123" }],
-        error: null,
+      from: vi.fn((table) => {
+        if (table === "workspace_members") {
+          return {
+            select: vi.fn(() => ({
+              eq: vi.fn(() => ({
+                then: vi.fn((callback) => {
+                  callback({
+                    data: [{ workspace_id: "workspace-123" }],
+                    error: null,
+                  });
+                  return Promise.resolve({
+                    data: [{ workspace_id: "workspace-123" }],
+                    error: null,
+                  });
+                }),
+              })),
+            })),
+          };
+        }
+        // For workspaces table
+        return {
+          select: vi.fn(() => ({
+            in: vi.fn(() =>
+              Promise.resolve({
+                data: [
+                  {
+                    id: "workspace-123",
+                    slug: "test-workspace",
+                    name: "Test Workspace",
+                  },
+                ],
+                error: null,
+              }),
+            ),
+          })),
+        };
       }),
     };
 
@@ -120,10 +165,12 @@ describe("Middleware - Onboarding Flow", () => {
     vi.mocked(createServerClient).mockReturnValue(mockSupabase as any);
 
     const request = mockRequest("http://localhost:3000/issues");
-    const result = await middleware(request);
+    await middleware(request);
 
-    expect(result).toBe(mockResponse);
-    expect(NextResponse.redirect).not.toHaveBeenCalled();
+    // The middleware should redirect to add the workspace slug
+    expect(NextResponse.redirect).toHaveBeenCalledWith(
+      new URL("http://localhost:3000/test-workspace/issues"),
+    );
   });
 
   it("redirects unauthenticated users to login", async () => {

@@ -1,8 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
-import { POST, GET } from "../route";
 
-// Mock getInstallationOctokit
+// Mock dependencies before imports
+vi.mock("@/lib/supabase/server", () => ({
+  createClient: vi.fn(),
+}));
 vi.mock("@/services/github-app.server", () => ({
   getInstallationOctokit: vi.fn(() => ({
     paginate: {
@@ -20,7 +22,11 @@ vi.mock("@/services/github-app.server", () => ({
                 user: { login: "testuser" },
                 assignee: { login: "assignee1" },
                 labels: [
-                  { name: "bug", color: "d73a4a", description: "Something isn't working" },
+                  {
+                    name: "bug",
+                    color: "d73a4a",
+                    description: "Something isn't working",
+                  },
                 ],
                 created_at: "2024-01-01T00:00:00Z",
                 updated_at: "2024-01-01T00:00:00Z",
@@ -58,6 +64,9 @@ vi.mock("@/services/github-app.server", () => ({
   })),
 }));
 
+// Import route handlers after mocks
+import { POST, GET } from "../route";
+
 // Mock Supabase client
 const mockSupabase = {
   auth: {
@@ -66,19 +75,21 @@ const mockSupabase = {
   from: vi.fn(),
 };
 
-vi.mock("@/lib/supabase/server", () => ({
-  createClient: vi.fn().mockResolvedValue(mockSupabase),
-}));
+// Remove duplicate mock
 
 describe("/api/repositories/[id]/sync-issues", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
-    
+
     // Reset mock implementations
     mockSupabase.auth.getUser.mockResolvedValue({
       data: { user: { id: "user-123" } },
       error: null,
     });
+
+    // Import the createClient mock and set it up
+    const { createClient } = await import("@/lib/supabase/server");
+    vi.mocked(createClient).mockResolvedValue(mockSupabase as any);
   });
 
   describe("POST", () => {
@@ -151,15 +162,20 @@ describe("/api/repositories/[id]/sync-issues", () => {
         return {};
       });
 
-      const request = new NextRequest("http://localhost:3000/api/repositories/repo-123/sync-issues", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const request = new NextRequest(
+        "http://localhost:3000/api/repositories/repo-123/sync-issues",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ full_sync: false }),
         },
-        body: JSON.stringify({ full_sync: false }),
-      });
+      );
 
-      const response = await POST(request, { params: Promise.resolve({ id: "repo-123" }) });
+      const response = await POST(request, {
+        params: Promise.resolve({ id: "repo-123" }),
+      });
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -173,15 +189,20 @@ describe("/api/repositories/[id]/sync-issues", () => {
         error: null,
       });
 
-      const request = new NextRequest("http://localhost:3000/api/repositories/repo-123/sync-issues", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const request = new NextRequest(
+        "http://localhost:3000/api/repositories/repo-123/sync-issues",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ full_sync: false }),
         },
-        body: JSON.stringify({ full_sync: false }),
-      });
+      );
 
-      const response = await POST(request, { params: Promise.resolve({ id: "repo-123" }) });
+      const response = await POST(request, {
+        params: Promise.resolve({ id: "repo-123" }),
+      });
       const data = await response.json();
 
       expect(response.status).toBe(401);
@@ -205,15 +226,20 @@ describe("/api/repositories/[id]/sync-issues", () => {
         return {};
       });
 
-      const request = new NextRequest("http://localhost:3000/api/repositories/repo-123/sync-issues", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const request = new NextRequest(
+        "http://localhost:3000/api/repositories/repo-123/sync-issues",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ full_sync: false }),
         },
-        body: JSON.stringify({ full_sync: false }),
-      });
+      );
 
-      const response = await POST(request, { params: Promise.resolve({ id: "repo-123" }) });
+      const response = await POST(request, {
+        params: Promise.resolve({ id: "repo-123" }),
+      });
       const data = await response.json();
 
       expect(response.status).toBe(404);
@@ -272,15 +298,20 @@ describe("/api/repositories/[id]/sync-issues", () => {
         return {};
       });
 
-      const request = new NextRequest("http://localhost:3000/api/repositories/repo-123/sync-issues", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const request = new NextRequest(
+        "http://localhost:3000/api/repositories/repo-123/sync-issues",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ full_sync: false }),
         },
-        body: JSON.stringify({ full_sync: false }),
-      });
+      );
 
-      const response = await POST(request, { params: Promise.resolve({ id: "repo-123" }) });
+      const response = await POST(request, {
+        params: Promise.resolve({ id: "repo-123" }),
+      });
       const data = await response.json();
 
       expect(response.status).toBe(409);
@@ -338,9 +369,13 @@ describe("/api/repositories/[id]/sync-issues", () => {
         return {};
       });
 
-      const request = new NextRequest("http://localhost:3000/api/repositories/repo-123/sync-status");
+      const request = new NextRequest(
+        "http://localhost:3000/api/repositories/repo-123/sync-status",
+      );
 
-      const response = await GET(request, { params: Promise.resolve({ id: "repo-123" }) });
+      const response = await GET(request, {
+        params: Promise.resolve({ id: "repo-123" }),
+      });
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -390,9 +425,13 @@ describe("/api/repositories/[id]/sync-issues", () => {
         return {};
       });
 
-      const request = new NextRequest("http://localhost:3000/api/repositories/repo-123/sync-status");
+      const request = new NextRequest(
+        "http://localhost:3000/api/repositories/repo-123/sync-status",
+      );
 
-      const response = await GET(request, { params: Promise.resolve({ id: "repo-123" }) });
+      const response = await GET(request, {
+        params: Promise.resolve({ id: "repo-123" }),
+      });
       const data = await response.json();
 
       expect(response.status).toBe(200);

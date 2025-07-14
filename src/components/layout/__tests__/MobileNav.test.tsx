@@ -66,10 +66,7 @@ describe("MobileNav", () => {
     await waitFor(() => {
       expect(screen.getByRole("link", { name: /issues/i })).toBeInTheDocument();
       expect(
-        screen.getByRole("link", { name: /projects/i }),
-      ).toBeInTheDocument();
-      expect(
-        screen.getByRole("link", { name: /activity/i }),
+        screen.getByRole("link", { name: /repositories/i }),
       ).toBeInTheDocument();
       expect(
         screen.getByRole("link", { name: /settings/i }),
@@ -87,10 +84,12 @@ describe("MobileNav", () => {
 
     await waitFor(() => {
       const issuesLink = screen.getByRole("link", { name: /issues/i });
-      const projectsLink = screen.getByRole("link", { name: /projects/i });
+      const repositoriesLink = screen.getByRole("link", {
+        name: /repositories/i,
+      });
 
       expect(issuesLink).toHaveClass("bg-accent");
-      expect(projectsLink).not.toHaveClass("bg-accent");
+      expect(repositoriesLink).not.toHaveClass("bg-accent");
     });
   });
 
@@ -103,13 +102,15 @@ describe("MobileNav", () => {
     fireEvent.click(menuButton);
 
     await waitFor(() => {
-      const projectsLink = screen.getByRole("link", { name: /projects/i });
-      fireEvent.click(projectsLink);
+      const repositoriesLink = screen.getByRole("link", {
+        name: /repositories/i,
+      });
+      fireEvent.click(repositoriesLink);
     });
 
     await waitFor(() => {
       expect(
-        screen.queryByRole("link", { name: /projects/i }),
+        screen.queryByRole("link", { name: /repositories/i }),
       ).not.toBeInTheDocument();
     });
   });

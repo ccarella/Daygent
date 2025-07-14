@@ -28,11 +28,23 @@ describe("useUser", () => {
     vi.clearAllMocks();
   });
 
-  it("should initialize with loading state", () => {
+  it("should initialize with loading state", async () => {
+    // Set up the mock to return null user
+    mockGetUser.mockResolvedValue({
+      data: { user: null },
+      error: null,
+    });
+
     const { result } = renderHook(() => useUser());
 
+    // Initial state should be loading
     expect(result.current.isLoading).toBe(true);
     expect(result.current.user).toBe(null);
+
+    // Wait for the effect to complete
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
   });
 
   it("should handle unauthenticated user", async () => {
@@ -71,7 +83,6 @@ describe("useUser", () => {
     };
 
     mockGetUser.mockResolvedValue({
-       
       data: { user: mockUser as any },
       error: null,
     });

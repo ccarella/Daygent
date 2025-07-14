@@ -12,6 +12,7 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
+  SheetDescription,
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Menu, User, LogOut } from "lucide-react";
@@ -48,6 +49,7 @@ export function MobileNav({ pathname }: MobileNavProps) {
         <SheetContent side="left" className="w-72">
           <SheetHeader className="mb-6">
             <SheetTitle>Daygent</SheetTitle>
+            <SheetDescription>Navigation menu</SheetDescription>
           </SheetHeader>
 
           <div className="mb-6 flex items-center gap-3 rounded-lg border p-3">

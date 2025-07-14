@@ -25,6 +25,30 @@ vi.mock("@/services/github.server", () => ({
   })),
 }));
 
+vi.mock("@/services/github-app.server", () => ({
+  getGitHubAppService: vi.fn().mockResolvedValue(null),
+  getServerGitHubService: vi.fn(() => ({
+    listUserRepositories: vi.fn().mockResolvedValue({
+      repositories: [
+        {
+          id: 1,
+          name: "test-repo",
+          full_name: "testuser/test-repo",
+          private: false,
+          description: "Test repository",
+          default_branch: "main",
+        },
+      ],
+      pagination: {
+        page: 1,
+        per_page: 30,
+        has_next: false,
+        has_prev: false,
+      },
+    }),
+  })),
+}));
+
 vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn().mockResolvedValue({
     auth: {
@@ -37,10 +61,20 @@ vi.mock("@/lib/supabase/server", () => ({
         },
         error: null,
       }),
+      getSession: vi.fn().mockResolvedValue({
+        data: { session: { user: { id: "user-123" } } },
+        error: null,
+      }),
     },
     from: vi.fn(() => ({
       select: vi.fn(() => ({
-        eq: vi.fn().mockResolvedValue({
+        eq: vi.fn(() => ({
+          single: vi.fn().mockResolvedValue({
+            data: null,
+            error: { code: "PGRST116" }, // Not found error
+          }),
+        })),
+        in: vi.fn().mockResolvedValue({
           data: [],
           error: null,
         }),
@@ -87,7 +121,7 @@ describe("GET /api/repositories", () => {
         }),
       },
     };
-     
+
     vi.mocked(createClient).mockResolvedValueOnce(mockClient as any);
 
     const request = new NextRequest("http://localhost:3000/api/repositories");
@@ -99,21 +133,27 @@ describe("GET /api/repositories", () => {
   });
 
   it("should handle GitHub service errors", async () => {
-    const { getServerGitHubService } = await import("@/services/github.server");
+    const { getServerGitHubService } = await import(
+      "@/services/github-app.server"
+    );
     vi.mocked(getServerGitHubService).mockResolvedValueOnce(null);
 
-    const request = new NextRequest("http://localhost:3000/api/repositories");
+    const request = new NextRequest(
+      "http://localhost:3000/api/repositories?workspace_id=ws-123",
+    );
     const response = await GET(request);
     const data = await response.json();
 
     expect(response.status).toBe(401);
     expect(data.error).toBe(
-      "GitHub service not available. Please re-authenticate.",
+      "GitHub not connected. Please connect your GitHub account in settings.",
     );
   });
 
   it("should handle search parameters", async () => {
-    const { getServerGitHubService } = await import("@/services/github.server");
+    const { getServerGitHubService } = await import(
+      "@/services/github-app.server"
+    );
     const mockSearchRepositories = vi.fn().mockResolvedValue({
       repositories: [],
       pagination: { page: 1, per_page: 30, has_next: false, has_prev: false },
@@ -122,11 +162,11 @@ describe("GET /api/repositories", () => {
     const mockService = {
       searchRepositories: mockSearchRepositories,
     };
-     
+
     vi.mocked(getServerGitHubService).mockResolvedValueOnce(mockService as any);
 
     const request = new NextRequest(
-      "http://localhost:3000/api/repositories?search=test",
+      "http://localhost:3000/api/repositories?workspace_id=ws-123&search=test",
     );
     await GET(request);
 

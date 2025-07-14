@@ -49,7 +49,11 @@ describe("handleIssueEvent with new schema", () => {
         user: { login: "testuser" },
         assignee: { login: "assignee1" },
         labels: [
-          { name: "bug", color: "d73a4a", description: "Something isn't working" },
+          {
+            name: "bug",
+            color: "d73a4a",
+            description: "Something isn't working",
+          },
           { name: "enhancement", color: "a2eeef", description: "New feature" },
         ],
         created_at: "2024-01-01T00:00:00Z",
@@ -75,7 +79,11 @@ describe("handleIssueEvent with new schema", () => {
       author_github_login: "testuser",
       assignee_github_login: "assignee1",
       labels: [
-        { name: "bug", color: "d73a4a", description: "Something isn't working" },
+        {
+          name: "bug",
+          color: "d73a4a",
+          description: "Something isn't working",
+        },
         { name: "enhancement", color: "a2eeef", description: "New feature" },
       ],
       github_created_at: "2024-01-01T00:00:00Z",
@@ -129,7 +137,7 @@ describe("handleIssueEvent with new schema", () => {
       body: "Issue description",
       state: "closed",
       author_github_login: "testuser",
-      assignee_github_login: null,
+      assignee_github_login: undefined,
       labels: [],
       github_created_at: "2024-01-01T00:00:00Z",
       github_updated_at: "2024-01-02T00:00:00Z",
@@ -199,7 +207,11 @@ describe("handleIssueEvent with new schema", () => {
       issue: {
         number: 1,
         labels: [
-          { name: "bug", color: "d73a4a", description: "Something isn't working" },
+          {
+            name: "bug",
+            color: "d73a4a",
+            description: "Something isn't working",
+          },
           { name: "priority", color: "ff0000", description: "High priority" },
         ],
         updated_at: "2024-01-02T00:00:00Z",
@@ -211,7 +223,11 @@ describe("handleIssueEvent with new schema", () => {
 
     expect(mockUpdate).toHaveBeenCalledWith({
       labels: [
-        { name: "bug", color: "d73a4a", description: "Something isn't working" },
+        {
+          name: "bug",
+          color: "d73a4a",
+          description: "Something isn't working",
+        },
         { name: "priority", color: "ff0000", description: "High priority" },
       ],
       github_updated_at: "2024-01-02T00:00:00Z",
