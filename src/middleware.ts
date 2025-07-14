@@ -51,10 +51,17 @@ export async function middleware(request: NextRequest) {
     },
   );
 
-  // Get user's workspaces
+  // Get user's workspaces - using join to get workspace details
   const { data: memberships } = await supabase
     .from("workspace_members")
-    .select("workspace:workspaces(*)")
+    .select(`
+      workspace_id,
+      workspaces (
+        id,
+        slug,
+        name
+      )
+    `)
     .eq("user_id", user.id);
 
   if (!memberships || memberships.length === 0) {
@@ -68,27 +75,28 @@ export async function middleware(request: NextRequest) {
 
   // Define proper type for membership with workspace
   interface WorkspaceMembership {
-    workspace: {
+    workspace_id: string;
+    workspaces: {
       id: string;
       slug: string;
       name: string;
     } | null;
   }
 
+  // Type the memberships array
+  const typedMemberships = memberships as WorkspaceMembership[];
+
   // Check if the path has a workspace slug
-  const hasWorkspaceSlug = memberships.some(
-    (m) => {
-      const membership = m as WorkspaceMembership;
-      return membership.workspace && membership.workspace.slug === workspaceSlug;
-    }
+  const hasWorkspaceSlug = typedMemberships.some(
+    (m) => m.workspaces && m.workspaces.slug === workspaceSlug
   );
 
   // If the path doesn't start with a valid workspace slug, redirect to the first workspace
   if (!hasWorkspaceSlug) {
-    const firstMembership = memberships[0] as WorkspaceMembership;
-    if (firstMembership?.workspace) {
+    const firstMembership = typedMemberships[0];
+    if (firstMembership?.workspaces) {
       // Redirect to workspace-scoped version of the requested page
-      const newPath = `/${firstMembership.workspace.slug}${pathname}`;
+      const newPath = `/${firstMembership.workspaces.slug}${pathname}`;
       return NextResponse.redirect(new URL(newPath, request.url));
     }
   }
