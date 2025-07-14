@@ -11,13 +11,23 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 import { useAuthStore } from "@/stores/auth.store";
 import { useWorkspaceStore } from "@/stores/workspace.store";
+import { WorkspaceSwitcher } from "@/components/workspace/WorkspaceSwitcher";
 import { LogOut, Settings, User } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 
 export function Header() {
   const router = useRouter();
+  const pathname = usePathname();
   const { user, logout } = useAuthStore();
   const { currentWorkspace } = useWorkspaceStore();
 
@@ -26,22 +36,61 @@ export function Header() {
     router.push("/login");
   };
 
+  // Build breadcrumbs from pathname
+  const segments = pathname.split("/").filter(Boolean);
+  const breadcrumbs = [];
+
+  if (currentWorkspace && segments[0] === currentWorkspace.slug) {
+    breadcrumbs.push({
+      name: currentWorkspace.name,
+      href: `/${currentWorkspace.slug}`,
+    });
+
+    if (segments[1]) {
+      breadcrumbs.push({
+        name: segments[1].charAt(0).toUpperCase() + segments[1].slice(1),
+        href: `/${segments[0]}/${segments[1]}`,
+      });
+    }
+  }
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Logo and Workspace */}
-        <div className="flex items-center">
-          <Link href="/issues" className="flex items-center space-x-2">
+        <div className="flex items-center gap-4">
+          <Link href="/" className="flex items-center space-x-2">
             <span className="text-2xl font-bold text-primary">Daygent</span>
           </Link>
-          {currentWorkspace && (
-            <div className="hidden md:flex items-center ml-4 text-sm text-muted-foreground">
-              <span className="px-2">/</span>
-              <span className="font-medium text-foreground">
-                {currentWorkspace.name}
-              </span>
-            </div>
-          )}
+          
+          {/* Workspace Switcher and Breadcrumbs */}
+          <div className="flex items-center gap-2">
+            <WorkspaceSwitcher />
+            
+            {breadcrumbs.length > 0 && (
+              <>
+                <span className="text-muted-foreground">/</span>
+                <Breadcrumb>
+                  <BreadcrumbList>
+                    {breadcrumbs.map((crumb, index) => (
+                      <BreadcrumbItem key={crumb.href}>
+                        {index < breadcrumbs.length - 1 ? (
+                          <>
+                            <BreadcrumbLink href={crumb.href}>
+                              {crumb.name}
+                            </BreadcrumbLink>
+                            <BreadcrumbSeparator />
+                          </>
+                        ) : (
+                          <BreadcrumbPage>{crumb.name}</BreadcrumbPage>
+                        )}
+                      </BreadcrumbItem>
+                    ))}
+                  </BreadcrumbList>
+                </Breadcrumb>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Search - centered on desktop */}

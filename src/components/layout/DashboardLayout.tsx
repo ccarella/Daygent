@@ -7,6 +7,7 @@ import { Header } from "./Header";
 import { Sidebar } from "./Sidebar";
 import { CommandPalette } from "@/components/CommandPalette";
 import { useCommandPalette } from "@/hooks/useCommandPalette";
+import { useWorkspaceCommands } from "@/hooks/useWorkspaceCommands";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -17,6 +18,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   useCommandPalette(); // Initialize global keyboard shortcuts
+  useWorkspaceCommands(); // Register workspace switching commands
 
   useEffect(() => {
     const savedState = localStorage.getItem("sidebar-open");

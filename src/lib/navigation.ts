@@ -1,31 +1,19 @@
 import {
-  LayoutDashboard,
   ListTodo,
-  FolderGit2,
-  Activity,
+  GitBranch,
   Settings,
 } from "lucide-react";
 
 export const NAV_ITEMS = [
-  {
-    title: "Dashboard",
-    href: "/dashboard",
-    icon: LayoutDashboard,
-  },
   {
     title: "Issues",
     href: "/issues",
     icon: ListTodo,
   },
   {
-    title: "Projects",
-    href: "/projects",
-    icon: FolderGit2,
-  },
-  {
-    title: "Activity",
-    href: "/activity",
-    icon: Activity,
+    title: "Repositories",
+    href: "/repositories",
+    icon: GitBranch,
   },
   {
     title: "Settings",

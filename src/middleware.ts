@@ -3,14 +3,20 @@ import type { NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 import { createServerClient } from "@supabase/ssr";
 
-const PUBLIC_PATHS = ["/", "/login", "/signup", "/auth/callback"];
+const PUBLIC_PATHS = ["/", "/login", "/signup", "/auth/callback", "/auth/error"];
 const ONBOARDING_PATHS = ["/onboarding", "/onboarding/profile", "/onboarding/workspace", "/onboarding/welcome"];
+const API_PATHS = ["/api"];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
   // Allow public paths
   if (PUBLIC_PATHS.includes(pathname)) {
+    return NextResponse.next();
+  }
+
+  // Allow API paths
+  if (API_PATHS.some(path => pathname.startsWith(path))) {
     return NextResponse.next();
   }
 
@@ -29,32 +35,49 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  // For dashboard routes, check workspace membership
-  if (!pathname.startsWith("/auth/error")) {
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return request.cookies.getAll();
-          },
-          setAll() {
-            // We don't need to set cookies here
-          },
+  // Create Supabase client for database queries
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll() {
+          // We don't need to set cookies here
         },
       },
-    );
+    },
+  );
 
-    const { data: workspaces } = await supabase
-      .from("workspace_members")
-      .select("workspace_id")
-      .eq("user_id", user.id)
-      .limit(1);
+  // Get user's workspaces
+  const { data: memberships } = await supabase
+    .from("workspace_members")
+    .select("workspace:workspaces(*)")
+    .eq("user_id", user.id);
 
-    if (!workspaces || workspaces.length === 0) {
-      // No workspace - redirect to workspace creation
-      return NextResponse.redirect(new URL("/onboarding", request.url));
+  if (!memberships || memberships.length === 0) {
+    // No workspace - redirect to workspace creation
+    return NextResponse.redirect(new URL("/onboarding/workspace", request.url));
+  }
+
+  // Extract workspace slug from pathname
+  const pathSegments = pathname.split("/").filter(Boolean);
+  const workspaceSlug = pathSegments[0];
+
+  // Check if the path has a workspace slug
+  const hasWorkspaceSlug = memberships.some(
+    (m: any) => m.workspace && m.workspace.slug === workspaceSlug
+  );
+
+  // If the path doesn't start with a valid workspace slug, redirect to the first workspace
+  if (!hasWorkspaceSlug) {
+    const firstMembership = memberships[0] as any;
+    if (firstMembership?.workspace) {
+      // Redirect to workspace-scoped version of the requested page
+      const newPath = `/${firstMembership.workspace.slug}${pathname}`;
+      return NextResponse.redirect(new URL(newPath, request.url));
     }
   }
 
