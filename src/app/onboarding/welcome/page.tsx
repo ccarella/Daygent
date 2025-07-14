@@ -70,17 +70,23 @@ export default function WelcomePage() {
               // Fallback: Query for workspaces where user is a member
               const { data: memberData } = await supabase
                 .from("workspace_members")
-                .select(`
-                  workspace_id,
-                  workspaces (*)
-                `)
+                .select("workspace_id")
                 .eq("user_id", user.id)
                 .order("created_at", { ascending: false })
                 .limit(1)
                 .single();
               
-              if (memberData?.workspaces) {
-                workspace = memberData.workspaces as Workspace;
+              if (memberData?.workspace_id) {
+                // Fetch the workspace directly
+                const { data: workspaceData } = await supabase
+                  .from("workspaces")
+                  .select("*")
+                  .eq("id", memberData.workspace_id)
+                  .single();
+                
+                if (workspaceData) {
+                  workspace = workspaceData;
+                }
               }
             }
           }
