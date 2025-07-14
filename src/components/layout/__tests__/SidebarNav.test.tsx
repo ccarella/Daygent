@@ -11,8 +11,7 @@ describe("SidebarNav", () => {
     render(<SidebarNav isOpen={true} pathname="/issues" />);
 
     expect(screen.getByText("Issues")).toBeInTheDocument();
-    expect(screen.getByText("Projects")).toBeInTheDocument();
-    expect(screen.getByText("Activity")).toBeInTheDocument();
+    expect(screen.getByText("Repositories")).toBeInTheDocument();
     expect(screen.getByText("Settings")).toBeInTheDocument();
   });
 
@@ -20,10 +19,12 @@ describe("SidebarNav", () => {
     render(<SidebarNav isOpen={true} pathname="/issues" />);
 
     const issuesLink = screen.getByRole("link", { name: /issues/i });
-    const projectsLink = screen.getByRole("link", { name: /projects/i });
+    const repositoriesLink = screen.getByRole("link", {
+      name: /repositories/i,
+    });
 
     expect(issuesLink).toHaveClass("bg-accent");
-    expect(projectsLink).not.toHaveClass("bg-accent");
+    expect(repositoriesLink).not.toHaveClass("bg-accent");
   });
 
   it("hides text when sidebar is collapsed", () => {
@@ -37,13 +38,13 @@ describe("SidebarNav", () => {
     render(<SidebarNav isOpen={true} pathname="/issues" />);
 
     const issuesLink = screen.getByRole("link", { name: /issues/i });
-    const projectsLink = screen.getByRole("link", { name: /projects/i });
-    const activityLink = screen.getByRole("link", { name: /activity/i });
+    const repositoriesLink = screen.getByRole("link", {
+      name: /repositories/i,
+    });
     const settingsLink = screen.getByRole("link", { name: /settings/i });
 
     expect(issuesLink).toHaveAttribute("href", "/issues");
-    expect(projectsLink).toHaveAttribute("href", "/projects");
-    expect(activityLink).toHaveAttribute("href", "/activity");
+    expect(repositoriesLink).toHaveAttribute("href", "/repositories");
     expect(settingsLink).toHaveAttribute("href", "/settings");
   });
 

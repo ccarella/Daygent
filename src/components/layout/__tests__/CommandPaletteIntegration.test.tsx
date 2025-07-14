@@ -72,28 +72,33 @@ describe("CommandPalette Integration with DashboardLayout", () => {
     // Open command palette
     await user.keyboard("{Meta>}k{/Meta}");
 
-    // Wait for command palette to open
+    // Wait for command palette to open and be focused
     await waitFor(() => {
-      expect(
-        screen.getByPlaceholderText("Type a command or search..."),
-      ).toBeInTheDocument();
+      const input = screen.getByPlaceholderText("Type a command or search...");
+      expect(input).toBeInTheDocument();
+      expect(input).toHaveFocus();
     });
 
     // Search for issues
-    await user.type(
-      screen.getByPlaceholderText("Type a command or search..."),
-      "issues",
-    );
+    const input = screen.getByPlaceholderText("Type a command or search...");
+    await user.clear(input);
+    await user.type(input, "issues");
 
-    // Click on the issues command
-    const issuesCommand = await screen.findByText("Go to Issues");
-    await user.click(issuesCommand);
+    // Wait for results then select with keyboard
+    await waitFor(() => {
+      expect(screen.getByText("Go to Issues")).toBeInTheDocument();
+    });
+
+    // Press Enter to select the first result
+    await user.keyboard("{Enter}");
 
     // Should navigate to issues and close palette
-    expect(mockPush).toHaveBeenCalledWith("/issues");
-    expect(
-      screen.queryByPlaceholderText("Type a command or search..."),
-    ).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith("/issues");
+      expect(
+        screen.queryByPlaceholderText("Type a command or search..."),
+      ).not.toBeInTheDocument();
+    });
   });
 
   it("should close command palette with ESC", async () => {

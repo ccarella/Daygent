@@ -52,6 +52,10 @@ vi.mock("@/hooks/useCommandPalette", () => ({
   }),
 }));
 
+vi.mock("@/hooks/useWorkspaceCommands", () => ({
+  useWorkspaceCommands: vi.fn(),
+}));
+
 describe("DashboardLayout", () => {
   beforeEach(() => {
     window.innerWidth = 1024;

@@ -5,8 +5,14 @@ import { renderHook, act } from "@testing-library/react";
 vi.mock("@/lib/supabase/client", () => {
   const mockSignInWithOAuth = vi.fn();
   const mockSignOut = vi.fn();
-  const mockGetUser = vi.fn();
-  const mockGetSession = vi.fn();
+  const mockGetUser = vi.fn().mockResolvedValue({
+    data: { user: null },
+    error: null,
+  });
+  const mockGetSession = vi.fn().mockResolvedValue({
+    data: { session: null },
+    error: null,
+  });
   const mockFrom = vi.fn();
   const mockOnAuthStateChange = vi.fn(() => ({
     data: {
@@ -181,10 +187,12 @@ describe("Auth Store", () => {
 
     // Set user
     act(() => {
-      result.current.setUser(createTestUser({
-        name: "Test User",
-        avatar_url: "https://example.com/avatar.jpg",
-      }));
+      result.current.setUser(
+        createTestUser({
+          name: "Test User",
+          avatar_url: "https://example.com/avatar.jpg",
+        }),
+      );
     });
 
     expect(result.current.user).toEqual(
@@ -242,7 +250,9 @@ describe("Auth Store", () => {
 
     expect(result.current.user?.id).toBe("user-123");
     expect(result.current.user?.name).toBe("Test User");
-    expect(result.current.user?.avatar_url).toBe("https://example.com/avatar.jpg");
+    expect(result.current.user?.avatar_url).toBe(
+      "https://example.com/avatar.jpg",
+    );
     expect(result.current.user?.github_id).toBe(12345);
     expect(result.current.user?.github_username).toBe("testuser");
     expect(result.current.isAuthenticated).toBe(true);

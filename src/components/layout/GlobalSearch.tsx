@@ -9,6 +9,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { SearchResults } from "./SearchResults";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -117,6 +118,9 @@ export function GlobalSearch({ isMobile = false }: GlobalSearchProps) {
           <DialogContent className="top-[10%] translate-y-0">
             <DialogHeader>
               <DialogTitle>Search</DialogTitle>
+              <DialogDescription>
+                Search for issues, projects, and more
+              </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSearch} className="space-y-4">
               <Input

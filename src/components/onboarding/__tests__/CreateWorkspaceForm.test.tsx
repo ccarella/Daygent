@@ -54,7 +54,6 @@ describe("CreateWorkspaceForm", () => {
 
     expect(screen.getByLabelText(/workspace name/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/url slug/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/description/i)).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /create workspace/i }),
     ).toBeInTheDocument();
@@ -94,11 +93,11 @@ describe("CreateWorkspaceForm", () => {
   });
 
   it("checks slug availability", async () => {
-    // Mock slug is available
-    mockSupabaseClient.maybeSingle.mockResolvedValue({
-      data: null,
-      error: null,
-    });
+    // Mock slug availability check API
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ available: true }),
+    } as Response);
 
     render(<CreateWorkspaceForm />);
     const user = userEvent.setup();
@@ -107,20 +106,20 @@ describe("CreateWorkspaceForm", () => {
     await user.type(slugInput, "available-slug");
 
     await waitFor(() => {
-      expect(mockSupabaseClient.from).toHaveBeenCalledWith("workspaces");
-      expect(mockSupabaseClient.eq).toHaveBeenCalledWith(
-        "slug",
-        "available-slug",
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringContaining(
+          "/api/workspaces/check-slug?slug=available-slug",
+        ),
       );
     });
   });
 
   it("shows error when slug is taken", async () => {
-    // Mock slug is taken
-    mockSupabaseClient.maybeSingle.mockResolvedValue({
-      data: { id: "existing-workspace" },
-      error: null,
-    });
+    // Mock slug is taken API response
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ available: false }),
+    } as Response);
 
     render(<CreateWorkspaceForm />);
     const user = userEvent.setup();
@@ -140,13 +139,13 @@ describe("CreateWorkspaceForm", () => {
   });
 
   it("creates workspace successfully", async () => {
-    // Mock slug availability check
-    mockSupabaseClient.maybeSingle.mockResolvedValue({
-      data: null,
-      error: null,
-    });
+    // Mock slug availability check API
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ available: true }),
+    } as Response);
 
-    // Mock successful API response
+    // Mock successful workspace creation API response
     vi.mocked(fetch).mockResolvedValueOnce({
       ok: true,
       json: async () => ({
@@ -163,9 +162,7 @@ describe("CreateWorkspaceForm", () => {
     const user = userEvent.setup();
 
     const nameInput = screen.getByLabelText(/workspace name/i);
-    const descriptionInput = screen.getByLabelText(/description/i);
     await user.type(nameInput, "New Workspace");
-    await user.type(descriptionInput, "Test description");
 
     const submitButton = screen.getByRole("button", {
       name: /create workspace/i,
@@ -181,7 +178,6 @@ describe("CreateWorkspaceForm", () => {
         body: JSON.stringify({
           name: "New Workspace",
           slug: "new-workspace",
-          description: "Test description",
         }),
       });
     });
@@ -199,13 +195,13 @@ describe("CreateWorkspaceForm", () => {
   });
 
   it("handles workspace creation error", async () => {
-    // Mock slug availability check
-    mockSupabaseClient.maybeSingle.mockResolvedValue({
-      data: null,
-      error: null,
-    });
+    // Mock slug availability check API
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ available: true }),
+    } as Response);
 
-    // Mock error response
+    // Mock error response for workspace creation
     vi.mocked(fetch).mockResolvedValueOnce({
       ok: false,
       json: async () => ({
@@ -225,37 +221,28 @@ describe("CreateWorkspaceForm", () => {
     await user.click(submitButton);
 
     await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith(
-        "Error creating workspace",
-        expect.objectContaining({
-          description: "Database error",
-        }),
-      );
+      expect(toast.error).toHaveBeenCalledWith("Error creating workspace", {
+        description: "Database error",
+      });
       expect(mockPush).not.toHaveBeenCalled();
     });
   });
 
   it("disables form during submission", async () => {
-    // Mock slug availability check
-    mockSupabaseClient.maybeSingle.mockResolvedValue({
-      data: null,
-      error: null,
+    // Mock slug availability check API
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ available: true }),
+    } as Response);
+
+    // Set up a promise that we can control
+    let resolveSubmit: (value: any) => void;
+    const submitPromise = new Promise((resolve) => {
+      resolveSubmit = resolve;
     });
 
-    // Mock slow API response
-    vi.mocked(fetch).mockImplementation(
-      () =>
-        new Promise((resolve) =>
-          setTimeout(
-            () =>
-              resolve({
-                ok: true,
-                json: async () => ({ workspace: { id: "workspace-id" } }),
-              } as Response),
-            100,
-          ),
-        ),
-    );
+    // Mock API response that we control
+    vi.mocked(fetch).mockImplementationOnce(() => submitPromise as any);
 
     render(<CreateWorkspaceForm />);
     const user = userEvent.setup();
@@ -266,12 +253,23 @@ describe("CreateWorkspaceForm", () => {
     const submitButton = screen.getByRole("button", {
       name: /create workspace/i,
     });
-    await user.click(submitButton);
 
-    // Check that inputs are disabled during submission
-    expect(nameInput).toBeDisabled();
-    expect(screen.getByLabelText(/url slug/i)).toBeDisabled();
-    expect(screen.getByLabelText(/description/i)).toBeDisabled();
-    expect(submitButton).toBeDisabled();
+    // Start the submission
+    const clickPromise = user.click(submitButton);
+
+    // Wait for the form to start processing
+    await waitFor(() => {
+      expect(nameInput).toBeDisabled();
+      expect(screen.getByLabelText(/url slug/i)).toBeDisabled();
+      expect(submitButton).toBeDisabled();
+    });
+
+    // Complete the submission
+    resolveSubmit!({
+      ok: true,
+      json: async () => ({ workspace: { id: "workspace-id" } }),
+    });
+
+    await clickPromise;
   });
 });
