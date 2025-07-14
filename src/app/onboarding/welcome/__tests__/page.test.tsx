@@ -24,9 +24,11 @@ vi.mock("@/lib/supabase/client", () => ({
       select: vi.fn(() => ({
         eq: vi.fn(() => ({
           order: vi.fn(() => ({
-            limit: vi.fn().mockResolvedValue({
-              data: [{ workspace: { id: "test-workspace-id", slug: "test-workspace" } }],
-            }),
+            limit: vi.fn(() => ({
+              single: vi.fn().mockResolvedValue({
+                data: { id: "test-workspace-id", slug: "test-workspace" },
+              }),
+            })),
           })),
         })),
       })),
@@ -46,7 +48,7 @@ describe("WelcomePage", () => {
     (useRouter as any).mockReturnValue({ push: mockPush });
     (useWorkspaceStore as any).mockReturnValue({
       currentWorkspace: { id: "test-workspace-id", slug: "test-workspace" },
-      loadWorkspaces: mockLoadWorkspaces,
+      loadWorkspaces: mockLoadWorkspaces.mockResolvedValue(undefined),
     });
   });
 
@@ -85,10 +87,20 @@ describe("WelcomePage", () => {
 
     render(<WelcomePage />);
     
+    // Wait for workspace to load
+    await waitFor(() => {
+      expect(mockLoadWorkspaces).toHaveBeenCalled();
+    });
+    
     // Navigate to last slide
     const nextButton = screen.getByRole("button", { name: /next/i });
     fireEvent.click(nextButton);
     fireEvent.click(nextButton);
+    
+    // Wait for loading to complete
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /connect with github/i })).toBeEnabled();
+    });
     
     // Click Connect with GitHub
     const connectButton = screen.getByRole("button", { name: /connect with github/i });
@@ -120,27 +132,28 @@ describe("WelcomePage", () => {
       loadWorkspaces: mockLoadWorkspaces,
     });
 
-    // Mock supabase to return no workspaces
-    vi.mock("@/lib/supabase/client", () => ({
-      createClient: vi.fn(() => ({
-        auth: {
-          getUser: vi.fn().mockResolvedValue({
-            data: { user: { id: "test-user-id" } },
-          }),
-        },
-        from: vi.fn(() => ({
-          select: vi.fn(() => ({
-            eq: vi.fn(() => ({
-              order: vi.fn(() => ({
-                limit: vi.fn().mockResolvedValue({
-                  data: [],
+    // Mock createClient locally for this test
+    const { createClient } = await import("@/lib/supabase/client");
+    (createClient as any).mockReturnValue({
+      auth: {
+        getUser: vi.fn().mockResolvedValue({
+          data: { user: { id: "test-user-id" } },
+        }),
+      },
+      from: vi.fn(() => ({
+        select: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            order: vi.fn(() => ({
+              limit: vi.fn(() => ({
+                single: vi.fn().mockResolvedValue({
+                  data: null,
                 }),
               })),
             })),
           })),
         })),
       })),
-    }));
+    });
 
     render(<WelcomePage />);
     
@@ -163,10 +176,20 @@ describe("WelcomePage", () => {
 
     render(<WelcomePage />);
     
+    // Wait for workspace to load
+    await waitFor(() => {
+      expect(mockLoadWorkspaces).toHaveBeenCalled();
+    });
+    
     // Navigate to last slide
     const nextButton = screen.getByRole("button", { name: /next/i });
     fireEvent.click(nextButton);
     fireEvent.click(nextButton);
+    
+    // Wait for loading to complete
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /connect with github/i })).toBeEnabled();
+    });
     
     // Click Connect with GitHub
     const connectButton = screen.getByRole("button", { name: /connect with github/i });
