@@ -9,6 +9,7 @@ Daygent is a project management platform specifically designed for developers us
 ## Development Commands
 
 ### Running the Application
+
 ```bash
 npm run dev          # Start development server with Turbopack on http://localhost:3000
 npm run build        # Build for production
@@ -17,6 +18,7 @@ npm run test:e2e     # Run Playwright E2E tests
 ```
 
 ### Code Quality
+
 ```bash
 npm run lint         # Run ESLint with Next.js rules
 npm run format       # Format code with Prettier
@@ -24,6 +26,7 @@ npx tsc --noEmit     # Check TypeScript types
 ```
 
 ### Testing
+
 ```bash
 npm test             # Run tests with Vitest
 npm run test:watch   # Run tests in watch mode
@@ -31,13 +34,16 @@ npm run test:ui      # Run tests with Vitest UI
 ```
 
 ### Pre-commit Hooks
+
 The project uses Husky and lint-staged to ensure code quality. Commits must follow Conventional Commits format:
+
 - Types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `chore`, `revert`, `ci`, `build`
 - Example: `feat: add user authentication`
 
 ## Architecture
 
 ### Tech Stack
+
 - **Frontend**: Next.js 15.3.5 with App Router, React 19, TypeScript (strict mode)
 - **Styling**: Tailwind CSS v4 with shadcn/ui components
 - **State Management**: Zustand stores for auth and command palette
@@ -47,6 +53,7 @@ The project uses Husky and lint-staged to ensure code quality. Commits must foll
 - **Integrations**: Anthropic API, GitHub API v4 (GraphQL), Stripe (planned)
 
 ### Project Structure
+
 - `/src/app/` - Next.js App Router pages and layouts
   - `/(auth)/` - Authentication pages (login)
   - `/(dashboard)/` - Protected dashboard pages (issues, projects, activity, settings)
@@ -62,6 +69,7 @@ The project uses Husky and lint-staged to ensure code quality. Commits must foll
 - `/supabase/` - Database migrations and configuration
 
 ### Key Configuration Files
+
 - `tsconfig.json` - TypeScript with strict mode enabled
 - `vitest.config.ts` - Test configuration with jsdom environment
 - `components.json` - shadcn/ui component configuration
@@ -72,6 +80,7 @@ The project uses Husky and lint-staged to ensure code quality. Commits must foll
 ## Implementation Status
 
 ### Completed Features
+
 - ✅ Authentication system with Supabase Auth
 - ✅ GitHub and Google OAuth integration
 - ✅ Protected route middleware
@@ -89,17 +98,20 @@ The project uses Husky and lint-staged to ensure code quality. Commits must foll
 - ✅ Test infrastructure with coverage setup
 
 ### In Progress
+
 - 🔄 GitHub repository connection
 - 🔄 Issue creation and management
 - 🔄 AI-powered issue expansion
 
 ### Recently Completed
+
 - ✅ GitHub webhook integration
 - ✅ GitHub issue sync functionality
 - ✅ Bulk issue import with pagination
 - ✅ Sync status tracking
 
 ### Not Started
+
 - ❌ Kanban board for issues
 - ❌ Stripe subscription management
 - ❌ AI usage tracking
@@ -108,24 +120,31 @@ The project uses Husky and lint-staged to ensure code quality. Commits must foll
 ## Development Guidelines
 
 ### Component Development
+
 When creating new components:
+
 1. Use shadcn/ui patterns for consistency
 2. Follow the existing structure in `/src/components/ui/`
 3. Ensure components are keyboard-accessible
 4. Use TypeScript strict mode types
 
 ### State Management
+
 Zustand is implemented for state management. Current stores:
+
 - `auth.store.ts` - Authentication state and user management
 - `commandPalette.store.ts` - Command palette state
 
 When creating new stores:
+
 - Create stores in `/src/stores/`
 - Use TypeScript interfaces for store shapes
 - Follow existing patterns for actions and selectors
 
 ### API Integration
+
 When implementing API routes:
+
 - Use Next.js App Router API routes in `/src/app/api/`
 - Follow RESTful conventions
 - Implement proper error handling
@@ -136,9 +155,10 @@ When implementing API routes:
 **IMPORTANT**: All database operations should use the Supabase MCP server for consistency and proper handling.
 
 The database schema is fully implemented with migrations. Key tables:
-- organizations (workspaces)
+
+- workspaces (simplified from organizations)
 - users (with GitHub/Google OAuth)
-- organization_members (role-based access)
+- workspace_members (simplified membership)
 - repositories (GitHub connections)
 - projects (repository groupings)
 - issues (with AI-expanded content)
@@ -148,7 +168,14 @@ The database schema is fully implemented with migrations. Key tables:
 
 All tables have Row Level Security (RLS) policies enabled.
 
+**Database Functions:**
+
+- `create_workspace_with_member` - The correct function used by the application to create workspaces
+- `create_workspace_with_owner` - Legacy function from earlier migration, kept for backward compatibility
+- Both functions exist in the database, but the application uses `create_workspace_with_member`
+
 ### Testing Strategy
+
 - Unit tests for utilities and hooks (Vitest)
 - Component tests for UI components (React Testing Library)
 - Integration tests for API routes
@@ -158,6 +185,7 @@ All tables have Row Level Security (RLS) policies enabled.
 ## Environment Variables
 
 Required environment variables for local development:
+
 ```bash
 # Supabase
 NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321
@@ -177,6 +205,7 @@ GITHUB_APP_NAME=your_app_name
 ```
 
 **Production Deployment (Vercel):**
+
 - All three Supabase environment variables above are **required** in production
 - The `SUPABASE_SERVICE_ROLE_KEY` is critical for organization creation and administrative operations
 - Without it, users will get 500 errors when trying to create organizations
@@ -197,14 +226,17 @@ GITHUB_APP_NAME=your_app_name
 ## Common Issues and Solutions
 
 ### Authentication Timeout
+
 - Fixed by using `maybeSingle()` instead of `single()` for profile queries
 - Emergency bypass implemented for hanging profile queries
 
 ### RLS Policy Errors
+
 - Ensure user profiles are created automatically via database trigger
 - Check migrations for proper policy setup
 
 ### GitHub OAuth Setup
+
 - Configure OAuth app in GitHub settings
 - Update redirect URLs in Supabase dashboard
 - Set proper scopes: `repo`, `read:user`, `user:email`
