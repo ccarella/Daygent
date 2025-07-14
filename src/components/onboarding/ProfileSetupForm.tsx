@@ -15,11 +15,11 @@ interface ProfileSetupFormProps {
   defaultAvatar?: string;
 }
 
-export function ProfileSetupForm({ 
-  userId, 
-  defaultEmail, 
-  defaultName, 
-  defaultAvatar 
+export function ProfileSetupForm({
+  userId,
+  defaultEmail,
+  defaultName,
+  defaultAvatar,
 }: ProfileSetupFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -56,7 +56,7 @@ export function ProfileSetupForm({
         });
 
         if (!response.ok) throw new Error("Avatar upload failed");
-        
+
         const { url } = await response.json();
         uploadedAvatarUrl = url;
       }
@@ -71,7 +71,11 @@ export function ProfileSetupForm({
         }),
       });
 
-      if (!response.ok) throw new Error("Profile update failed");
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Profile update failed:", errorData);
+        throw new Error(errorData.error || "Profile update failed");
+      }
 
       toast.success("Profile updated successfully!");
       router.push("/onboarding/workspace");
@@ -88,11 +92,16 @@ export function ProfileSetupForm({
       <div className="flex flex-col items-center space-y-4">
         <Avatar className="h-24 w-24">
           <AvatarImage src={avatarUrl} />
-          <AvatarFallback>{name?.[0] || defaultEmail[0].toUpperCase()}</AvatarFallback>
+          <AvatarFallback>
+            {name?.[0] || defaultEmail[0].toUpperCase()}
+          </AvatarFallback>
         </Avatar>
-        
+
         <div>
-          <Label htmlFor="avatar" className="cursor-pointer text-blue-600 hover:text-blue-700">
+          <Label
+            htmlFor="avatar"
+            className="cursor-pointer text-blue-600 hover:text-blue-700"
+          >
             Upload Avatar
           </Label>
           <Input
@@ -127,9 +136,9 @@ export function ProfileSetupForm({
         />
       </div>
 
-      <Button 
-        type="submit" 
-        className="w-full" 
+      <Button
+        type="submit"
+        className="w-full"
         disabled={isLoading || !name.trim()}
       >
         {isLoading ? "Saving..." : "Continue to Workspace Setup"}
