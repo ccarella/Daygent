@@ -127,6 +127,12 @@ export const useAuthStore = create<AuthState>()(
           // Clear workspace store too
           const { reset } = useWorkspaceStore.getState();
           reset();
+          
+          // Force redirect to home page after successful logout
+          // This ensures the user is properly redirected after session is cleared
+          if (typeof window !== 'undefined') {
+            window.location.href = '/';
+          }
         } catch (error) {
           logger.error('Logout failed:', error);
           set(

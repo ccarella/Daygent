@@ -27,7 +27,6 @@ export function UserMenu({ isOpen }: UserMenuProps) {
 
   const handleLogout = async () => {
     await logout();
-    router.push("/login");
   };
 
   const displayName = user?.name || user?.github_username || "User";
