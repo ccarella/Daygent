@@ -5,7 +5,8 @@ import { createServerClient } from "@/lib/supabase/server";
 export async function GET() {
   console.log("[Supabase Health Check] Starting comprehensive health check...");
   
-  const results: any = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const results: Record<string, any> = {
     timestamp: new Date().toISOString(),
     environment: {
       nodeEnv: process.env.NODE_ENV,
@@ -53,7 +54,7 @@ export async function GET() {
         new Promise((_, reject) => 
           setTimeout(() => reject(new Error("getSession timeout after 5s")), 5000)
         )
-      ]) as any;
+      ]) as Awaited<ReturnType<typeof client.auth.getSession>>;
       
       const sessionTime = performance.now() - sessionStart;
       results.clientTests.getSession = {
@@ -63,9 +64,9 @@ export async function GET() {
         error: error?.message || null,
       };
       console.log("[Supabase Health Check] getSession completed in", sessionTime, "ms");
-    } catch (error: any) {
+    } catch (error) {
       results.clientTests.getSession = {
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         timeout: true,
       };
       results.errors.push(`getSession: ${error.message}`);
@@ -80,7 +81,7 @@ export async function GET() {
         new Promise((_, reject) => 
           setTimeout(() => reject(new Error("getUser timeout after 5s")), 5000)
         )
-      ]) as any;
+      ]) as Awaited<ReturnType<typeof client.auth.getSession>>;
       
       const userTime = performance.now() - userStart;
       results.clientTests.getUser = {
@@ -91,9 +92,9 @@ export async function GET() {
         error: error?.message || null,
       };
       console.log("[Supabase Health Check] getUser completed in", userTime, "ms");
-    } catch (error: any) {
+    } catch (error) {
       results.clientTests.getUser = {
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         timeout: true,
       };
       results.errors.push(`getUser: ${error.message}`);
@@ -115,14 +116,14 @@ export async function GET() {
         error: error?.message || null,
       };
       console.log("[Supabase Health Check] Database query completed in", dbTime, "ms");
-    } catch (error: any) {
+    } catch (error) {
       results.clientTests.database = {
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
       };
       results.errors.push(`Database: ${error.message}`);
     }
     
-  } catch (error: any) {
+  } catch (error) {
     console.error("[Supabase Health Check] Client initialization failed:", error);
     results.clientTests.initError = error.message;
     results.errors.push(`Client init: ${error.message}`);
@@ -143,11 +144,11 @@ export async function GET() {
         userId: user?.id || null,
         error: error?.message || null,
       };
-    } catch (error: any) {
-      results.serverTests.auth = { error: error.message };
+    } catch (error) {
+      results.serverTests.auth = { error: error instanceof Error ? error.message : String(error) };
       results.errors.push(`Server auth: ${error.message}`);
     }
-  } catch (error: any) {
+  } catch (error) {
     results.serverTests.initError = error.message;
     results.errors.push(`Server init: ${error.message}`);
   }

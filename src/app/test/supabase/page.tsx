@@ -4,14 +4,16 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 export default function SupabaseTestPage() {
-  const [results, setResults] = useState<any>({});
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [results, setResults] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function runTests() {
       console.log("[Supabase Test Page] Starting client-side tests...");
       
-      const testResults: any = {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const testResults: Record<string, any> = {
         timestamp: new Date().toISOString(),
         browser: {
           userAgent: navigator.userAgent,
@@ -43,13 +45,13 @@ export default function SupabaseTestPage() {
                 userId: parsed.user?.id,
                 expiresAt: parsed.expires_at,
               };
-            } catch (e) {
+            } catch {
               testResults.localStorage.authToken = { key, parseError: true };
             }
           }
         }
-      } catch (error: any) {
-        testResults.errors.push(`localStorage: ${error.message}`);
+      } catch (error) {
+        testResults.errors.push(`localStorage: ${error instanceof Error ? error instanceof Error ? error.message : String(error) : String(error)}`);
       }
 
       // Check cookies
@@ -58,8 +60,8 @@ export default function SupabaseTestPage() {
         const supabaseCookies = cookies.filter(c => c.includes('sb-') || c.includes('supabase'));
         testResults.cookies.total = cookies.length;
         testResults.cookies.supabaseCookies = supabaseCookies.map(c => c.split('=')[0]);
-      } catch (error: any) {
-        testResults.errors.push(`cookies: ${error.message}`);
+      } catch (error) {
+        testResults.errors.push(`cookies: ${error instanceof Error ? error.message : String(error)}`);
       }
 
       // Test Supabase client
@@ -82,7 +84,8 @@ export default function SupabaseTestPage() {
             new Promise((_, reject) => 
               setTimeout(() => reject(new Error("Timeout after 5s")), 5000)
             )
-          ]) as any;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ]) as { data: any, error: any };
           
           const sessionTime = performance.now() - sessionStart;
           testResults.supabaseClient.getSession = {
@@ -91,12 +94,12 @@ export default function SupabaseTestPage() {
             user: session?.user?.email,
             error: error?.message,
           };
-        } catch (error: any) {
+        } catch (error) {
           testResults.supabaseClient.getSession = {
-            error: error.message,
+            error: error instanceof Error ? error.message : String(error),
             timeout: true,
           };
-          testResults.errors.push(`getSession: ${error.message}`);
+          testResults.errors.push(`getSession: ${error instanceof Error ? error.message : String(error)}`);
         }
 
         // Test getUser
@@ -108,7 +111,8 @@ export default function SupabaseTestPage() {
             new Promise((_, reject) => 
               setTimeout(() => reject(new Error("Timeout after 5s")), 5000)
             )
-          ]) as any;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ]) as { data: any, error: any };
           
           const userTime = performance.now() - userStart;
           testResults.supabaseClient.getUser = {
@@ -118,19 +122,19 @@ export default function SupabaseTestPage() {
             email: user?.email,
             error: error?.message,
           };
-        } catch (error: any) {
+        } catch (error) {
           testResults.supabaseClient.getUser = {
-            error: error.message,
+            error: error instanceof Error ? error.message : String(error),
             timeout: true,
           };
-          testResults.errors.push(`getUser: ${error.message}`);
+          testResults.errors.push(`getUser: ${error instanceof Error ? error.message : String(error)}`);
         }
 
         // Test auth state listener
         console.log("[Supabase Test Page] Testing auth state listener...");
         try {
           let listenerCalled = false;
-          const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+          const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
             listenerCalled = true;
             console.log("[Supabase Test Page] Auth state changed:", event);
           });
@@ -144,14 +148,14 @@ export default function SupabaseTestPage() {
           };
           
           subscription?.unsubscribe();
-        } catch (error: any) {
-          testResults.supabaseClient.authListener = { error: error.message };
-          testResults.errors.push(`authListener: ${error.message}`);
+        } catch (error) {
+          testResults.supabaseClient.authListener = { error: error instanceof Error ? error.message : String(error) };
+          testResults.errors.push(`authListener: ${error instanceof Error ? error.message : String(error)}`);
         }
 
-      } catch (error: any) {
-        testResults.supabaseClient.initError = error.message;
-        testResults.errors.push(`Client init: ${error.message}`);
+      } catch (error) {
+        testResults.supabaseClient.initError = error instanceof Error ? error.message : String(error);
+        testResults.errors.push(`Client init: ${error instanceof Error ? error.message : String(error)}`);
       }
 
       // Summary
@@ -179,7 +183,7 @@ export default function SupabaseTestPage() {
         setResults(prev => ({ ...prev, serverSide: data }));
       })
       .catch(error => {
-        setResults(prev => ({ ...prev, serverSideError: error.message }));
+        setResults(prev => ({ ...prev, serverSideError: error instanceof Error ? error.message : String(error) }));
       });
   }, []);
 
