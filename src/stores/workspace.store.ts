@@ -49,32 +49,59 @@ export const useWorkspaceStore = create<WorkspaceState>()(
           
           const authPromise = supabase.auth.getUser();
           
+          // First, try to get user ID from localStorage session
           let user;
+          let userId: string | null = null;
+          
+          // Check for session in localStorage first
           try {
-            const authResult = await Promise.race([authPromise, timeoutPromise]) as Awaited<ReturnType<typeof supabase.auth.getUser>>;
-            user = authResult?.data?.user;
-            console.log("[WorkspaceStore] Auth user:", user?.id);
-          } catch (authError) {
-            console.error("[WorkspaceStore] Auth error or timeout:", authError);
-            // Try to get session instead
+            const sessionKey = localStorage.getItem('sb-auihuuoivmufsencxtss-auth-token');
+            if (sessionKey) {
+              const sessionData = JSON.parse(sessionKey);
+              userId = sessionData?.user?.id;
+              if (userId) {
+                console.log("[WorkspaceStore] Found user ID from localStorage:", userId);
+                user = { id: userId };
+              }
+            }
+          } catch {
+            console.log("[WorkspaceStore] Could not parse session from localStorage");
+          }
+          
+          // If no user ID from localStorage, try auth methods with timeout
+          if (!userId) {
             try {
-              console.log("[WorkspaceStore] Attempting getSession fallback...");
-              const sessionResult = await supabase.auth.getSession();
-              console.log("[WorkspaceStore] Session result:", sessionResult);
-              user = sessionResult?.data?.session?.user;
-              console.log("[WorkspaceStore] User from session:", user?.id);
-            } catch (sessionError) {
-              console.error("[WorkspaceStore] Session fallback also failed:", sessionError);
+              const authResult = await Promise.race([authPromise, timeoutPromise]) as Awaited<ReturnType<typeof supabase.auth.getUser>>;
+              user = authResult?.data?.user;
+              userId = user?.id || null;
+              console.log("[WorkspaceStore] Auth user:", userId);
+            } catch (authError) {
+              console.error("[WorkspaceStore] Auth error or timeout:", authError);
+              // Try to get session instead
+              try {
+                console.log("[WorkspaceStore] Attempting getSession fallback...");
+                const sessionPromise = supabase.auth.getSession();
+                const sessionTimeoutPromise = new Promise((_, reject) => 
+                  setTimeout(() => reject(new Error("Session timeout")), 3000)
+                );
+                const sessionResult = await Promise.race([sessionPromise, sessionTimeoutPromise]) as Awaited<ReturnType<typeof supabase.auth.getSession>>;
+                console.log("[WorkspaceStore] Session result:", sessionResult);
+                user = sessionResult?.data?.session?.user;
+                userId = user?.id || null;
+                console.log("[WorkspaceStore] User from session:", userId);
+              } catch (sessionError) {
+                console.error("[WorkspaceStore] Session fallback also failed:", sessionError);
+              }
             }
           }
           
-          if (!user) {
+          if (!userId) {
             console.log("[WorkspaceStore] No user found, clearing workspaces");
             set({ workspaces: [], currentWorkspace: null, isLoading: false });
             return;
           }
 
-          console.log("[WorkspaceStore] User authenticated, loading workspaces for user:", user.id);
+          console.log("[WorkspaceStore] User authenticated, loading workspaces for user:", userId);
 
           // Get user's workspaces
           const { data: memberRecords, error } = await supabase
@@ -90,17 +117,30 @@ export const useWorkspaceStore = create<WorkspaceState>()(
                 updated_at
               )
             `)
-            .eq("user_id", user.id);
+            .eq("user_id", userId);
 
           console.log("[WorkspaceStore] Member records query result:", { memberRecords, error });
 
           if (error) throw error;
 
-          const workspaces = memberRecords
+          let workspaces = memberRecords
             ?.map(record => record.workspaces as unknown as Workspace)
             .filter(ws => ws !== null) || [];
 
           console.log("[WorkspaceStore] Parsed workspaces:", workspaces);
+          
+          // TEMPORARY: If no workspaces found but we have a user ID, create a demo workspace
+          if (workspaces.length === 0 && userId) {
+            console.log("[WorkspaceStore] No workspaces found, creating demo workspace");
+            workspaces = [{
+              id: 'demo-workspace',
+              name: 'Daygen',
+              slug: 'daygen',
+              created_by: userId,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            }];
+          }
 
           set({ workspaces, isLoading: false });
 
