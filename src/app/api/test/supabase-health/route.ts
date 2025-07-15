@@ -69,7 +69,7 @@ export async function GET() {
         error: error instanceof Error ? error.message : String(error),
         timeout: true,
       };
-      results.errors.push(`getSession: ${error.message}`);
+      results.errors.push(`getSession: ${error instanceof Error ? error.message : String(error)}`);
     }
     
     // Test 3: Try to get user
@@ -97,7 +97,7 @@ export async function GET() {
         error: error instanceof Error ? error.message : String(error),
         timeout: true,
       };
-      results.errors.push(`getUser: ${error.message}`);
+      results.errors.push(`getUser: ${error instanceof Error ? error.message : String(error)}`);
     }
     
     // Test 4: Database connectivity
@@ -120,13 +120,13 @@ export async function GET() {
       results.clientTests.database = {
         error: error instanceof Error ? error.message : String(error),
       };
-      results.errors.push(`Database: ${error.message}`);
+      results.errors.push(`Database: ${error instanceof Error ? error.message : String(error)}`);
     }
     
   } catch (error) {
     console.error("[Supabase Health Check] Client initialization failed:", error);
-    results.clientTests.initError = error.message;
-    results.errors.push(`Client init: ${error.message}`);
+    results.clientTests.initError = error instanceof Error ? error.message : String(error);
+    results.errors.push(`Client init: ${error instanceof Error ? error.message : String(error)}`);
   }
   
   // Test 5: Server-side Supabase
@@ -146,11 +146,11 @@ export async function GET() {
       };
     } catch (error) {
       results.serverTests.auth = { error: error instanceof Error ? error.message : String(error) };
-      results.errors.push(`Server auth: ${error.message}`);
+      results.errors.push(`Server auth: ${error instanceof Error ? error.message : String(error)}`);
     }
   } catch (error) {
-    results.serverTests.initError = error.message;
-    results.errors.push(`Server init: ${error.message}`);
+    results.serverTests.initError = error instanceof Error ? error.message : String(error);
+    results.errors.push(`Server init: ${error instanceof Error ? error.message : String(error)}`);
   }
   
   // Test 6: Check localStorage and cookies info
