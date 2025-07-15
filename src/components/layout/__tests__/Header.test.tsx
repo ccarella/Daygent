@@ -47,7 +47,12 @@ describe("Header", () => {
     render(<Header />);
 
     // Check logo
-    expect(screen.getByText("Daygent")).toBeInTheDocument();
+    const logo = screen.getByText("Daygent");
+    expect(logo).toBeInTheDocument();
+    
+    // Check logo link points to /issues
+    const logoLink = logo.closest('a');
+    expect(logoLink).toHaveAttribute('href', '/issues');
 
     // Check search (desktop)
     const searchInput = screen.getByPlaceholderText(/Search issues, projects/i);
