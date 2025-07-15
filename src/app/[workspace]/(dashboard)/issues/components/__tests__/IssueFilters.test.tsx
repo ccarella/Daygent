@@ -14,28 +14,22 @@ vi.mock("next/navigation", () => ({
 }));
 
 describe("IssueFilters", () => {
-  const mockProjects = [
-    { id: "1", name: "Project Alpha" },
-    { id: "2", name: "Project Beta" },
-  ];
-
   beforeEach(() => {
     mockPush.mockClear();
     mockSearchParams = new URLSearchParams();
   });
 
   it("should render all filter controls", () => {
-    render(<IssueFilters projects={mockProjects} />);
+    render(<IssueFilters />);
 
     expect(screen.getByLabelText("Status")).toBeInTheDocument();
     expect(screen.getByLabelText("Priority")).toBeInTheDocument();
-    expect(screen.getByLabelText("Project")).toBeInTheDocument();
     expect(screen.getByLabelText("Assignee")).toBeInTheDocument();
     expect(screen.getByLabelText("AI Enhanced")).toBeInTheDocument();
   });
 
   it("should update URL when status filter changes", async () => {
-    const { user } = render(<IssueFilters projects={mockProjects} />);
+    const { user } = render(<IssueFilters />);
 
     const statusSelect = screen.getByLabelText("Status");
     await user.click(statusSelect);
@@ -45,7 +39,7 @@ describe("IssueFilters", () => {
   });
 
   it("should update URL when priority filter changes", async () => {
-    const { user } = render(<IssueFilters projects={mockProjects} />);
+    const { user } = render(<IssueFilters />);
 
     const prioritySelect = screen.getByLabelText("Priority");
     await user.click(prioritySelect);
@@ -54,21 +48,11 @@ describe("IssueFilters", () => {
     expect(mockPush).toHaveBeenCalledWith("/issues?priority=high");
   });
 
-  it("should update URL when project filter changes", async () => {
-    const { user } = render(<IssueFilters projects={mockProjects} />);
-
-    const projectSelect = screen.getByLabelText("Project");
-    await user.click(projectSelect);
-    await user.click(screen.getByText("Project Alpha"));
-
-    expect(mockPush).toHaveBeenCalledWith("/issues?project=1");
-  });
-
   it("should show active filter count", () => {
     mockSearchParams.set("status", "open");
     mockSearchParams.set("priority", "high");
 
-    render(<IssueFilters projects={mockProjects} />);
+    render(<IssueFilters />);
 
     expect(screen.getByText("2 filters active")).toBeInTheDocument();
   });
@@ -78,7 +62,7 @@ describe("IssueFilters", () => {
     mockSearchParams.set("status", "open");
     mockSearchParams.set("priority", "high");
 
-    const { user } = render(<IssueFilters projects={mockProjects} />);
+    const { user } = render(<IssueFilters />);
 
     const clearButton = screen.getByRole("button", { name: /clear/i });
     await user.click(clearButton);
@@ -88,8 +72,8 @@ describe("IssueFilters", () => {
 
   it("should toggle enhanced filter when checkbox is clicked", async () => {
     mockSearchParams = new URLSearchParams();
-    
-    const { user } = render(<IssueFilters projects={mockProjects} />);
+
+    const { user } = render(<IssueFilters />);
 
     const enhancedCheckbox = screen.getByRole("checkbox", {
       name: /AI Enhanced/i,
@@ -103,7 +87,7 @@ describe("IssueFilters", () => {
     mockSearchParams = new URLSearchParams();
     mockSearchParams.set("status", "open");
 
-    const { user } = render(<IssueFilters projects={mockProjects} />);
+    const { user } = render(<IssueFilters />);
 
     const statusSelect = screen.getByLabelText("Status");
     await user.click(statusSelect);
@@ -116,7 +100,7 @@ describe("IssueFilters", () => {
     mockSearchParams = new URLSearchParams();
     mockSearchParams.set("page", "3");
 
-    const { user } = render(<IssueFilters projects={mockProjects} />);
+    const { user } = render(<IssueFilters />);
 
     const statusSelect = screen.getByLabelText("Status");
     await user.click(statusSelect);
