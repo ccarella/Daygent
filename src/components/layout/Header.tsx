@@ -1,8 +1,9 @@
 "use client";
 
+import * as React from "react";
 import Link from "next/link";
 import { GlobalSearch } from "./GlobalSearch";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/ui/user-avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -109,15 +110,11 @@ export function Header() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="relative rounded-full focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
-                <Avatar className="h-8 w-8">
-                  <AvatarImage
-                    src={user?.avatar_url || undefined}
-                    alt={user?.name || "User"}
-                  />
-                  <AvatarFallback>
-                    {user?.name?.charAt(0).toUpperCase() || "U"}
-                  </AvatarFallback>
-                </Avatar>
+                <UserAvatar
+                  name={user?.name}
+                  avatarUrl={user?.avatar_url}
+                  className="h-8 w-8"
+                />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
