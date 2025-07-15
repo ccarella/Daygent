@@ -9,14 +9,17 @@ export async function POST(request: NextRequest) {
     if (!workspace_id) {
       return NextResponse.json(
         { error: "workspace_id is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     const supabase = await createClient();
-    
+
     // Verify the user is authenticated
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -32,7 +35,16 @@ export async function POST(request: NextRequest) {
     if (memberError || !memberData) {
       return NextResponse.json(
         { error: "You don't have access to this workspace" },
-        { status: 403 }
+        { status: 403 },
+      );
+    }
+
+    // Check if GitHub App name is configured
+    if (!process.env.GITHUB_APP_NAME) {
+      console.error("GITHUB_APP_NAME environment variable is not set");
+      return NextResponse.json(
+        { error: "GitHub App is not configured. Please contact support." },
+        { status: 500 },
       );
     }
 
@@ -51,7 +63,7 @@ export async function POST(request: NextRequest) {
     console.error("GitHub App installation initiation error:", error);
     return NextResponse.json(
       { error: "Failed to initiate GitHub App installation" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
