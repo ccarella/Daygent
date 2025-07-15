@@ -10,9 +10,11 @@ export default async function WorkspaceLayout({
 }) {
   const { workspace: workspaceSlug } = await params;
   const supabase = await createClient();
-  
+
   // Check if user is authenticated
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) {
     redirect("/login");
   }

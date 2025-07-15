@@ -21,7 +21,7 @@ const mockIssue: Issue = {
   assignee_github_login: "janedoe",
   labels: [
     { name: "bug", color: "#d73a4a" },
-    { name: "urgent", color: "#e99695" }
+    { name: "urgent", color: "#e99695" },
   ],
   github_created_at: new Date(Date.now() - 86400000).toISOString(),
   github_updated_at: new Date(Date.now() - 3600000).toISOString(),
@@ -40,7 +40,7 @@ const mockIssue: Issue = {
     installation_id: null,
     last_synced_at: null,
     created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
+    updated_at: new Date().toISOString(),
   } as Repository & { id: string; name: string; full_name: string },
 };
 
@@ -64,8 +64,6 @@ describe("IssueItem", () => {
     expect(screen.getByText("daygent")).toBeInTheDocument();
   });
 
-
-
   it("should show relative time for updates", () => {
     render(<IssueItem issue={mockIssue} />);
 
@@ -76,7 +74,9 @@ describe("IssueItem", () => {
   it("should link to issue detail page", () => {
     render(<IssueItem issue={mockIssue} />);
 
-    const link = screen.getByRole("link", { name: /#42.*Fix authentication bug/ });
+    const link = screen.getByRole("link", {
+      name: /#42.*Fix authentication bug/,
+    });
     expect(link).toHaveAttribute("href", `/issues/${mockIssue.id}`);
   });
 

@@ -7,8 +7,9 @@ export async function GET() {
   try {
     // Log environment check
     const hasServiceKey = !!process.env.SUPABASE_SERVICE_ROLE_KEY;
-    const serviceKeyPreview = process.env.SUPABASE_SERVICE_ROLE_KEY?.substring(0, 20) + "...";
-    
+    const serviceKeyPreview =
+      process.env.SUPABASE_SERVICE_ROLE_KEY?.substring(0, 20) + "...";
+
     // Get authenticated user
     const supabase = await createClient();
     const {
@@ -17,11 +18,14 @@ export async function GET() {
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json({ 
-        error: "Unauthorized",
-        hasServiceKey,
-        serviceKeyPreview 
-      }, { status: 401 });
+      return NextResponse.json(
+        {
+          error: "Unauthorized",
+          hasServiceKey,
+          serviceKeyPreview,
+        },
+        { status: 401 },
+      );
     }
 
     // Create a service role client to bypass RLS
@@ -46,34 +50,35 @@ export async function GET() {
           detectSessionInUrl: false,
         },
         db: {
-          schema: 'public',
+          schema: "public",
         },
         global: {
           headers: {
-            'x-my-custom-header': 'daygent-api',
+            "x-my-custom-header": "daygent-api",
           },
         },
-      }
+      },
     );
 
     // Test workspace creation using the database function
     const testSlug = `test-workspace-${Date.now()}`;
-    const { data: workspaceId, error: workspaceError } = await serviceRoleClient.rpc(
-      'create_workspace_with_member',
-      {
+    const { data: workspaceId, error: workspaceError } =
+      await serviceRoleClient.rpc("create_workspace_with_member", {
         p_name: "Test Workspace",
         p_slug: testSlug,
         p_user_id: user.id,
-      }
-    );
+      });
 
     if (workspaceError || !workspaceId) {
-      return NextResponse.json({ 
-        error: "Failed to create workspace",
-        details: workspaceError,
-        hasServiceKey,
-        serviceKeyPreview 
-      }, { status: 500 });
+      return NextResponse.json(
+        {
+          error: "Failed to create workspace",
+          details: workspaceError,
+          hasServiceKey,
+          serviceKeyPreview,
+        },
+        { status: 500 },
+      );
     }
 
     // Get the created workspace
@@ -84,27 +89,32 @@ export async function GET() {
       .single();
 
     if (fetchError || !workspace) {
-      return NextResponse.json({ 
-        error: "Workspace created but failed to fetch details",
-        details: fetchError,
-        hasServiceKey,
-        serviceKeyPreview 
-      }, { status: 500 });
+      return NextResponse.json(
+        {
+          error: "Workspace created but failed to fetch details",
+          details: fetchError,
+          hasServiceKey,
+          serviceKeyPreview,
+        },
+        { status: 500 },
+      );
     }
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
       workspace,
       hasServiceKey,
       serviceKeyPreview,
-      userId: user.id 
+      userId: user.id,
     });
-    
   } catch (error) {
-    return NextResponse.json({ 
-      error: "Unexpected error",
-      details: error instanceof Error ? error.message : "Unknown error",
-      stack: error instanceof Error ? error.stack : undefined
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: "Unexpected error",
+        details: error instanceof Error ? error.message : "Unknown error",
+        stack: error instanceof Error ? error.stack : undefined,
+      },
+      { status: 500 },
+    );
   }
 }

@@ -40,7 +40,7 @@ export function IssueSorting() {
       params.delete("page");
       router.push(`${pathname}?${params.toString()}`);
     },
-    [searchParams, router, pathname, currentSort]
+    [searchParams, router, pathname, currentSort],
   );
 
   const toggleOrder = useCallback(() => {

@@ -85,9 +85,13 @@ export default function DebugOrgPage() {
         return;
       }
 
-      const workspaces = workspaceData
-        ?.map((item: { workspace: unknown }) => item.workspace as Workspace | null)
-        .filter((ws): ws is Workspace => ws !== null) || [];
+      const workspaces =
+        workspaceData
+          ?.map(
+            (item: { workspace: unknown }) =>
+              item.workspace as Workspace | null,
+          )
+          .filter((ws): ws is Workspace => ws !== null) || [];
       setWorkspaces(workspaces);
     } catch (err) {
       setError(
@@ -235,7 +239,9 @@ export default function DebugOrgPage() {
                         <div>
                           <p className="text-muted-foreground">Created</p>
                           <p className="font-medium">
-                            {new Date(workspace.created_at).toLocaleDateString()}
+                            {new Date(
+                              workspace.created_at,
+                            ).toLocaleDateString()}
                           </p>
                         </div>
                       </div>

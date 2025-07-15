@@ -5,7 +5,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Github, GitBranch, User, Bell, Shield, CreditCard } from "lucide-react";
+import {
+  Github,
+  GitBranch,
+  User,
+  Bell,
+  Shield,
+  CreditCard,
+} from "lucide-react";
 
 interface SettingsPageProps {
   params: Promise<{ workspace: string }>;
@@ -13,7 +20,7 @@ interface SettingsPageProps {
 
 export default async function SettingsPage({ params }: SettingsPageProps) {
   const { workspace } = await params;
-  
+
   const settingsSections = [
     {
       title: "GitHub Integration",
@@ -60,7 +67,7 @@ export default async function SettingsPage({ params }: SettingsPageProps) {
           Manage your account and application settings
         </p>
       </div>
-      
+
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {settingsSections.map((section) => {
           const Icon = section.icon;

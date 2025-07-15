@@ -9,12 +9,14 @@ const inviteMemberSchema = z.object({
 // GET /api/workspaces/[id]/members - List workspace members
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params;
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -35,7 +37,8 @@ export async function GET(
     // Get all members
     const { data: members, error } = await supabase
       .from("workspace_members")
-      .select(`
+      .select(
+        `
         user_id,
         created_at,
         users (
@@ -44,7 +47,8 @@ export async function GET(
           full_name,
           avatar_url
         )
-      `)
+      `,
+      )
       .eq("workspace_id", id);
 
     if (error) throw error;
@@ -54,7 +58,7 @@ export async function GET(
     console.error("Failed to fetch workspace members:", error);
     return NextResponse.json(
       { error: "Failed to fetch workspace members" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -62,12 +66,14 @@ export async function GET(
 // POST /api/workspaces/[id]/members - Invite member
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params;
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -98,7 +104,7 @@ export async function POST(
     if (!invitedUser) {
       return NextResponse.json(
         { error: "User not found. They must sign up first." },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -113,37 +119,35 @@ export async function POST(
     if (existingMember) {
       return NextResponse.json(
         { error: "User is already a member of this workspace" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // Add member
-    const { error } = await supabase
-      .from("workspace_members")
-      .insert({
-        workspace_id: id,
-        user_id: invitedUser.id,
-      });
+    const { error } = await supabase.from("workspace_members").insert({
+      workspace_id: id,
+      user_id: invitedUser.id,
+    });
 
     if (error) throw error;
 
     return NextResponse.json(
       { message: "Member invited successfully" },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error) {
     console.error("Failed to invite member:", error);
-    
+
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: "Invalid request data", details: error.issues },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     return NextResponse.json(
       { error: "Failed to invite member" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -151,15 +155,17 @@ export async function POST(
 // DELETE /api/workspaces/[id]/members/[userId] - Remove member
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params;
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
     const url = new URL(request.url);
-    const userIdToRemove = url.pathname.split('/').pop();
+    const userIdToRemove = url.pathname.split("/").pop();
 
     if (!user || !userIdToRemove) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -188,7 +194,7 @@ export async function DELETE(
       if (!workspace || workspace.created_by !== user.id) {
         return NextResponse.json(
           { error: "Only workspace creator can remove other members" },
-          { status: 403 }
+          { status: 403 },
         );
       }
     }
@@ -207,7 +213,7 @@ export async function DELETE(
     console.error("Failed to remove member:", error);
     return NextResponse.json(
       { error: "Failed to remove member" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

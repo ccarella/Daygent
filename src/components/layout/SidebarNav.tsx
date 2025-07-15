@@ -64,7 +64,7 @@ export function SidebarNav({ isOpen, pathname }: SidebarNavProps) {
       {NAV_ITEMS.map((item, index) => {
         const Icon = item.icon;
         // Build workspace-based href
-        const href = currentWorkspace 
+        const href = currentWorkspace
           ? `/${currentWorkspace.slug}${item.href}`
           : item.href;
         const isActive = pathname === href || pathname.startsWith(href + "/");

@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { IssueList } from "./components/IssueList";
 import { IssueFilters } from "./components/IssueFilters";
@@ -161,14 +160,12 @@ export default async function IssuesPage({
             <IssueSorting />
           </div>
 
-          <Suspense fallback={<div>Loading issues...</div>}>
-            <IssueList
-              issues={issues || []}
-              totalCount={count || 0}
-              currentPage={page}
-              totalPages={totalPages}
-            />
-          </Suspense>
+          <IssueList
+            issues={issues || []}
+            totalCount={count || 0}
+            currentPage={page}
+            totalPages={totalPages}
+          />
         </>
       )}
     </div>

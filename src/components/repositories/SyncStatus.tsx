@@ -23,7 +23,9 @@ export function SyncStatus({ repositoryId }: SyncStatusProps) {
   useEffect(() => {
     const fetchStatus = async () => {
       try {
-        const response = await fetch(`/api/repositories/${repositoryId}/sync-status`);
+        const response = await fetch(
+          `/api/repositories/${repositoryId}/sync-status`,
+        );
         if (response.ok) {
           const data = await response.json();
           setStatus(data);
@@ -40,7 +42,6 @@ export function SyncStatus({ repositoryId }: SyncStatusProps) {
     return () => clearInterval(interval);
   }, [repositoryId]);
 
-
   if (isLoading) return null;
   if (!status) return null;
 
@@ -53,7 +54,9 @@ export function SyncStatus({ repositoryId }: SyncStatusProps) {
               <Clock className="h-5 w-5 text-blue-600 animate-pulse" />
               <div>
                 <p className="font-medium">Syncing issues...</p>
-                <p className="text-sm text-gray-600">This may take a few minutes</p>
+                <p className="text-sm text-gray-600">
+                  This may take a few minutes
+                </p>
               </div>
             </>
           ) : status.last_issue_sync ? (
@@ -62,7 +65,8 @@ export function SyncStatus({ repositoryId }: SyncStatusProps) {
               <div>
                 <p className="font-medium">Issues synced</p>
                 <p className="text-sm text-gray-600">
-                  Last synced {formatDistanceToNow(new Date(status.last_issue_sync), {
+                  Last synced{" "}
+                  {formatDistanceToNow(new Date(status.last_issue_sync), {
                     addSuffix: true,
                   })}
                 </p>
@@ -73,12 +77,14 @@ export function SyncStatus({ repositoryId }: SyncStatusProps) {
               <AlertCircle className="h-5 w-5 text-yellow-600" />
               <div>
                 <p className="font-medium">Not synced</p>
-                <p className="text-sm text-gray-600">Click sync to import issues</p>
+                <p className="text-sm text-gray-600">
+                  Click sync to import issues
+                </p>
               </div>
             </>
           )}
         </div>
-        
+
         {status.sync_in_progress && (
           <Badge variant="secondary">In Progress</Badge>
         )}

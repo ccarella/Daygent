@@ -4,7 +4,9 @@ import { WorkspaceCreationForm } from "@/components/onboarding/WorkspaceCreation
 
 export default async function WorkspaceCreationPage() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) {
     redirect("/login");
@@ -29,7 +31,7 @@ export default async function WorkspaceCreationPage() {
           A workspace is where you&apos;ll manage your projects and collaborate
         </p>
       </div>
-      
+
       <WorkspaceCreationForm />
     </div>
   );

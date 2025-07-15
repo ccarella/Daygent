@@ -10,11 +10,13 @@ const syncSchema = z.object({
 // POST /api/repositories/[id]/sync-issues - Sync issues from GitHub
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -22,22 +24,27 @@ export async function POST(
 
     const body = await request.json();
     const { full_sync } = syncSchema.parse(body);
-    
+
     // Await params
     const { id } = await params;
 
     // Get repository with workspace info
     const { data: repository, error: repoError } = await supabase
       .from("repositories")
-      .select(`
+      .select(
+        `
         *,
         workspace:workspaces(id)
-      `)
+      `,
+      )
       .eq("id", id)
       .single();
 
     if (repoError || !repository) {
-      return NextResponse.json({ error: "Repository not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Repository not found" },
+        { status: 404 },
+      );
     }
 
     // Verify user has access
@@ -62,23 +69,18 @@ export async function POST(
     if (syncStatus?.sync_in_progress) {
       return NextResponse.json(
         { error: "Sync already in progress" },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
     // Mark sync as in progress
-    await supabase
-      .from("sync_status")
-      .upsert({
-        repository_id: id,
-        sync_in_progress: true,
-      });
+    await supabase.from("sync_status").upsert({
+      repository_id: id,
+      sync_in_progress: true,
+    });
 
     // Start sync process (could be moved to background job)
-    const result = await syncRepositoryIssues(
-      repository,
-      full_sync
-    );
+    const result = await syncRepositoryIssues(repository, full_sync);
 
     // Update sync status
     await supabase
@@ -98,7 +100,7 @@ export async function POST(
     });
   } catch (error) {
     console.error("Issue sync error:", error);
-    
+
     // Mark sync as failed
     const supabase = await createClient();
     const { id } = await params;
@@ -109,7 +111,7 @@ export async function POST(
 
     return NextResponse.json(
       { error: "Failed to sync issues" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -124,11 +126,11 @@ interface SyncRepository {
 
 async function syncRepositoryIssues(
   repository: SyncRepository,
-  fullSync: boolean = false
+  fullSync: boolean = false,
 ) {
   const octokit = await getInstallationOctokit(repository.installation_id);
   const supabase = await createClient();
-  
+
   let synced = 0;
   let cursor = null;
 
@@ -139,7 +141,7 @@ async function syncRepositoryIssues(
       .select("last_issue_cursor")
       .eq("repository_id", repository.id)
       .single();
-    
+
     cursor = syncStatus?.last_issue_cursor;
   }
 
@@ -155,7 +157,7 @@ async function syncRepositoryIssues(
       sort: "updated",
       direction: "desc",
       per_page: 100,
-    }
+    },
   );
 
   for await (const { data: issues } of iterator) {
@@ -182,11 +184,13 @@ async function syncRepositoryIssues(
           state: issue.state,
           author_github_login: issue.user?.login,
           assignee_github_login: issue.assignee?.login,
-          labels: issue.labels.map((label: { name: string; color: string; description?: string }) => ({
-            name: label.name,
-            color: label.color,
-            description: label.description,
-          })),
+          labels: issue.labels.map(
+            (label: { name: string; color: string; description?: string }) => ({
+              name: label.name,
+              color: label.color,
+              description: label.description,
+            }),
+          ),
           github_created_at: issue.created_at,
           github_updated_at: issue.updated_at,
           github_closed_at: issue.closed_at,
@@ -213,11 +217,13 @@ async function syncRepositoryIssues(
 // GET /api/repositories/[id]/sync-status - Get sync status
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -225,7 +231,7 @@ export async function GET(
 
     // Await params
     const { id } = await params;
-    
+
     // Get repository to verify access
     const { data: repository } = await supabase
       .from("repositories")
@@ -234,7 +240,10 @@ export async function GET(
       .single();
 
     if (!repository) {
-      return NextResponse.json({ error: "Repository not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Repository not found" },
+        { status: 404 },
+      );
     }
 
     // Verify user has access
@@ -256,18 +265,27 @@ export async function GET(
       .eq("repository_id", id)
       .single();
 
-    if (error && error.code !== "PGRST116") { // PGRST116 is "not found"
+    if (error && error.code !== "PGRST116") {
+      // PGRST116 is "not found"
       console.error("Error fetching sync status:", error);
-      return NextResponse.json({ error: "Failed to fetch sync status" }, { status: 500 });
+      return NextResponse.json(
+        { error: "Failed to fetch sync status" },
+        { status: 500 },
+      );
     }
 
-    return NextResponse.json(syncStatus || {
-      sync_in_progress: false,
-      last_issue_sync: null,
-      last_issue_cursor: null,
-    });
+    return NextResponse.json(
+      syncStatus || {
+        sync_in_progress: false,
+        last_issue_sync: null,
+        last_issue_cursor: null,
+      },
+    );
   } catch (error) {
     console.error("Error fetching sync status:", error);
-    return NextResponse.json({ error: "Failed to fetch sync status" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch sync status" },
+      { status: 500 },
+    );
   }
 }

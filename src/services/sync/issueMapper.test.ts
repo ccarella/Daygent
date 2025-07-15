@@ -7,7 +7,7 @@ import {
   extractOriginalDescription,
   extractPullRequestReferences,
   generateSyncSummary,
-  GitHubIssue
+  GitHubIssue,
 } from "./issueMapper";
 
 describe("issueMapper", () => {
@@ -33,7 +33,7 @@ describe("issueMapper", () => {
     it("should extract urgent priority from labels", () => {
       const labels = {
         totalCount: 1,
-        nodes: [{ id: "1", name: "urgent", color: "red" }]
+        nodes: [{ id: "1", name: "urgent", color: "red" }],
       };
       expect(extractPriorityFromLabels(labels)).toBe("urgent");
     });
@@ -41,7 +41,7 @@ describe("issueMapper", () => {
     it("should extract high priority from labels", () => {
       const labels = {
         totalCount: 1,
-        nodes: [{ id: "1", name: "priority: high", color: "orange" }]
+        nodes: [{ id: "1", name: "priority: high", color: "orange" }],
       };
       expect(extractPriorityFromLabels(labels)).toBe("high");
     });
@@ -49,7 +49,7 @@ describe("issueMapper", () => {
     it("should return null when no priority labels found", () => {
       const labels = {
         totalCount: 1,
-        nodes: [{ id: "1", name: "bug", color: "red" }]
+        nodes: [{ id: "1", name: "bug", color: "red" }],
       };
       expect(extractPriorityFromLabels(labels)).toBeNull();
     });
@@ -57,7 +57,7 @@ describe("issueMapper", () => {
     it("should handle case-insensitive label matching", () => {
       const labels = {
         totalCount: 1,
-        nodes: [{ id: "1", name: "URGENT", color: "red" }]
+        nodes: [{ id: "1", name: "URGENT", color: "red" }],
       };
       expect(extractPriorityFromLabels(labels)).toBe("urgent");
     });
@@ -77,12 +77,12 @@ describe("issueMapper", () => {
       author: { login: "testuser" },
       assignees: { totalCount: 0, nodes: [] },
       labels: { totalCount: 0, nodes: [] },
-      comments: { totalCount: 0 }
+      comments: { totalCount: 0 },
     };
 
     it("should map GitHub issue to sync data format", () => {
       const result = mapGitHubIssueToSyncData(mockIssue);
-      
+
       expect(result).toEqual({
         github_issue_number: 42,
         github_issue_id: 123,
@@ -91,7 +91,7 @@ describe("issueMapper", () => {
         status: "open",
         assigned_to: null,
         updated_at: "2024-01-02T00:00:00Z",
-        completed_at: null
+        completed_at: null,
       });
     });
 
@@ -107,7 +107,7 @@ describe("issueMapper", () => {
         "Original description",
         "Enhanced description",
         "open",
-        "high"
+        "high",
       );
 
       expect(result).toContain("Original description");
@@ -122,7 +122,7 @@ describe("issueMapper", () => {
         "Original description",
         null,
         "open",
-        null
+        null,
       );
 
       expect(result).toBe("Original description");
@@ -159,7 +159,7 @@ Enhanced content
     it("should extract PR numbers from title", () => {
       const result = extractPullRequestReferences(
         "Fix issue #123 and #456",
-        null
+        null,
       );
       expect(result).toEqual([123, 456]);
     });
@@ -167,7 +167,7 @@ Enhanced content
     it("should extract PR numbers from body", () => {
       const result = extractPullRequestReferences(
         "Test issue",
-        "This fixes #789"
+        "This fixes #789",
       );
       expect(result).toEqual([789]);
     });
@@ -175,16 +175,13 @@ Enhanced content
     it("should return unique PR numbers", () => {
       const result = extractPullRequestReferences(
         "Fix #123",
-        "Also fixes #123 and #456"
+        "Also fixes #123 and #456",
       );
       expect(result).toEqual([123, 456]);
     });
 
     it("should handle no PR references", () => {
-      const result = extractPullRequestReferences(
-        "No references",
-        "Just text"
-      );
+      const result = extractPullRequestReferences("No references", "Just text");
       expect(result).toEqual([]);
     });
   });

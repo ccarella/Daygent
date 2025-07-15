@@ -16,13 +16,21 @@ export function useWorkspaceCommands() {
     const workspaceCommands = workspaces.map((workspace) => ({
       id: `switch-workspace-${workspace.id}`,
       title: `Switch to ${workspace.name}`,
-      description: workspace.id === currentWorkspace?.id ? "Current workspace" : "Switch workspace",
+      description:
+        workspace.id === currentWorkspace?.id
+          ? "Current workspace"
+          : "Switch workspace",
       icon: Building2,
       action: async () => {
         await switchWorkspace(workspace.id);
         router.push(`/${workspace.slug}/issues`);
       },
-      keywords: ["workspace", "switch", workspace.name.toLowerCase(), workspace.slug],
+      keywords: [
+        "workspace",
+        "switch",
+        workspace.name.toLowerCase(),
+        workspace.slug,
+      ],
     }));
 
     // Add create workspace command
@@ -39,7 +47,7 @@ export function useWorkspaceCommands() {
 
     // Register all workspace commands
     const allCommands = [...workspaceCommands, createWorkspaceCommand];
-    
+
     // Register commands with the command palette
     registerCommands("workspace", allCommands);
 

@@ -39,7 +39,9 @@ export default function GitHubSettingsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { currentWorkspace } = useWorkspaceStore();
-  const [installation, setInstallation] = useState<GitHubInstallation | null>(null);
+  const [installation, setInstallation] = useState<GitHubInstallation | null>(
+    null,
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -100,11 +102,13 @@ export default function GitHubSettingsPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to initiate GitHub connection");
+        throw new Error(
+          errorData.error || "Failed to initiate GitHub connection",
+        );
       }
 
       const { install_url } = await response.json();
-      
+
       // Redirect to GitHub App installation page
       window.location.href = install_url;
     } catch (err) {
@@ -118,7 +122,7 @@ export default function GitHubSettingsPage() {
     if (!currentWorkspace || !installation) return;
 
     const confirmed = window.confirm(
-      "Are you sure you want to disconnect GitHub? This will remove access to all connected repositories."
+      "Are you sure you want to disconnect GitHub? This will remove access to all connected repositories.",
     );
 
     if (!confirmed) return;
@@ -136,13 +140,12 @@ export default function GitHubSettingsPage() {
       if (deleteError) throw deleteError;
 
       setInstallation(null);
-      
+
       // Also clear any connected repositories
       await supabase
         .from("repositories")
         .delete()
         .eq("workspace_id", currentWorkspace.id);
-
     } catch (err) {
       console.error("Error disconnecting GitHub:", err);
       setError("Failed to disconnect GitHub");
@@ -158,7 +161,8 @@ export default function GitHubSettingsPage() {
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>No Workspace Selected</AlertTitle>
           <AlertDescription>
-            Please select a workspace from the sidebar to manage GitHub settings.
+            Please select a workspace from the sidebar to manage GitHub
+            settings.
           </AlertDescription>
         </Alert>
       </div>
@@ -177,9 +181,12 @@ export default function GitHubSettingsPage() {
       {success && (
         <Alert className="border-green-500 bg-green-50">
           <CheckCircle2 className="h-4 w-4 text-green-600" />
-          <AlertTitle className="text-green-800">Connected Successfully!</AlertTitle>
+          <AlertTitle className="text-green-800">
+            Connected Successfully!
+          </AlertTitle>
           <AlertDescription className="text-green-700">
-            Your GitHub account has been connected. You can now import repositories.
+            Your GitHub account has been connected. You can now import
+            repositories.
           </AlertDescription>
         </Alert>
       )}
@@ -189,13 +196,20 @@ export default function GitHubSettingsPage() {
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Connection Failed</AlertTitle>
           <AlertDescription>
-            {errorParam === "missing_params" && "Missing required parameters. Please try again."}
-            {errorParam === "invalid_workspace" && "Invalid workspace. Please try again."}
-            {errorParam === "token_exchange_failed" && "Failed to authenticate with GitHub. Please try again."}
-            {errorParam === "no_access_token" && "No access token received from GitHub. Please try again."}
-            {errorParam === "installation_fetch_failed" && "Failed to get installation details. Please try again."}
-            {errorParam === "storage_failed" && "Failed to save installation. Please try again."}
-            {errorParam === "unexpected" && "An unexpected error occurred. Please try again."}
+            {errorParam === "missing_params" &&
+              "Missing required parameters. Please try again."}
+            {errorParam === "invalid_workspace" &&
+              "Invalid workspace. Please try again."}
+            {errorParam === "token_exchange_failed" &&
+              "Failed to authenticate with GitHub. Please try again."}
+            {errorParam === "no_access_token" &&
+              "No access token received from GitHub. Please try again."}
+            {errorParam === "installation_fetch_failed" &&
+              "Failed to get installation details. Please try again."}
+            {errorParam === "storage_failed" &&
+              "Failed to save installation. Please try again."}
+            {errorParam === "unexpected" &&
+              "An unexpected error occurred. Please try again."}
           </AlertDescription>
         </Alert>
       )}
@@ -212,7 +226,8 @@ export default function GitHubSettingsPage() {
         <CardHeader>
           <CardTitle>GitHub App Connection</CardTitle>
           <CardDescription>
-            Connect your GitHub account to enable repository imports and issue synchronization
+            Connect your GitHub account to enable repository imports and issue
+            synchronization
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -228,7 +243,9 @@ export default function GitHubSettingsPage() {
                   <div className="flex items-center gap-3">
                     <Github className="h-8 w-8" />
                     <div>
-                      <p className="font-semibold text-lg">{installation.github_account_name}</p>
+                      <p className="font-semibold text-lg">
+                        {installation.github_account_name}
+                      </p>
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         {installation.github_account_type === "Organization" ? (
                           <Building2 className="h-3 w-3" />
@@ -244,7 +261,8 @@ export default function GitHubSettingsPage() {
                     Connected
                   </Badge>
                   <p className="text-sm text-muted-foreground">
-                    Connected on {new Date(installation.installed_at).toLocaleDateString()}
+                    Connected on{" "}
+                    {new Date(installation.installed_at).toLocaleDateString()}
                   </p>
                 </div>
                 <div className="flex gap-2">
@@ -306,7 +324,9 @@ export default function GitHubSettingsPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <h4 className="font-medium">What you can do with GitHub integration:</h4>
+            <h4 className="font-medium">
+              What you can do with GitHub integration:
+            </h4>
             <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
               <li>Import repositories from your GitHub account</li>
               <li>Sync issues between GitHub and Daygent</li>
@@ -314,7 +334,7 @@ export default function GitHubSettingsPage() {
               <li>Create AI-enhanced issue descriptions</li>
             </ul>
           </div>
-          
+
           <div className="space-y-2">
             <h4 className="font-medium">Required permissions:</h4>
             <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
@@ -327,8 +347,9 @@ export default function GitHubSettingsPage() {
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              You can manage which repositories to import after connecting your GitHub account.
-              Only repositories you explicitly select will be accessible by Daygent.
+              You can manage which repositories to import after connecting your
+              GitHub account. Only repositories you explicitly select will be
+              accessible by Daygent.
             </AlertDescription>
           </Alert>
         </CardContent>

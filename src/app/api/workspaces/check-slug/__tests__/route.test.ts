@@ -36,7 +36,7 @@ describe("POST /api/workspaces/check-slug", () => {
       {
         method: "POST",
         body: JSON.stringify({}),
-      }
+      },
     );
     const response = await POST(request);
     const data = await response.json();
@@ -51,7 +51,7 @@ describe("POST /api/workspaces/check-slug", () => {
       {
         method: "POST",
         body: JSON.stringify({ slug: "ab" }),
-      }
+      },
     );
     const response = await POST(request);
     const data = await response.json();
@@ -66,13 +66,15 @@ describe("POST /api/workspaces/check-slug", () => {
       {
         method: "POST",
         body: JSON.stringify({ slug: "Test Workspace" }),
-      }
+      },
     );
     const response = await POST(request);
     const data = await response.json();
 
     expect(response.status).toBe(400);
-    expect(data.error).toBe("Slug must contain only lowercase letters, numbers, and hyphens");
+    expect(data.error).toBe(
+      "Slug must contain only lowercase letters, numbers, and hyphens",
+    );
   });
 
   it("should return 401 if user is not authenticated", async () => {
@@ -86,7 +88,7 @@ describe("POST /api/workspaces/check-slug", () => {
       {
         method: "POST",
         body: JSON.stringify({ slug: "test-workspace" }),
-      }
+      },
     );
     const response = await POST(request);
     const data = await response.json();
@@ -111,7 +113,7 @@ describe("POST /api/workspaces/check-slug", () => {
       {
         method: "POST",
         body: JSON.stringify({ slug: "new-workspace" }),
-      }
+      },
     );
     const response = await POST(request);
     const data = await response.json();
@@ -138,7 +140,7 @@ describe("POST /api/workspaces/check-slug", () => {
       {
         method: "POST",
         body: JSON.stringify({ slug: "existing-workspace" }),
-      }
+      },
     );
     const response = await POST(request);
     const data = await response.json();
@@ -173,7 +175,7 @@ describe("POST /api/workspaces/check-slug", () => {
         {
           method: "POST",
           body: JSON.stringify({ slug }),
-        }
+        },
       );
       const response = await POST(request);
       const data = await response.json();
@@ -196,12 +198,14 @@ describe("POST /api/workspaces/check-slug", () => {
         {
           method: "POST",
           body: JSON.stringify({ slug }),
-        }
+        },
       );
       const response = await POST(request);
       const data = await response.json();
       expect(response.status).toBe(400);
-      expect(data.error).toBe("Slug must contain only lowercase letters, numbers, and hyphens");
+      expect(data.error).toBe(
+        "Slug must contain only lowercase letters, numbers, and hyphens",
+      );
     }
   });
 });

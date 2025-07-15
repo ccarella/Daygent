@@ -123,9 +123,7 @@ export default async function ProjectDetailPage({
                   View on GitHub
                 </a>
               </Button>
-              <SyncIssuesButton 
-                repositoryId={project.repositories.id} 
-              />
+              <SyncIssuesButton repositoryId={project.repositories.id} />
             </div>
           </div>
         </div>

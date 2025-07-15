@@ -59,7 +59,9 @@ export default function RepositoriesPage() {
   const [searchInput, setSearchInput] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
   const [successTimer, setSuccessTimer] = useState<NodeJS.Timeout | null>(null);
-  const [hasGitHubInstallation, setHasGitHubInstallation] = useState<boolean | null>(null);
+  const [hasGitHubInstallation, setHasGitHubInstallation] = useState<
+    boolean | null
+  >(null);
   const [checkingInstallation, setCheckingInstallation] = useState(true);
 
   useEffect(() => {
@@ -74,7 +76,7 @@ export default function RepositoriesPage() {
   useEffect(() => {
     const checkInstallation = async () => {
       if (!currentWorkspace) return;
-      
+
       setCheckingInstallation(true);
       try {
         const supabase = createClient();
@@ -83,7 +85,7 @@ export default function RepositoriesPage() {
           .select("id")
           .eq("workspace_id", currentWorkspace.id)
           .single();
-        
+
         setHasGitHubInstallation(!!data);
       } catch {
         setHasGitHubInstallation(false);
@@ -141,8 +143,7 @@ export default function RepositoriesPage() {
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>No Workspace Selected</AlertTitle>
           <AlertDescription>
-            Please select a workspace from the sidebar to manage
-            repositories.
+            Please select a workspace from the sidebar to manage repositories.
           </AlertDescription>
         </Alert>
       </div>
@@ -168,12 +169,13 @@ export default function RepositoriesPage() {
             Connect GitHub to import repositories to {currentWorkspace.name}
           </p>
         </div>
-        
+
         <Card>
           <CardHeader>
             <CardTitle>GitHub Not Connected</CardTitle>
             <CardDescription>
-              You need to connect your GitHub account before you can import repositories.
+              You need to connect your GitHub account before you can import
+              repositories.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -181,7 +183,9 @@ export default function RepositoriesPage() {
               <Github className="h-8 w-8" />
               <p>Connect your GitHub account to get started</p>
             </div>
-            <Button onClick={() => router.push(`/${workspaceSlug}/settings/github`)}>
+            <Button
+              onClick={() => router.push(`/${workspaceSlug}/settings/github`)}
+            >
               <Github className="mr-2 h-4 w-4" />
               Connect GitHub Account
             </Button>
@@ -411,7 +415,10 @@ export default function RepositoriesPage() {
       )}
 
       <div className="flex justify-end gap-4">
-        <Button variant="outline" onClick={() => router.push(`/${workspaceSlug}/projects/new`)}>
+        <Button
+          variant="outline"
+          onClick={() => router.push(`/${workspaceSlug}/projects/new`)}
+        >
           Skip for Now
         </Button>
         {repositories.some((r) => r.is_connected) && (

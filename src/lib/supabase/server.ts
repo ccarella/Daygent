@@ -76,7 +76,7 @@ export async function createServiceRoleClient() {
 
   if (!supabaseUrl || !serviceRoleKey) {
     throw new Error(
-      `Missing required environment variables: ${!supabaseUrl ? "NEXT_PUBLIC_SUPABASE_URL" : ""} ${!serviceRoleKey ? "SUPABASE_SERVICE_ROLE_KEY" : ""}`.trim()
+      `Missing required environment variables: ${!supabaseUrl ? "NEXT_PUBLIC_SUPABASE_URL" : ""} ${!serviceRoleKey ? "SUPABASE_SERVICE_ROLE_KEY" : ""}`.trim(),
     );
   }
 

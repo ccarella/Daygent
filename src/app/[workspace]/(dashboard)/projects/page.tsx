@@ -54,7 +54,9 @@ export default function ProjectsPage() {
       try {
         const [projectsResponse, reposResponse] = await Promise.all([
           fetch(`/api/projects?workspace_id=${currentWorkspace.id}`),
-          fetch(`/api/repositories/connected?workspace_id=${currentWorkspace.id}`),
+          fetch(
+            `/api/repositories/connected?workspace_id=${currentWorkspace.id}`,
+          ),
         ]);
 
         if (!projectsResponse.ok || !reposResponse.ok) {
@@ -146,7 +148,9 @@ export default function ProjectsPage() {
             </p>
             {repositories.length === 0 ? (
               <Button asChild>
-                <Link href={`/${workspaceSlug}/settings/repositories`}>Connect Repository</Link>
+                <Link href={`/${workspaceSlug}/settings/repositories`}>
+                  Connect Repository
+                </Link>
               </Button>
             ) : (
               <CreateProjectModal
@@ -186,7 +190,9 @@ export default function ProjectsPage() {
               </CardContent>
               <CardFooter>
                 <Button asChild variant="outline" className="w-full">
-                  <Link href={`/${workspaceSlug}/projects/${project.id}`}>View Project</Link>
+                  <Link href={`/${workspaceSlug}/projects/${project.id}`}>
+                    View Project
+                  </Link>
                 </Button>
               </CardFooter>
             </Card>

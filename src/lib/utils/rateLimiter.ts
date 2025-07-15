@@ -30,7 +30,7 @@ class RateLimiter {
     if (!entry || now > entry.resetTime) {
       this.limits.set(identifier, {
         count: 1,
-        resetTime: now + this.windowMs
+        resetTime: now + this.windowMs,
       });
       return true;
     }
@@ -83,16 +83,16 @@ class RateLimiter {
 // Create rate limiters for different endpoints
 export const syncRateLimiter = new RateLimiter(
   5 * 60 * 1000, // 5 minute window
-  10 // 10 sync requests per 5 minutes
+  10, // 10 sync requests per 5 minutes
 );
 
 export const apiRateLimiter = new RateLimiter(
   60 * 1000, // 1 minute window
-  100 // 100 requests per minute
+  100, // 100 requests per minute
 );
 
 // Cleanup expired entries every minute
-if (typeof window === 'undefined') {
+if (typeof window === "undefined") {
   setInterval(() => {
     syncRateLimiter.cleanup();
     apiRateLimiter.cleanup();
@@ -104,30 +104,30 @@ if (typeof window === 'undefined') {
  */
 export function rateLimitResponse(
   identifier: string,
-  limiter: RateLimiter
+  limiter: RateLimiter,
 ): Response | null {
   if (!limiter.check(identifier)) {
     const resetTime = limiter.getResetTime(identifier);
     const remaining = limiter.getRemaining(identifier);
-    
+
     return new Response(
       JSON.stringify({
         error: "Too many requests",
         message: "Rate limit exceeded. Please try again later.",
-        retryAfter: Math.ceil((resetTime - Date.now()) / 1000)
+        retryAfter: Math.ceil((resetTime - Date.now()) / 1000),
       }),
       {
         status: 429,
         headers: {
-          'Content-Type': 'application/json',
-          'X-RateLimit-Limit': limiter['maxRequests'].toString(),
-          'X-RateLimit-Remaining': remaining.toString(),
-          'X-RateLimit-Reset': resetTime.toString(),
-          'Retry-After': Math.ceil((resetTime - Date.now()) / 1000).toString()
-        }
-      }
+          "Content-Type": "application/json",
+          "X-RateLimit-Limit": limiter["maxRequests"].toString(),
+          "X-RateLimit-Remaining": remaining.toString(),
+          "X-RateLimit-Reset": resetTime.toString(),
+          "Retry-After": Math.ceil((resetTime - Date.now()) / 1000).toString(),
+        },
+      },
     );
   }
-  
+
   return null;
 }

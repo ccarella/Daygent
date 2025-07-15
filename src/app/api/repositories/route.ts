@@ -33,7 +33,10 @@ export async function GET(request: NextRequest) {
 
     if (!githubService) {
       return NextResponse.json(
-        { error: "GitHub not connected. Please connect your GitHub account in settings." },
+        {
+          error:
+            "GitHub not connected. Please connect your GitHub account in settings.",
+        },
         { status: 401 },
       );
     }

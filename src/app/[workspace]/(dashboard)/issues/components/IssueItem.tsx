@@ -3,10 +3,7 @@
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns/formatDistanceToNow";
 import { Badge } from "@/components/ui/badge";
-import {
-  CheckCircle2,
-  Circle,
-} from "lucide-react";
+import { CheckCircle2, Circle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Issue as WorkspaceIssue } from "@/types/workspace";
 
@@ -18,7 +15,10 @@ interface IssueItemProps {
   issue: Issue;
 }
 
-const stateConfig: Record<string, { label: string; icon: typeof Circle; className: string }> = {
+const stateConfig: Record<
+  string,
+  { label: string; icon: typeof Circle; className: string }
+> = {
   open: { label: "Open", icon: Circle, className: "text-blue-600" },
   closed: {
     label: "Closed",
@@ -28,7 +28,7 @@ const stateConfig: Record<string, { label: string; icon: typeof Circle; classNam
 };
 
 export function IssueItem({ issue }: IssueItemProps) {
-  const state = stateConfig[issue.state || 'open'];
+  const state = stateConfig[issue.state || "open"];
   const StateIcon = state.icon;
 
   return (
@@ -59,9 +59,11 @@ export function IssueItem({ issue }: IssueItemProps) {
                 )}
                 <span>
                   Updated{" "}
-                  {issue.updated_at ? formatDistanceToNow(new Date(issue.updated_at), {
-                    addSuffix: true,
-                  }) : 'recently'}
+                  {issue.updated_at
+                    ? formatDistanceToNow(new Date(issue.updated_at), {
+                        addSuffix: true,
+                      })
+                    : "recently"}
                 </span>
               </div>
             </div>

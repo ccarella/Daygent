@@ -130,11 +130,14 @@ describe("POST /api/workspaces", () => {
       created_by: "user-123",
     });
 
-    expect(mockSupabaseClient.rpc).toHaveBeenCalledWith("create_workspace_with_member", {
-      p_name: "Test Workspace",
-      p_slug: "test-workspace",
-      p_user_id: "user-123",
-    });
+    expect(mockSupabaseClient.rpc).toHaveBeenCalledWith(
+      "create_workspace_with_member",
+      {
+        p_name: "Test Workspace",
+        p_slug: "test-workspace",
+        p_user_id: "user-123",
+      },
+    );
   });
 
   it("handles workspace creation failure", async () => {

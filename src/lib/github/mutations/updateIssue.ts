@@ -1,4 +1,4 @@
-import { gql } from '@apollo/client';
+import { gql } from "@apollo/client";
 
 export const UPDATE_ISSUE = gql`
   mutation UpdateIssue($input: UpdateIssueInput!) {

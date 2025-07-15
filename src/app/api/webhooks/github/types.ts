@@ -96,7 +96,9 @@ export function isIssuesEvent(event: unknown): event is IssuesEvent {
   );
 }
 
-export function isIssueCommentEvent(event: unknown): event is IssueCommentEvent {
+export function isIssueCommentEvent(
+  event: unknown,
+): event is IssueCommentEvent {
   return (
     typeof event === "object" &&
     event !== null &&
@@ -115,7 +117,9 @@ export function isPullRequestEvent(event: unknown): event is PullRequestEvent {
   );
 }
 
-export function isInstallationEvent(event: unknown): event is InstallationEvent {
+export function isInstallationEvent(
+  event: unknown,
+): event is InstallationEvent {
   return (
     typeof event === "object" &&
     event !== null &&
@@ -125,7 +129,7 @@ export function isInstallationEvent(event: unknown): event is InstallationEvent 
 }
 
 export function isInstallationRepositoriesEvent(
-  event: unknown
+  event: unknown,
 ): event is InstallationRepositoriesEvent {
   return (
     typeof event === "object" &&

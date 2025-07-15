@@ -32,7 +32,7 @@ const formSchema = z.object({
     .max(30, "Slug must be less than 30 characters")
     .regex(
       /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
-      "Slug must be lowercase alphanumeric with hyphens only"
+      "Slug must be lowercase alphanumeric with hyphens only",
     ),
   description: z.string().optional(),
 });
@@ -88,8 +88,10 @@ export function WorkspaceCreationForm() {
 
       setIsCheckingSlug(true);
       try {
-        const response = await fetch(`/api/workspaces/check-slug?slug=${encodeURIComponent(slug)}`);
-        
+        const response = await fetch(
+          `/api/workspaces/check-slug?slug=${encodeURIComponent(slug)}`,
+        );
+
         if (!response.ok) {
           if (response.status === 401) {
             console.error("User not authenticated");
@@ -141,7 +143,10 @@ export function WorkspaceCreationForm() {
       router.push("/onboarding/welcome");
     } catch (error) {
       console.error("Error creating workspace:", error);
-      const errorMessage = error instanceof Error ? error.message : "Something went wrong. Please try again.";
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Something went wrong. Please try again.";
       toast.error("Error creating workspace", {
         description: errorMessage,
       });

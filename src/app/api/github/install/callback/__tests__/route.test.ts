@@ -235,6 +235,8 @@ describe("GitHub Install Callback Route", () => {
 
     const response = await GET(mockRequest);
 
-    expect(response.url).toContain("/test-workspace/settings/github?error=token_exchange_failed");
+    expect(response.url).toContain(
+      "/test-workspace/settings/github?error=token_exchange_failed",
+    );
   });
 });

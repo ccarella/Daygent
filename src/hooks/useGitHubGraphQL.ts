@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
-import { GitHubGraphQLClient, createGitHubGraphQLClient } from '@/lib/github';
-import type { Session } from '@supabase/supabase-js';
+import { useCallback, useEffect, useRef, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { GitHubGraphQLClient, createGitHubGraphQLClient } from "@/lib/github";
+import type { Session } from "@supabase/supabase-js";
 
 interface UseGitHubGraphQLReturn {
   client: GitHubGraphQLClient | null;
@@ -13,11 +13,11 @@ interface UseGitHubGraphQLReturn {
 /**
  * Hook to use GitHub GraphQL client in React components.
  * Automatically handles authentication using Supabase session.
- * 
+ *
  * @example
  * ```tsx
  * const { client, isLoading, error } = useGitHubGraphQL();
- * 
+ *
  * const fetchRepositories = async () => {
  *   if (!client) return;
  *   const data = await client.query(LIST_USER_REPOSITORIES, { first: 10 });
@@ -54,7 +54,7 @@ export function useGitHubGraphQL(): UseGitHubGraphQLReturn {
       const providerToken = session.provider_token;
 
       if (!providerToken) {
-        throw new Error('No GitHub provider token found in session');
+        throw new Error("No GitHub provider token found in session");
       }
 
       // Create client with dynamic token getter to handle token refresh
@@ -66,8 +66,8 @@ export function useGitHubGraphQL(): UseGitHubGraphQLReturn {
 
       setClient(graphqlClient);
     } catch (err) {
-      console.error('Failed to initialize GitHub GraphQL client:', err);
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      console.error("Failed to initialize GitHub GraphQL client:", err);
+      setError(err instanceof Error ? err.message : "Unknown error");
       setClient(null);
     } finally {
       setIsLoading(false);
@@ -80,13 +80,15 @@ export function useGitHubGraphQL(): UseGitHubGraphQLReturn {
     // Subscribe to auth state changes
     const {
       data: { subscription },
-    } = supabaseRef.current.auth.onAuthStateChange((_event: string, session: Session | null) => {
-      if (!session?.provider_token) {
-        setClient(null);
-      } else {
-        initializeClient();
-      }
-    });
+    } = supabaseRef.current.auth.onAuthStateChange(
+      (_event: string, session: Session | null) => {
+        if (!session?.provider_token) {
+          setClient(null);
+        } else {
+          initializeClient();
+        }
+      },
+    );
 
     return () => {
       subscription.unsubscribe();

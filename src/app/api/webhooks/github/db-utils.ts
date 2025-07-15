@@ -1,13 +1,10 @@
 import { createServiceRoleClient } from "@/lib/supabase/server";
-import {
-  PullRequestSyncData,
-  CommentSyncData,
-} from "./types";
+import { PullRequestSyncData, CommentSyncData } from "./types";
 
 // Helper to get repository by GitHub ID
 export async function getRepositoryByGithubId(githubRepoId: number) {
   const supabase = await createServiceRoleClient();
-  
+
   const { data, error } = await supabase
     .from("repositories")
     .select("*")
@@ -26,10 +23,10 @@ export async function getRepositoryByGithubId(githubRepoId: number) {
 export async function getOrCreateUserByGithubId(
   githubUserId: number,
   githubUsername: string,
-  email?: string | null
+  email?: string | null,
 ) {
   const supabase = await createServiceRoleClient();
-  
+
   // First try to find existing user
   const { data: existingUser } = await supabase
     .from("users")
@@ -64,7 +61,7 @@ export async function getOrCreateUserByGithubId(
 // Helper to get workspace from repository
 export async function getWorkspaceFromRepository(repositoryId: string) {
   const supabase = await createServiceRoleClient();
-  
+
   const { data, error } = await supabase
     .from("repositories")
     .select("workspace_id")
@@ -79,12 +76,11 @@ export async function getWorkspaceFromRepository(repositoryId: string) {
   return data?.workspace_id;
 }
 
-
 // Helper to sync issue comment
 export async function syncIssueComment(
   repositoryId: string,
   issueNumber: number,
-  commentData: CommentSyncData
+  commentData: CommentSyncData,
 ) {
   const supabase = await createServiceRoleClient();
 
@@ -104,7 +100,7 @@ export async function syncIssueComment(
   // Get or create user
   const user = await getOrCreateUserByGithubId(
     commentData.user_github_id,
-    `github_user_${commentData.user_github_id}`
+    `github_user_${commentData.user_github_id}`,
   );
 
   if (!user) {
@@ -164,7 +160,7 @@ export async function syncIssueComment(
 // Helper to link PR to issues
 export async function linkPullRequestToIssues(
   repositoryId: string,
-  prData: PullRequestSyncData
+  prData: PullRequestSyncData,
 ) {
   const supabase = await createServiceRoleClient();
 
@@ -182,7 +178,10 @@ export async function linkPullRequestToIssues(
       .eq("github_issue_number", issueNumber);
 
     if (error) {
-      console.error(`[Webhook DB] Error linking PR to issue #${issueNumber}:`, error);
+      console.error(
+        `[Webhook DB] Error linking PR to issue #${issueNumber}:`,
+        error,
+      );
     }
   }
 }
@@ -190,7 +189,7 @@ export async function linkPullRequestToIssues(
 // Helper to update repository installation
 export async function updateRepositoryInstallation(
   fullName: string,
-  installationId: number | null
+  installationId: number | null,
 ) {
   const supabase = await createServiceRoleClient();
 
@@ -203,7 +202,10 @@ export async function updateRepositoryInstallation(
     .eq("full_name", fullName);
 
   if (error) {
-    console.error("[Webhook DB] Error updating repository installation:", error);
+    console.error(
+      "[Webhook DB] Error updating repository installation:",
+      error,
+    );
   }
 }
 

@@ -15,21 +15,21 @@ const syncRequestSchema = z.object({
 
 export async function POST(
   request: NextRequest,
-  props: { params: Promise<{ id: string }> }
+  props: { params: Promise<{ id: string }> },
 ) {
   try {
     const params = await props.params;
     const repositoryId = params.id;
-    
+
     // Authenticate user
     const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
     if (authError || !user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Check rate limit
@@ -41,11 +41,11 @@ export async function POST(
     // Validate request body
     const body = await request.json();
     const validationResult = syncRequestSchema.safeParse(body);
-    
+
     if (!validationResult.success) {
       return NextResponse.json(
         { error: "Invalid request", details: validationResult.error.format() },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -54,12 +54,14 @@ export async function POST(
     // Check repository access and get repository details
     const { data: repository, error: repoError } = await supabase
       .from("repositories")
-      .select(`
+      .select(
+        `
         *,
         workspace:workspaces!inner(
           workspace_members!inner(*)
         )
-      `)
+      `,
+      )
       .eq("id", repositoryId)
       .eq("workspace.workspace_members.user_id", user.id)
       .single();
@@ -67,7 +69,7 @@ export async function POST(
     if (repoError || !repository) {
       return NextResponse.json(
         { error: "Repository not found or access denied" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -76,7 +78,7 @@ export async function POST(
     if (!hasAccess) {
       return NextResponse.json(
         { error: "Access denied. You must be a workspace member." },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -84,7 +86,7 @@ export async function POST(
     if (repository.sync_status === "syncing") {
       return NextResponse.json(
         { error: "Sync already in progress" },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
@@ -96,7 +98,7 @@ export async function POST(
         type: "issues",
         status: "running",
         created_by: user.id,
-        metadata: { states, since, batchSize }
+        metadata: { states, since, batchSize },
       })
       .select()
       .single();
@@ -105,7 +107,7 @@ export async function POST(
       console.error("[Sync API] Failed to create sync job:", jobError);
       return NextResponse.json(
         { error: "Failed to start sync job" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -113,8 +115,8 @@ export async function POST(
     performSync(repository, syncJob.id, {
       states,
       since: since ? new Date(since) : undefined,
-      batchSize
-    }).catch(error => {
+      batchSize,
+    }).catch((error) => {
       console.error("[Sync API] Background sync failed:", error);
     });
 
@@ -122,14 +124,13 @@ export async function POST(
       message: "Sync job started",
       jobId: syncJob.id,
       status: "running",
-      checkStatusUrl: `/api/repositories/${repositoryId}/sync/status?jobId=${syncJob.id}`
+      checkStatusUrl: `/api/repositories/${repositoryId}/sync/status?jobId=${syncJob.id}`,
     });
-
   } catch (error) {
     console.error("[Sync API] Unexpected error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -138,10 +139,10 @@ export async function POST(
 async function performSync(
   repository: RepositoryWithGitHub,
   jobId: string,
-  options: SyncJobOptions
+  options: SyncJobOptions,
 ) {
   const supabase = await createClient();
-  
+
   try {
     // Create GitHub client
     const githubClient = await getServerGitHubGraphQLClient();
@@ -154,13 +155,15 @@ async function performSync(
     await syncService.initialize();
 
     // Extract github_owner and github_name from full_name if not present
-    const github_owner = repository.github_owner || repository.full_name?.split('/')[0];
-    const github_name = repository.github_name || repository.full_name?.split('/')[1];
-    
+    const github_owner =
+      repository.github_owner || repository.full_name?.split("/")[0];
+    const github_name =
+      repository.github_name || repository.full_name?.split("/")[1];
+
     if (!github_owner || !github_name) {
       throw new Error("Unable to determine repository owner and name");
     }
-    
+
     // Perform sync
     const result = await syncService.syncRepositoryIssues(
       {
@@ -183,12 +186,12 @@ async function performSync(
               errors: progress.errors,
               metadata: {
                 ...options,
-                lastProgress: progress
-              }
+                lastProgress: progress,
+              },
             })
             .eq("id", jobId);
-        }
-      }
+        },
+      },
     );
 
     // Update job status
@@ -204,11 +207,10 @@ async function performSync(
         error_details: result.errorDetails,
         metadata: {
           ...options,
-          summary: result.summary
-        }
+          summary: result.summary,
+        },
       })
       .eq("id", jobId);
-
   } catch (error) {
     // Update job status on error
     await supabase
@@ -216,10 +218,12 @@ async function performSync(
       .update({
         status: "failed",
         completed_at: new Date().toISOString(),
-        error_details: [error instanceof Error ? error.message : "Unknown error"],
+        error_details: [
+          error instanceof Error ? error.message : "Unknown error",
+        ],
       })
       .eq("id", jobId);
-    
+
     throw error;
   }
 }

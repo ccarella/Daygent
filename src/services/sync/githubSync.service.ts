@@ -1,14 +1,16 @@
 import { GET_ISSUES } from "@/lib/github/queries/issues";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { GitHubGraphQLClient } from "@/lib/github/client";
-import { withRetry, isTransientError, isGitHubRateLimitError } from "@/lib/utils/retry";
-import { 
-  getWorkspaceFromRepository
-} from "@/app/api/webhooks/github/db-utils";
-import { 
-  GitHubIssue, 
+import {
+  withRetry,
+  isTransientError,
+  isGitHubRateLimitError,
+} from "@/lib/utils/retry";
+import { getWorkspaceFromRepository } from "@/app/api/webhooks/github/db-utils";
+import {
+  GitHubIssue,
   mapGitHubIssueToSyncData,
-  generateSyncSummary
+  generateSyncSummary,
 } from "./issueMapper";
 
 export interface SyncOptions {
@@ -63,7 +65,9 @@ export class GitHubSyncService {
 
   private getSupabase() {
     if (!this.supabase) {
-      throw new Error("GitHubSyncService not initialized. Call initialize() first.");
+      throw new Error(
+        "GitHubSyncService not initialized. Call initialize() first.",
+      );
     }
     return this.supabase;
   }
@@ -73,7 +77,7 @@ export class GitHubSyncService {
    */
   async syncRepositoryIssues(
     repository: RepositoryInfo,
-    options: SyncOptions = {}
+    options: SyncOptions = {},
   ): Promise<SyncResult> {
     const {
       states = ["OPEN", "CLOSED"],
@@ -81,7 +85,7 @@ export class GitHubSyncService {
       maxDuration = 10 * 60 * 1000, // 10 minutes default
       maxIssues = 5000, // Default max issues to sync
       onProgress,
-      abortSignal
+      abortSignal,
     } = options;
 
     // Initialize tracking
@@ -99,7 +103,9 @@ export class GitHubSyncService {
     // Get workspace from repository
     const workspaceId = await getWorkspaceFromRepository(repository.id);
     if (!workspaceId) {
-      console.error(`[Sync] No workspace found for repository ${repository.github_name}`);
+      console.error(
+        `[Sync] No workspace found for repository ${repository.github_name}`,
+      );
       return {
         success: false,
         issuesProcessed: 0,
@@ -107,7 +113,7 @@ export class GitHubSyncService {
         updated: 0,
         errors: 0,
         summary: "Failed to get workspace for repository",
-        errorDetails: ["Repository must belong to a workspace"]
+        errorDetails: ["Repository must belong to a workspace"],
       };
     }
 
@@ -118,7 +124,7 @@ export class GitHubSyncService {
 
       do {
         currentPage++;
-        
+
         // Fetch batch of issues from GitHub
         type IssueQueryResponse = {
           repository: {
@@ -132,27 +138,32 @@ export class GitHubSyncService {
             };
           };
         };
-        
+
         const response: IssueQueryResponse = await withRetry(
-          () => this.client.query<IssueQueryResponse>(
-            GET_ISSUES,
-            {
-              owner: repository.github_owner,
-              name: repository.github_name,
-              first: batchSize,
-              after: cursor,
-              states,
-              orderBy: { field: "UPDATED_AT", direction: "DESC" }
-            },
-            {
-              fetchPolicy: "network-only" // Always fetch fresh data
-            }
-          ),
+          () =>
+            this.client.query<IssueQueryResponse>(
+              GET_ISSUES,
+              {
+                owner: repository.github_owner,
+                name: repository.github_name,
+                first: batchSize,
+                after: cursor,
+                states,
+                orderBy: { field: "UPDATED_AT", direction: "DESC" },
+              },
+              {
+                fetchPolicy: "network-only", // Always fetch fresh data
+              },
+            ),
           {
             maxAttempts: 3,
-            retryCondition: (error) => isTransientError(error) || isGitHubRateLimitError(error),
+            retryCondition: (error) =>
+              isTransientError(error) || isGitHubRateLimitError(error),
             onRetry: (attempt, error) => {
-              console.log(`[Sync] Retrying GitHub API call (attempt ${attempt}):`, error);
+              console.log(
+                `[Sync] Retrying GitHub API call (attempt ${attempt}):`,
+                error,
+              );
               if (onProgress) {
                 onProgress({
                   total: totalCount,
@@ -161,14 +172,16 @@ export class GitHubSyncService {
                   updated,
                   errors,
                   currentPage,
-                  message: `Retrying GitHub API call (attempt ${attempt})...`
+                  message: `Retrying GitHub API call (attempt ${attempt})...`,
                 });
               }
-            }
-          }
+            },
+          },
         );
 
-        const issuesData: IssueQueryResponse["repository"]["issues"] | undefined = response.repository?.issues;
+        const issuesData:
+          | IssueQueryResponse["repository"]["issues"]
+          | undefined = response.repository?.issues;
         if (!issuesData) {
           throw new Error("Failed to fetch issues from GitHub");
         }
@@ -178,7 +191,9 @@ export class GitHubSyncService {
 
         // Check if we've exceeded limits
         if (totalCount > maxIssues) {
-          console.warn(`[Sync] Repository has ${totalCount} issues, exceeding limit of ${maxIssues}. Sync will be limited.`);
+          console.warn(
+            `[Sync] Repository has ${totalCount} issues, exceeding limit of ${maxIssues}. Sync will be limited.`,
+          );
         }
 
         // Process issues in batch for better performance
@@ -195,7 +210,9 @@ export class GitHubSyncService {
 
               // Check duration limit
               if (Date.now() - startTime > maxDuration) {
-                throw new Error(`Sync exceeded maximum duration of ${maxDuration}ms`);
+                throw new Error(
+                  `Sync exceeded maximum duration of ${maxDuration}ms`,
+                );
               }
 
               // Check issue count limit
@@ -204,7 +221,7 @@ export class GitHubSyncService {
               }
 
               processed++;
-              
+
               // Report progress
               if (onProgress) {
                 onProgress({
@@ -214,13 +231,13 @@ export class GitHubSyncService {
                   updated,
                   errors,
                   currentPage,
-                  message: `Processing issue #${issueNumber}: ${title}`
+                  message: `Processing issue #${issueNumber}: ${title}`,
                 });
               }
-              
+
               return true; // Continue processing
-            }
-          }
+            },
+          },
         );
 
         created += batchResult.created;
@@ -232,7 +249,9 @@ export class GitHubSyncService {
           if (errorDetails.length < MAX_ERROR_DETAILS) {
             errorDetails.push(error);
           } else if (errorDetails.length === MAX_ERROR_DETAILS) {
-            errorDetails.push(`... and ${errors - MAX_ERROR_DETAILS} more errors`);
+            errorDetails.push(
+              `... and ${errors - MAX_ERROR_DETAILS} more errors`,
+            );
             break;
           }
         }
@@ -244,8 +263,9 @@ export class GitHubSyncService {
         }
 
         // Check for next page
-        cursor = issuesData.pageInfo.hasNextPage ? issuesData.pageInfo.endCursor : null;
-
+        cursor = issuesData.pageInfo.hasNextPage
+          ? issuesData.pageInfo.endCursor
+          : null;
       } while (cursor);
 
       // Update sync status
@@ -263,14 +283,14 @@ export class GitHubSyncService {
         updated,
         errors,
         summary,
-        errorDetails: errorDetails.length > 0 ? errorDetails : undefined
+        errorDetails: errorDetails.length > 0 ? errorDetails : undefined,
       };
-
     } catch (error) {
       // Update sync status on failure
       await this.updateRepositorySyncStatus(repository.id, "error");
 
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
       console.error("[Sync] Fatal error during sync:", error);
 
       return {
@@ -280,7 +300,7 @@ export class GitHubSyncService {
         updated,
         errors: errors + 1,
         summary: `Sync failed: ${errorMessage}`,
-        errorDetails: [...errorDetails, errorMessage]
+        errorDetails: [...errorDetails, errorMessage],
       };
     }
   }
@@ -294,15 +314,20 @@ export class GitHubSyncService {
     workspaceId: string,
     options: {
       onProgress?: (issueNumber: number, title: string) => boolean;
-    } = {}
-  ): Promise<{ created: number; updated: number; errors: number; errorDetails: string[] }> {
+    } = {},
+  ): Promise<{
+    created: number;
+    updated: number;
+    errors: number;
+    errorDetails: string[];
+  }> {
     let created = 0;
     let updated = 0;
     let errors = 0;
     const errorDetails: string[] = [];
 
     // Get existing issues in batch
-    const issueNumbers = issues.map(i => i.number);
+    const issueNumbers = issues.map((i) => i.number);
     const { data: existingIssues } = await this.getSupabase()
       .from("issues")
       .select("id, github_issue_number, expanded_description, priority")
@@ -311,7 +336,7 @@ export class GitHubSyncService {
 
     // Create a map for quick lookup
     const existingIssueMap = new Map(
-      (existingIssues || []).map(issue => [issue.github_issue_number, issue])
+      (existingIssues || []).map((issue) => [issue.github_issue_number, issue]),
     );
 
     // Prepare batch operations
@@ -330,7 +355,7 @@ export class GitHubSyncService {
       github_updated_at: string;
       github_closed_at: string | null;
     }
-    
+
     interface IssueUpdateData {
       id: string;
       title: string;
@@ -342,7 +367,7 @@ export class GitHubSyncService {
       github_updated_at: string;
       github_closed_at: string | null;
     }
-    
+
     const issuesToCreate: IssueCreateData[] = [];
     const issuesToUpdate: IssueUpdateData[] = [];
 
@@ -376,7 +401,11 @@ export class GitHubSyncService {
             state: syncData.status === "completed" ? "closed" : "open",
             author_github_login: issue.author?.login || null,
             assignee_github_login: issue.assignees?.nodes?.[0]?.login || null,
-            labels: issue.labels?.nodes?.map((l) => ({ name: l.name, color: l.color })) || [],
+            labels:
+              issue.labels?.nodes?.map((l) => ({
+                name: l.name,
+                color: l.color,
+              })) || [],
             github_updated_at: syncData.updated_at,
             github_closed_at: syncData.completed_at || null,
           });
@@ -392,7 +421,11 @@ export class GitHubSyncService {
             state: syncData.status === "completed" ? "closed" : "open",
             author_github_login: issue.author?.login || null,
             assignee_github_login: issue.assignees?.nodes?.[0]?.login || null,
-            labels: issue.labels?.nodes?.map((l) => ({ name: l.name, color: l.color })) || [],
+            labels:
+              issue.labels?.nodes?.map((l) => ({
+                name: l.name,
+                color: l.color,
+              })) || [],
             github_created_at: issue.createdAt,
             github_updated_at: syncData.updated_at,
             github_closed_at: syncData.completed_at || null,
@@ -400,7 +433,7 @@ export class GitHubSyncService {
         }
       } catch (error) {
         errors++;
-        const errorMessage = `Failed to prepare issue #${issue.number}: ${error instanceof Error ? error.message : 'Unknown error'}`;
+        const errorMessage = `Failed to prepare issue #${issue.number}: ${error instanceof Error ? error.message : "Unknown error"}`;
         errorDetails.push(errorMessage);
         console.error(`[Sync] ${errorMessage}`, error);
       }
@@ -414,7 +447,9 @@ export class GitHubSyncService {
 
       if (error) {
         errors += issuesToCreate.length;
-        errorDetails.push(`Failed to create ${issuesToCreate.length} issues: ${error.message}`);
+        errorDetails.push(
+          `Failed to create ${issuesToCreate.length} issues: ${error.message}`,
+        );
         console.error("[Sync] Batch create failed:", error);
       } else {
         created += issuesToCreate.length;
@@ -430,7 +465,7 @@ export class GitHubSyncService {
             .from("issues")
             .update(issue)
             .eq("id", issue.id);
-          
+
           if (error) throw error;
           return { success: true };
         } catch (error) {
@@ -439,8 +474,8 @@ export class GitHubSyncService {
       });
 
       const results = await Promise.all(updatePromises);
-      const successCount = results.filter(r => r.success).length;
-      const failureCount = results.filter(r => !r.success).length;
+      const successCount = results.filter((r) => r.success).length;
+      const failureCount = results.filter((r) => !r.success).length;
 
       updated += successCount;
       if (failureCount > 0) {
@@ -458,7 +493,7 @@ export class GitHubSyncService {
   private async syncSingleIssue(
     repository: RepositoryInfo,
     issue: GitHubIssue,
-    workspaceId: string
+    workspaceId: string,
   ): Promise<{ created: boolean; updated: boolean }> {
     // Resolve assignee if present
     let assigneeUserId: string | null = null;
@@ -481,7 +516,7 @@ export class GitHubSyncService {
 
     if (existingIssue) {
       // Update existing issue
-      
+
       const { error } = await this.getSupabase()
         .from("issues")
         .update({
@@ -490,7 +525,11 @@ export class GitHubSyncService {
           state: syncData.status === "completed" ? "closed" : "open",
           author_github_login: issue.author?.login || null,
           assignee_github_login: issue.assignees?.nodes?.[0]?.login || null,
-          labels: issue.labels?.nodes?.map((l) => ({ name: l.name, color: l.color })) || [],
+          labels:
+            issue.labels?.nodes?.map((l) => ({
+              name: l.name,
+              color: l.color,
+            })) || [],
           github_updated_at: syncData.updated_at,
           github_closed_at: syncData.completed_at,
         })
@@ -500,7 +539,7 @@ export class GitHubSyncService {
       return { created: false, updated: true };
     } else {
       // Create new issue
-      
+
       const { error } = await this.getSupabase()
         .from("issues")
         .insert({
@@ -513,7 +552,11 @@ export class GitHubSyncService {
           state: syncData.status === "completed" ? "closed" : "open",
           author_github_login: issue.author?.login || null,
           assignee_github_login: issue.assignees?.nodes?.[0]?.login || null,
-          labels: issue.labels?.nodes?.map((l) => ({ name: l.name, color: l.color })) || [],
+          labels:
+            issue.labels?.nodes?.map((l) => ({
+              name: l.name,
+              color: l.color,
+            })) || [],
           github_created_at: issue.createdAt,
           github_updated_at: syncData.updated_at,
           github_closed_at: syncData.completed_at,
@@ -555,15 +598,13 @@ export class GitHubSyncService {
     return data.id;
   }
 
-
-
   /**
    * Update repository sync status
    */
   private async updateRepositorySyncStatus(
-    repositoryId: string, 
+    repositoryId: string,
     status: "pending" | "syncing" | "synced" | "error",
-    error?: string
+    error?: string,
   ) {
     const updateData: {
       sync_status: string;
@@ -572,16 +613,16 @@ export class GitHubSyncService {
       sync_error?: string | null;
     } = {
       sync_status: status,
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     };
-    
+
     if (status === "synced") {
       updateData.last_synced_at = new Date().toISOString();
       updateData.sync_error = null;
     } else if (status === "error" && error) {
       updateData.sync_error = error;
     }
-    
+
     await this.getSupabase()
       .from("repositories")
       .update(updateData)

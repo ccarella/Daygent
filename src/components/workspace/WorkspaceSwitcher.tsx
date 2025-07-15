@@ -20,11 +20,12 @@ interface WorkspaceSwitcherProps {
 
 export function WorkspaceSwitcher({ className }: WorkspaceSwitcherProps) {
   const router = useRouter();
-  const { currentWorkspace, workspaces, switchWorkspace, isLoading } = useWorkspaceStore();
+  const { currentWorkspace, workspaces, switchWorkspace, isLoading } =
+    useWorkspaceStore();
 
   const handleSwitch = async (workspaceId: string) => {
     await switchWorkspace(workspaceId);
-    const workspace = workspaces.find(w => w.id === workspaceId);
+    const workspace = workspaces.find((w) => w.id === workspaceId);
     if (workspace) {
       router.push(`/${workspace.slug}/issues`);
     }
@@ -39,10 +40,7 @@ export function WorkspaceSwitcher({ className }: WorkspaceSwitcherProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button 
-          variant="outline" 
-          className={cn("justify-between", className)}
-        >
+        <Button variant="outline" className={cn("justify-between", className)}>
           <span className="truncate">{currentWorkspace.name}</span>
           <ChevronDown className="ml-2 h-4 w-4 flex-shrink-0" />
         </Button>
@@ -63,7 +61,7 @@ export function WorkspaceSwitcher({ className }: WorkspaceSwitcherProps) {
           </DropdownMenuItem>
         ))}
         <DropdownMenuSeparator />
-        <DropdownMenuItem 
+        <DropdownMenuItem
           onClick={handleCreateWorkspace}
           className="cursor-pointer"
         >

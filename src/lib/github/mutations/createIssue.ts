@@ -1,4 +1,4 @@
-import { gql } from '@apollo/client';
+import { gql } from "@apollo/client";
 
 export const CREATE_ISSUE = gql`
   mutation CreateIssue($input: CreateIssueInput!) {
@@ -59,7 +59,9 @@ export const ADD_ASSIGNEES_TO_ISSUE = gql`
 `;
 
 export const REMOVE_ASSIGNEES_FROM_ISSUE = gql`
-  mutation RemoveAssigneesFromIssue($input: RemoveAssigneesFromAssignableInput!) {
+  mutation RemoveAssigneesFromIssue(
+    $input: RemoveAssigneesFromAssignableInput!
+  ) {
     removeAssigneesFromAssignable(input: $input) {
       assignable {
         ... on Issue {

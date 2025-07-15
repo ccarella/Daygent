@@ -26,7 +26,7 @@ describe("IssueSorting", () => {
     expect(screen.getByText("Updated")).toBeInTheDocument(); // Default sort
     // Default order is desc, so button shows option to sort ascending
     expect(
-      screen.getByRole("button", { name: /sort ascending/i })
+      screen.getByRole("button", { name: /sort ascending/i }),
     ).toBeInTheDocument();
   });
 
@@ -69,7 +69,7 @@ describe("IssueSorting", () => {
 
     // When order is asc, button shows option to sort descending
     expect(
-      screen.getByRole("button", { name: /sort descending/i })
+      screen.getByRole("button", { name: /sort descending/i }),
     ).toBeInTheDocument();
   });
 

@@ -21,7 +21,7 @@ export function IssueList({ issues, repositoryId, onSync }: IssueListProps) {
 
   const handleSync = async () => {
     if (!repositoryId) return;
-    
+
     setIsSyncing(true);
     try {
       const response = await fetch(
@@ -30,14 +30,14 @@ export function IssueList({ issues, repositoryId, onSync }: IssueListProps) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ full_sync: false }),
-        }
+        },
       );
 
       if (!response.ok) throw new Error("Sync failed");
 
       const result = await response.json();
       toast.success(`Synced ${result.synced} issues`);
-      
+
       if (onSync) onSync();
     } catch (error) {
       console.error("Sync error:", error);
@@ -57,10 +57,9 @@ export function IssueList({ issues, repositoryId, onSync }: IssueListProps) {
             onClick={handleSync}
             disabled={isSyncing}
           >
-            <RefreshCw className={cn(
-              "mr-2 h-4 w-4",
-              isSyncing && "animate-spin"
-            )} />
+            <RefreshCw
+              className={cn("mr-2 h-4 w-4", isSyncing && "animate-spin")}
+            />
             {isSyncing ? "Syncing..." : "Sync Issues"}
           </Button>
         </div>
@@ -77,7 +76,10 @@ export function IssueList({ issues, repositoryId, onSync }: IssueListProps) {
         </div>
         <div>
           {issues.map((issue) => (
-            <div key={issue.id} className="grid grid-cols-[auto,1fr,200px,200px,150px,50px] gap-4 p-4 border-b last:border-0 hover:bg-gray-50">
+            <div
+              key={issue.id}
+              className="grid grid-cols-[auto,1fr,200px,200px,150px,50px] gap-4 p-4 border-b last:border-0 hover:bg-gray-50"
+            >
               <div className="font-mono text-sm">
                 {issue.github_issue_number}
               </div>
@@ -88,7 +90,9 @@ export function IssueList({ issues, repositoryId, onSync }: IssueListProps) {
                   ) : (
                     <Circle className="h-4 w-4 text-green-600" />
                   )}
-                  <span className={issue.state === "closed" ? "line-through" : ""}>
+                  <span
+                    className={issue.state === "closed" ? "line-through" : ""}
+                  >
                     {issue.title}
                   </span>
                 </div>
@@ -115,16 +119,13 @@ export function IssueList({ issues, repositoryId, onSync }: IssueListProps) {
                 </div>
               </div>
               <div className="text-sm text-gray-600">
-                {issue.github_updated_at && formatDistanceToNow(new Date(issue.github_updated_at), {
-                  addSuffix: true,
-                })}
+                {issue.github_updated_at &&
+                  formatDistanceToNow(new Date(issue.github_updated_at), {
+                    addSuffix: true,
+                  })}
               </div>
               <div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  asChild
-                >
+                <Button variant="ghost" size="sm" asChild>
                   <a
                     href={`https://github.com/${issue.repository?.full_name}/issues/${issue.github_issue_number}`}
                     target="_blank"

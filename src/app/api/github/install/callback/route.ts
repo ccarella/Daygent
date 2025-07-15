@@ -20,10 +20,13 @@ export async function GET(request: NextRequest) {
             .select("slug")
             .eq("id", workspaceId)
             .single();
-          
+
           if (workspace) {
             return NextResponse.redirect(
-              new URL(`/${workspace.slug}/settings/github?error=missing_params`, request.url)
+              new URL(
+                `/${workspace.slug}/settings/github?error=missing_params`,
+                request.url,
+              ),
             );
           }
         } catch {
@@ -31,24 +34,27 @@ export async function GET(request: NextRequest) {
         }
       }
     }
-    
+
     return NextResponse.redirect(
-      new URL("/?error=missing_params", request.url)
+      new URL("/?error=missing_params", request.url),
     );
   }
 
   try {
     const supabase = await createClient();
-    
+
     // Verify the user is authenticated
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
     if (authError || !user) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
 
     // Verify the state parameter (should contain workspace ID)
     const [workspaceId] = state.split(":");
-    
+
     // Verify workspace membership
     const { data: sessionData } = await supabase
       .from("workspace_members")
@@ -64,15 +70,18 @@ export async function GET(request: NextRequest) {
         .select("slug")
         .eq("id", workspaceId)
         .single();
-      
+
       if (workspace) {
         return NextResponse.redirect(
-          new URL(`/${workspace.slug}/settings/github?error=invalid_workspace`, request.url)
+          new URL(
+            `/${workspace.slug}/settings/github?error=invalid_workspace`,
+            request.url,
+          ),
         );
       }
-      
+
       return NextResponse.redirect(
-        new URL("/?error=invalid_workspace", request.url)
+        new URL("/?error=invalid_workspace", request.url),
       );
     }
 
@@ -91,19 +100,27 @@ export async function GET(request: NextRequest) {
           client_secret: config.clientSecret,
           code,
         }),
-      }
+      },
     );
 
     if (!tokenResponse.ok) {
-      console.error("Failed to exchange code for token:", await tokenResponse.text());
+      console.error(
+        "Failed to exchange code for token:",
+        await tokenResponse.text(),
+      );
       const { data: workspace } = await supabase
         .from("workspaces")
         .select("slug")
         .eq("id", workspaceId)
         .single();
-      
+
       return NextResponse.redirect(
-        new URL(workspace ? `/${workspace.slug}/settings/github?error=token_exchange_failed` : "/?error=token_exchange_failed", request.url)
+        new URL(
+          workspace
+            ? `/${workspace.slug}/settings/github?error=token_exchange_failed`
+            : "/?error=token_exchange_failed",
+          request.url,
+        ),
       );
     }
 
@@ -117,9 +134,14 @@ export async function GET(request: NextRequest) {
         .select("slug")
         .eq("id", workspaceId)
         .single();
-      
+
       return NextResponse.redirect(
-        new URL(workspace ? `/${workspace.slug}/settings/github?error=no_access_token` : "/?error=no_access_token", request.url)
+        new URL(
+          workspace
+            ? `/${workspace.slug}/settings/github?error=no_access_token`
+            : "/?error=no_access_token",
+          request.url,
+        ),
       );
     }
 
@@ -131,19 +153,27 @@ export async function GET(request: NextRequest) {
           Authorization: `Bearer ${accessToken}`,
           Accept: "application/vnd.github.v3+json",
         },
-      }
+      },
     );
 
     if (!installationResponse.ok) {
-      console.error("Failed to get installation details:", await installationResponse.text());
+      console.error(
+        "Failed to get installation details:",
+        await installationResponse.text(),
+      );
       const { data: workspace } = await supabase
         .from("workspaces")
         .select("slug")
         .eq("id", workspaceId)
         .single();
-      
+
       return NextResponse.redirect(
-        new URL(workspace ? `/${workspace.slug}/settings/github?error=installation_fetch_failed` : "/?error=installation_fetch_failed", request.url)
+        new URL(
+          workspace
+            ? `/${workspace.slug}/settings/github?error=installation_fetch_failed`
+            : "/?error=installation_fetch_failed",
+          request.url,
+        ),
       );
     }
 
@@ -152,16 +182,19 @@ export async function GET(request: NextRequest) {
     // Store the installation in the database
     const { error: insertError } = await supabase
       .from("github_installations")
-      .upsert({
-        workspace_id: workspaceId,
-        installation_id: parseInt(installationId),
-        github_account_name: installationData.account.login,
-        github_account_type: installationData.account.type,
-        installed_by: user.id,
-        installed_at: new Date().toISOString(),
-      }, {
-        onConflict: "installation_id",
-      });
+      .upsert(
+        {
+          workspace_id: workspaceId,
+          installation_id: parseInt(installationId),
+          github_account_name: installationData.account.login,
+          github_account_type: installationData.account.type,
+          installed_by: user.id,
+          installed_at: new Date().toISOString(),
+        },
+        {
+          onConflict: "installation_id",
+        },
+      );
 
     if (insertError) {
       console.error("Failed to store installation:", insertError);
@@ -170,9 +203,14 @@ export async function GET(request: NextRequest) {
         .select("slug")
         .eq("id", workspaceId)
         .single();
-      
+
       return NextResponse.redirect(
-        new URL(workspace ? `/${workspace.slug}/settings/github?error=storage_failed` : "/?error=storage_failed", request.url)
+        new URL(
+          workspace
+            ? `/${workspace.slug}/settings/github?error=storage_failed`
+            : "/?error=storage_failed",
+          request.url,
+        ),
       );
     }
 
@@ -185,21 +223,23 @@ export async function GET(request: NextRequest) {
 
     if (!workspace) {
       return NextResponse.redirect(
-        new URL("/?error=workspace_not_found", request.url)
+        new URL("/?error=workspace_not_found", request.url),
       );
     }
 
     // Redirect to workspace-specific issues page
     return NextResponse.redirect(
-      new URL(`/${workspace.slug}/issues`, request.url)
+      new URL(`/${workspace.slug}/issues`, request.url),
     );
   } catch (error) {
     console.error("GitHub App installation callback error:", error);
     // Get workspace for error redirect
     try {
       const supabase = await createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
       if (user) {
         const { data: workspaces } = await supabase
           .from("workspace_members")
@@ -207,12 +247,19 @@ export async function GET(request: NextRequest) {
           .eq("user_id", user.id)
           .order("created_at", { ascending: false })
           .limit(1);
-        
+
         if (workspaces && workspaces.length > 0) {
           const workspaceRecord = workspaces[0];
-          if ('workspace' in workspaceRecord && workspaceRecord.workspace && 'slug' in workspaceRecord.workspace) {
+          if (
+            "workspace" in workspaceRecord &&
+            workspaceRecord.workspace &&
+            "slug" in workspaceRecord.workspace
+          ) {
             return NextResponse.redirect(
-              new URL(`/${workspaceRecord.workspace.slug}/settings/github?error=unexpected`, request.url)
+              new URL(
+                `/${workspaceRecord.workspace.slug}/settings/github?error=unexpected`,
+                request.url,
+              ),
             );
           }
         }
@@ -220,9 +267,9 @@ export async function GET(request: NextRequest) {
     } catch {
       // Fallback to root if we can't get workspace
     }
-    
+
     return NextResponse.redirect(
-      new URL("/?error=github_connect_failed", request.url)
+      new URL("/?error=github_connect_failed", request.url),
     );
   }
 }

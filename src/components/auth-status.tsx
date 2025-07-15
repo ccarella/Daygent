@@ -6,15 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Github } from "lucide-react";
 
 export function AuthStatus() {
-  const {
-    user,
-    isLoading,
-    error,
-    login,
-    logout,
-    checkSession,
-  } = useAuthStore();
-  
+  const { user, isLoading, error, login, logout, checkSession } =
+    useAuthStore();
+
   const isAuthenticated = !!user;
   const initializeAttempted = useRef(false);
 
@@ -32,7 +26,7 @@ export function AuthStatus() {
   const handleLogin = async () => {
     console.log("[AuthStatus Component] Login button clicked");
     try {
-      await login('github');
+      await login("github");
     } catch (error) {
       console.error("[AuthStatus Component] Login failed:", error);
     }
@@ -72,7 +66,11 @@ export function AuthStatus() {
           >
             Retry
           </Button>
-          <Button onClick={() => window.location.reload()} variant="outline" size="sm">
+          <Button
+            onClick={() => window.location.reload()}
+            variant="outline"
+            size="sm"
+          >
             Refresh Page
           </Button>
         </div>

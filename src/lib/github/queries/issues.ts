@@ -1,4 +1,4 @@
-import { gql } from '@apollo/client';
+import { gql } from "@apollo/client";
 
 export const GET_ISSUES = gql`
   query GetIssues(
@@ -11,12 +11,7 @@ export const GET_ISSUES = gql`
   ) {
     repository(owner: $owner, name: $name) {
       id
-      issues(
-        first: $first
-        after: $after
-        states: $states
-        orderBy: $orderBy
-      ) {
+      issues(first: $first, after: $after, states: $states, orderBy: $orderBy) {
         totalCount
         pageInfo {
           hasNextPage

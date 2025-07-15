@@ -8,14 +8,14 @@ import {
   ApolloError,
   OperationVariables,
   FetchPolicy,
-} from '@apollo/client';
-import { setContext } from '@apollo/client/link/context';
-import { onError } from '@apollo/client/link/error';
-import { RetryLink } from '@apollo/client/link/retry';
-import { AuthConfig } from './types';
-import { parseApolloError, shouldRetry, getRetryDelay, sleep } from './utils';
+} from "@apollo/client";
+import { setContext } from "@apollo/client/link/context";
+import { onError } from "@apollo/client/link/error";
+import { RetryLink } from "@apollo/client/link/retry";
+import { AuthConfig } from "./types";
+import { parseApolloError, shouldRetry, getRetryDelay, sleep } from "./utils";
 
-const GITHUB_GRAPHQL_API = 'https://api.github.com/graphql';
+const GITHUB_GRAPHQL_API = "https://api.github.com/graphql";
 
 const httpLink = createHttpLink({
   uri: GITHUB_GRAPHQL_API,
@@ -25,7 +25,9 @@ const createAuthLink = (getAuth: () => AuthConfig | null) => {
   return setContext((_, { headers }) => {
     const auth = getAuth();
     if (!auth) {
-      console.warn('No authentication token available for GitHub GraphQL request');
+      console.warn(
+        "No authentication token available for GitHub GraphQL request",
+      );
       return { headers };
     }
 
@@ -33,7 +35,7 @@ const createAuthLink = (getAuth: () => AuthConfig | null) => {
       headers: {
         ...headers,
         authorization: `Bearer ${auth.token}`,
-        'X-GitHub-Api-Version': '2022-11-28',
+        "X-GitHub-Api-Version": "2022-11-28",
       },
     };
   });
@@ -83,28 +85,23 @@ export class GitHubGraphQLClient {
 
     const authLink = createAuthLink(this.getAuth);
 
-    const link = ApolloLink.from([
-      errorLink,
-      retryLink,
-      authLink,
-      httpLink,
-    ]);
+    const link = ApolloLink.from([errorLink, retryLink, authLink, httpLink]);
 
     this.client = new ApolloClient({
       link,
       cache: new InMemoryCache({
         typePolicies: {
           Repository: {
-            keyFields: ['id'],
+            keyFields: ["id"],
           },
           Issue: {
-            keyFields: ['id'],
+            keyFields: ["id"],
           },
           PullRequest: {
-            keyFields: ['id'],
+            keyFields: ["id"],
           },
           User: {
-            keyFields: ['id'],
+            keyFields: ["id"],
           },
           Query: {
             fields: {
@@ -119,18 +116,21 @@ export class GitHubGraphQLClient {
       }),
       defaultOptions: {
         query: {
-          fetchPolicy: 'cache-first',
-          errorPolicy: 'all',
+          fetchPolicy: "cache-first",
+          errorPolicy: "all",
         },
         watchQuery: {
-          fetchPolicy: 'network-only',
-          errorPolicy: 'all',
+          fetchPolicy: "network-only",
+          errorPolicy: "all",
         },
       },
     });
   }
 
-  async query<TData, TVariables extends OperationVariables = OperationVariables>(
+  async query<
+    TData,
+    TVariables extends OperationVariables = OperationVariables,
+  >(
     query: DocumentNode,
     variables?: TVariables,
     options: {
@@ -138,7 +138,7 @@ export class GitHubGraphQLClient {
       retry?: boolean;
     } = {},
   ): Promise<TData> {
-    const { fetchPolicy = 'cache-first', retry = true } = options;
+    const { fetchPolicy = "cache-first", retry = true } = options;
     let attempt = 0;
 
     while (true) {
@@ -150,17 +150,20 @@ export class GitHubGraphQLClient {
         });
 
         // Check rate limit headers from response context
-        const context = result.data && (result as unknown as { context?: { response?: { headers?: Map<string, string> } } }).context;
+        const context =
+          result.data &&
+          (
+            result as unknown as {
+              context?: { response?: { headers?: Map<string, string> } };
+            }
+          ).context;
         if (context?.response?.headers) {
           const headers = context.response.headers;
           const remaining = parseInt(
-            headers.get('X-RateLimit-Remaining') || '0',
+            headers.get("X-RateLimit-Remaining") || "0",
             10,
           );
-          const reset = parseInt(
-            headers.get('X-RateLimit-Reset') || '0',
-            10,
-          );
+          const reset = parseInt(headers.get("X-RateLimit-Reset") || "0", 10);
 
           if (remaining < 100 && reset && this.onRateLimit) {
             this.onRateLimit(remaining, new Date(reset * 1000));
@@ -181,10 +184,10 @@ export class GitHubGraphQLClient {
     }
   }
 
-  async mutate<TData, TVariables extends OperationVariables = OperationVariables>(
-    mutation: DocumentNode,
-    variables?: TVariables,
-  ): Promise<TData> {
+  async mutate<
+    TData,
+    TVariables extends OperationVariables = OperationVariables,
+  >(mutation: DocumentNode, variables?: TVariables): Promise<TData> {
     try {
       const result = await this.client.mutate<TData, TVariables>({
         mutation,
@@ -192,7 +195,7 @@ export class GitHubGraphQLClient {
       });
 
       if (!result.data) {
-        throw new Error('Mutation returned no data');
+        throw new Error("Mutation returned no data");
       }
 
       return result.data;
@@ -218,7 +221,7 @@ export function createGitHubGraphQLClient(
     getAuth: () => {
       const token = getProviderToken();
       if (!token) return null;
-      return { type: 'user', token };
+      return { type: "user", token };
     },
     onRateLimit: (remaining, resetAt) => {
       console.warn(

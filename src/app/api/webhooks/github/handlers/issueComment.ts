@@ -12,14 +12,18 @@ export async function handleIssueCommentEvent(payload: unknown): Promise<void> {
   }
 
   const { action, issue, comment, repository, sender } = payload;
-  
-  console.log(`[Issue Comment Handler] Processing ${action} for comment on issue #${issue.number}`);
+
+  console.log(
+    `[Issue Comment Handler] Processing ${action} for comment on issue #${issue.number}`,
+  );
 
   try {
     // Get repository from database
     const repo = await getRepositoryByGithubId(repository.id);
     if (!repo) {
-      console.warn(`[Issue Comment Handler] Repository not found: ${repository.full_name}`);
+      console.warn(
+        `[Issue Comment Handler] Repository not found: ${repository.full_name}`,
+      );
       return;
     }
 
@@ -30,9 +34,8 @@ export async function handleIssueCommentEvent(payload: unknown): Promise<void> {
     }
 
     // For deleted comments, we'll mark them with a special prefix
-    const commentContent = action === "deleted" 
-      ? `[Comment deleted]`
-      : comment.body;
+    const commentContent =
+      action === "deleted" ? `[Comment deleted]` : comment.body;
 
     // Prepare comment data
     const commentData: CommentSyncData = {
@@ -47,7 +50,7 @@ export async function handleIssueCommentEvent(payload: unknown): Promise<void> {
     const syncedComment = await syncIssueComment(
       repo.id,
       issue.number,
-      commentData
+      commentData,
     );
 
     if (!syncedComment) {
@@ -59,7 +62,7 @@ export async function handleIssueCommentEvent(payload: unknown): Promise<void> {
     const senderUser = await getOrCreateUserByGithubId(
       sender.id,
       sender.login,
-      sender.email
+      sender.email,
     );
 
     if (!senderUser) {
@@ -69,9 +72,14 @@ export async function handleIssueCommentEvent(payload: unknown): Promise<void> {
 
     // Activity logging removed - no activities table
 
-    console.log(`[Issue Comment Handler] Successfully processed ${action} for comment ${comment.id}`);
+    console.log(
+      `[Issue Comment Handler] Successfully processed ${action} for comment ${comment.id}`,
+    );
   } catch (error) {
-    console.error("[Issue Comment Handler] Error processing comment event:", error);
+    console.error(
+      "[Issue Comment Handler] Error processing comment event:",
+      error,
+    );
     // Don't throw - we want webhook to return 200 OK to GitHub
   }
 }

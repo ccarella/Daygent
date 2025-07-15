@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 
 export async function GET(
   request: NextRequest,
-  props: { params: Promise<{ id: string }> }
+  props: { params: Promise<{ id: string }> },
 ) {
   try {
     const params = await props.params;
@@ -12,22 +12,23 @@ export async function GET(
     const jobId = searchParams.get("jobId");
     const page = parseInt(searchParams.get("page") || "1", 10);
     const limit = parseInt(searchParams.get("limit") || "10", 10);
-    
+
     // Authenticate user
     const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
     if (authError || !user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Check repository access
     const { data: repository, error: repoError } = await supabase
       .from("repositories")
-      .select(`
+      .select(
+        `
         id,
         sync_status,
         last_synced_at,
@@ -35,7 +36,8 @@ export async function GET(
         workspace:workspaces!inner(
           workspace_members!inner(user_id)
         )
-      `)
+      `,
+      )
       .eq("id", repositoryId)
       .eq("workspace.workspace_members.user_id", user.id)
       .single();
@@ -43,7 +45,7 @@ export async function GET(
     if (repoError || !repository) {
       return NextResponse.json(
         { error: "Repository not found or access denied" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -59,7 +61,7 @@ export async function GET(
       if (jobError || !syncJob) {
         return NextResponse.json(
           { error: "Sync job not found" },
-          { status: 404 }
+          { status: 404 },
         );
       }
 
@@ -73,10 +75,10 @@ export async function GET(
           processed: syncJob.issues_processed,
           created: syncJob.issues_created,
           updated: syncJob.issues_updated,
-          errors: syncJob.errors
+          errors: syncJob.errors,
         },
         errorDetails: syncJob.error_details,
-        metadata: syncJob.metadata
+        metadata: syncJob.metadata,
       });
     }
 
@@ -116,34 +118,34 @@ export async function GET(
         syncStatus: repository.sync_status,
         lastSyncedAt: repository.last_synced_at,
         syncError: repository.sync_error,
-        issueCount: issueCount || 0
+        issueCount: issueCount || 0,
       },
-      jobs: recentJobs?.map(job => ({
-        id: job.id,
-        type: job.type,
-        status: job.status,
-        startedAt: job.started_at,
-        completedAt: job.completed_at,
-        issuesProcessed: job.issues_processed,
-        issuesCreated: job.issues_created,
-        issuesUpdated: job.issues_updated,
-        errors: job.errors
-      })) || [],
+      jobs:
+        recentJobs?.map((job) => ({
+          id: job.id,
+          type: job.type,
+          status: job.status,
+          startedAt: job.started_at,
+          completedAt: job.completed_at,
+          issuesProcessed: job.issues_processed,
+          issuesCreated: job.issues_created,
+          issuesUpdated: job.issues_updated,
+          errors: job.errors,
+        })) || [],
       pagination: {
         page: validatedPage,
         limit: validatedLimit,
         total: totalJobs || 0,
         totalPages,
         hasNextPage,
-        hasPreviousPage
-      }
+        hasPreviousPage,
+      },
     });
-
   } catch (error) {
     console.error("[Sync Status API] Unexpected error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

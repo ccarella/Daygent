@@ -57,7 +57,7 @@ export interface GitHubIssue {
  */
 export function mapGitHubStateToStatus(
   state: "OPEN" | "CLOSED",
-  stateReason?: "COMPLETED" | "NOT_PLANNED" | "REOPENED" | null
+  stateReason?: "COMPLETED" | "NOT_PLANNED" | "REOPENED" | null,
 ): IssueSyncData["status"] {
   if (state === "CLOSED") {
     // Map based on state reason
@@ -68,7 +68,7 @@ export function mapGitHubStateToStatus(
     }
     return "completed"; // Default closed to completed
   }
-  
+
   // For open issues, default to "open"
   // Could be enhanced to check labels for "in progress" or "review"
   return "open";
@@ -80,7 +80,7 @@ export function mapGitHubStateToStatus(
  * @returns Priority level or null if no priority label found
  */
 export function extractPriorityFromLabels(
-  labels: GitHubIssue["labels"]
+  labels: GitHubIssue["labels"],
 ): "urgent" | "high" | "medium" | "low" | null {
   const priorityLabels = {
     urgent: ["urgent", "critical", "p0", "priority: urgent"],
@@ -91,9 +91,9 @@ export function extractPriorityFromLabels(
 
   for (const node of labels.nodes) {
     const labelName = node.name.toLowerCase();
-    
+
     for (const [priority, patterns] of Object.entries(priorityLabels)) {
-      if (patterns.some(pattern => labelName.includes(pattern))) {
+      if (patterns.some((pattern) => labelName.includes(pattern))) {
         return priority as "urgent" | "high" | "medium" | "low";
       }
     }
@@ -110,7 +110,7 @@ export function extractPriorityFromLabels(
  */
 export function mapGitHubIssueToSyncData(
   issue: GitHubIssue,
-  assigneeUserId?: string | null
+  assigneeUserId?: string | null,
 ): IssueSyncData {
   return {
     github_issue_number: issue.number,
@@ -136,10 +136,10 @@ export function formatIssueBodyForGitHub(
   originalDescription: string | null,
   expandedDescription: string | null,
   status: string,
-  priority: string | null
+  priority: string | null,
 ): string {
   let body = originalDescription || "";
-  
+
   // Only add AI section if we have expanded description
   if (expandedDescription) {
     body += `
@@ -153,7 +153,7 @@ ${expandedDescription}
 **Status**: ${status}${priority ? `\n**Priority**: ${priority}` : ""}
 <!-- Daygent:End -->`;
   }
-  
+
   return body;
 }
 
@@ -164,7 +164,7 @@ ${expandedDescription}
  */
 export function extractOriginalDescription(body: string | null): string | null {
   if (!body) return null;
-  
+
   // Remove the AI-enhanced section if present
   const daygentStartIndex = body.indexOf("<!-- Daygent:Start -->");
   if (daygentStartIndex !== -1) {
@@ -178,7 +178,7 @@ export function extractOriginalDescription(body: string | null): string | null {
     }
     return body.substring(0, endIndex).trim();
   }
-  
+
   return body;
 }
 
@@ -189,17 +189,17 @@ export function extractOriginalDescription(body: string | null): string | null {
  */
 export function extractPullRequestReferences(
   title: string,
-  body: string | null
+  body: string | null,
 ): number[] {
   const prNumbers: number[] = [];
   const prPattern = /#(\d+)/g;
-  
+
   // Check title
   const titleMatches = title.matchAll(prPattern);
   for (const match of titleMatches) {
     prNumbers.push(parseInt(match[1], 10));
   }
-  
+
   // Check body
   if (body) {
     const bodyMatches = body.matchAll(prPattern);
@@ -207,7 +207,7 @@ export function extractPullRequestReferences(
       prNumbers.push(parseInt(match[1], 10));
     }
   }
-  
+
   // Return unique PR numbers
   return [...new Set(prNumbers)];
 }
@@ -224,25 +224,25 @@ export function generateSyncSummary(
   issueCount: number,
   created: number,
   updated: number,
-  errors: number
+  errors: number,
 ): string {
   const parts = [];
-  
+
   if (created > 0) {
     parts.push(`${created} created`);
   }
-  
+
   if (updated > 0) {
     parts.push(`${updated} updated`);
   }
-  
+
   if (errors > 0) {
     parts.push(`${errors} errors`);
   }
-  
+
   if (parts.length === 0) {
     return "No changes";
   }
-  
+
   return `Synced ${issueCount} issues: ${parts.join(", ")}`;
 }

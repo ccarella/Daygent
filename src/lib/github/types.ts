@@ -1,5 +1,5 @@
 export interface AuthConfig {
-  type: 'user' | 'installation' | 'app';
+  type: "user" | "installation" | "app";
   token: string;
 }
 

@@ -17,14 +17,14 @@ function validateConfig(): GitHubAppConfig {
 
   const missingVars: string[] = [];
 
-  if (!config.appId) missingVars.push('GITHUB_APP_ID');
-  if (!config.clientId) missingVars.push('GITHUB_APP_CLIENT_ID');
-  if (!config.clientSecret) missingVars.push('GITHUB_APP_CLIENT_SECRET');
-  if (!config.webhookSecret) missingVars.push('GITHUB_APP_WEBHOOK_SECRET');
+  if (!config.appId) missingVars.push("GITHUB_APP_ID");
+  if (!config.clientId) missingVars.push("GITHUB_APP_CLIENT_ID");
+  if (!config.clientSecret) missingVars.push("GITHUB_APP_CLIENT_SECRET");
+  if (!config.webhookSecret) missingVars.push("GITHUB_APP_WEBHOOK_SECRET");
 
   if (missingVars.length > 0) {
     throw new Error(
-      `Missing required GitHub App environment variables: ${missingVars.join(', ')}`
+      `Missing required GitHub App environment variables: ${missingVars.join(", ")}`,
     );
   }
 

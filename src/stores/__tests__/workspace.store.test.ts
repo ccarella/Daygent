@@ -17,15 +17,15 @@ describe("Workspace Store", () => {
       from: vi.fn(),
       rpc: vi.fn(),
     };
-    
+
     vi.mocked(createClient).mockReturnValue(mockSupabase);
-    
+
     // Reset store
     const { result } = renderHook(() => useWorkspaceStore());
     act(() => {
       result.current.reset();
     });
-    
+
     // Clear localStorage
     localStorage.clear();
   });
@@ -43,7 +43,7 @@ describe("Workspace Store", () => {
         error: null,
       }),
     };
-    
+
     mockSupabase.from.mockReturnValue(mockFrom);
 
     const { result } = renderHook(() => useWorkspaceStore());
@@ -70,7 +70,7 @@ describe("Workspace Store", () => {
         error: new Error("Failed to fetch"),
       }),
     };
-    
+
     mockSupabase.from.mockReturnValue(mockFrom);
 
     const { result } = renderHook(() => useWorkspaceStore());
@@ -112,7 +112,7 @@ describe("Workspace Store", () => {
         error: null,
       }),
     };
-    
+
     mockSupabase.from.mockReturnValue(mockFrom);
 
     const { result } = renderHook(() => useWorkspaceStore());
@@ -131,7 +131,7 @@ describe("Workspace Store", () => {
         p_name: "New Workspace",
         p_slug: "new-workspace",
         p_user_id: mockUser.id,
-      }
+      },
     );
     expect(createdWorkspace).toEqual(newWorkspace);
     expect(result.current.currentWorkspace).toEqual(newWorkspace);
@@ -169,8 +169,12 @@ describe("Workspace Store", () => {
   it("switches between workspaces", async () => {
     const { result } = renderHook(() => useWorkspaceStore());
 
-    const workspace2 = { ...mockWorkspace, id: "workspace-456", name: "Other Workspace" };
-    
+    const workspace2 = {
+      ...mockWorkspace,
+      id: "workspace-456",
+      name: "Other Workspace",
+    };
+
     // Set initial workspaces
     act(() => {
       result.current.workspaces = [mockWorkspace, workspace2];
@@ -201,7 +205,7 @@ describe("Workspace Store", () => {
         error: null,
       }),
     };
-    
+
     mockSupabase.from.mockReturnValue(mockFrom);
 
     const { result } = renderHook(() => useWorkspaceStore());
@@ -228,7 +232,7 @@ describe("Workspace Store", () => {
         error: null,
       }),
     };
-    
+
     mockSupabase.from.mockReturnValue(mockFrom);
 
     const { result } = renderHook(() => useWorkspaceStore());
@@ -265,7 +269,11 @@ describe("Workspace Store", () => {
       error: null,
     });
 
-    const workspace2 = { ...mockWorkspace, id: "workspace-456", name: "Saved Workspace" };
+    const workspace2 = {
+      ...mockWorkspace,
+      id: "workspace-456",
+      name: "Saved Workspace",
+    };
 
     const mockFrom = {
       select: vi.fn().mockReturnThis(),
@@ -277,7 +285,7 @@ describe("Workspace Store", () => {
         error: null,
       }),
     };
-    
+
     mockSupabase.from.mockReturnValue(mockFrom);
 
     const { result } = renderHook(() => useWorkspaceStore());

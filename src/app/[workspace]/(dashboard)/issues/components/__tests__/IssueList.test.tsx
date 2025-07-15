@@ -48,7 +48,7 @@ const createMockIssue = (overrides: Partial<Issue> = {}): Issue => ({
     installation_id: null,
     last_synced_at: null,
     created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
+    updated_at: new Date().toISOString(),
   } as Repository & { id: string; name: string; full_name: string },
   ...overrides,
 });
@@ -72,7 +72,7 @@ describe("IssueList", () => {
         totalCount={3}
         currentPage={1}
         totalPages={1}
-      />
+      />,
     );
 
     expect(screen.getByText("Issue 1")).toBeInTheDocument();
@@ -82,29 +82,31 @@ describe("IssueList", () => {
 
   it("should show empty state when no issues exist", () => {
     render(
-      <IssueList issues={[]} totalCount={0} currentPage={1} totalPages={0} />
+      <IssueList issues={[]} totalCount={0} currentPage={1} totalPages={0} />,
     );
 
     expect(
-      screen.getByText("No issues found. Create your first issue to get started.")
+      screen.getByText(
+        "No issues found. Create your first issue to get started.",
+      ),
     ).toBeInTheDocument();
   });
 
   it("should show filtered empty state when issues exist but filtered out", () => {
     render(
-      <IssueList issues={[]} totalCount={10} currentPage={1} totalPages={1} />
+      <IssueList issues={[]} totalCount={10} currentPage={1} totalPages={1} />,
     );
 
     expect(
       screen.getByText(
-        "No issues match your filters. Try adjusting your search criteria."
-      )
+        "No issues match your filters. Try adjusting your search criteria.",
+      ),
     ).toBeInTheDocument();
   });
 
   it("should show pagination info", () => {
     const issues = Array.from({ length: 25 }, (_, i) =>
-      createMockIssue({ id: String(i), github_issue_number: i + 1 })
+      createMockIssue({ id: String(i), github_issue_number: i + 1 }),
     );
 
     render(
@@ -113,16 +115,18 @@ describe("IssueList", () => {
         totalCount={75}
         currentPage={2}
         totalPages={3}
-      />
+      />,
     );
 
-    expect(screen.getByText("Showing 26 to 50 of 75 issues")).toBeInTheDocument();
+    expect(
+      screen.getByText("Showing 26 to 50 of 75 issues"),
+    ).toBeInTheDocument();
     expect(screen.getByText("Page 2 of 3")).toBeInTheDocument();
   });
 
   it("should handle pagination navigation", async () => {
     const issues = Array.from({ length: 10 }, (_, i) =>
-      createMockIssue({ id: String(i) })
+      createMockIssue({ id: String(i) }),
     );
 
     const { user } = render(
@@ -131,7 +135,7 @@ describe("IssueList", () => {
         totalCount={30}
         currentPage={2}
         totalPages={3}
-      />
+      />,
     );
 
     // Test next page
@@ -153,7 +157,7 @@ describe("IssueList", () => {
 
   it("should disable pagination buttons appropriately", () => {
     const issues = Array.from({ length: 10 }, (_, i) =>
-      createMockIssue({ id: String(i) })
+      createMockIssue({ id: String(i) }),
     );
 
     // On first page
@@ -163,13 +167,19 @@ describe("IssueList", () => {
         totalCount={30}
         currentPage={1}
         totalPages={3}
-      />
+      />,
     );
 
     expect(screen.getByRole("button", { name: "First page" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Previous page" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Next page" })).not.toBeDisabled();
-    expect(screen.getByRole("button", { name: "Last page" })).not.toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Previous page" }),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Next page" }),
+    ).not.toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Last page" }),
+    ).not.toBeDisabled();
 
     // On last page
     rerender(
@@ -178,14 +188,14 @@ describe("IssueList", () => {
         totalCount={30}
         currentPage={3}
         totalPages={3}
-      />
+      />,
     );
 
     expect(
-      screen.getByRole("button", { name: "First page" })
+      screen.getByRole("button", { name: "First page" }),
     ).not.toBeDisabled();
     expect(
-      screen.getByRole("button", { name: "Previous page" })
+      screen.getByRole("button", { name: "Previous page" }),
     ).not.toBeDisabled();
     expect(screen.getByRole("button", { name: "Next page" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Last page" })).toBeDisabled();
@@ -197,7 +207,7 @@ describe("IssueList", () => {
     mockSearchParams.set("priority", "high");
 
     const issues = Array.from({ length: 10 }, (_, i) =>
-      createMockIssue({ id: String(i) })
+      createMockIssue({ id: String(i) }),
     );
 
     const { user } = render(
@@ -206,27 +216,32 @@ describe("IssueList", () => {
         totalCount={30}
         currentPage={1}
         totalPages={3}
-      />
+      />,
     );
 
     await user.click(screen.getByRole("button", { name: "Next page" }));
     expect(mockPush).toHaveBeenCalledWith(
-      "/issues?status=open&priority=high&page=2"
+      "/issues?status=open&priority=high&page=2",
     );
   });
 
   it("should not show pagination for single page", () => {
     const issues = Array.from({ length: 5 }, (_, i) =>
-      createMockIssue({ id: String(i) })
+      createMockIssue({ id: String(i) }),
     );
 
     render(
-      <IssueList issues={issues} totalCount={5} currentPage={1} totalPages={1} />
+      <IssueList
+        issues={issues}
+        totalCount={5}
+        currentPage={1}
+        totalPages={1}
+      />,
     );
 
     expect(screen.queryByText("Page 1 of 1")).not.toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: "Next page" })
+      screen.queryByRole("button", { name: "Next page" }),
     ).not.toBeInTheDocument();
   });
 });

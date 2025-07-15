@@ -1,8 +1,4 @@
-import {
-  ListTodo,
-  GitBranch,
-  Settings,
-} from "lucide-react";
+import { ListTodo, GitBranch, Settings } from "lucide-react";
 
 export const NAV_ITEMS = [
   {

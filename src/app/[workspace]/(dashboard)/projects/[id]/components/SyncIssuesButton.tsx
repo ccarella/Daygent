@@ -11,7 +11,9 @@ interface SyncIssuesButtonProps {
 
 export function SyncIssuesButton({ repositoryId }: SyncIssuesButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [syncStatus, setSyncStatus] = useState<"idle" | "success" | "error">("idle");
+  const [syncStatus, setSyncStatus] = useState<"idle" | "success" | "error">(
+    "idle",
+  );
   const [errorMessage, setErrorMessage] = useState<string>("");
   const router = useRouter();
 
@@ -21,16 +23,19 @@ export function SyncIssuesButton({ repositoryId }: SyncIssuesButtonProps) {
     setErrorMessage("");
 
     try {
-      const response = await fetch(`/api/repositories/${repositoryId}/sync/issues`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const response = await fetch(
+        `/api/repositories/${repositoryId}/sync/issues`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            states: ["OPEN", "CLOSED"],
+            batchSize: 50,
+          }),
         },
-        body: JSON.stringify({
-          states: ["OPEN", "CLOSED"],
-          batchSize: 50,
-        }),
-      });
+      );
 
       const data = await response.json();
 
@@ -39,15 +44,16 @@ export function SyncIssuesButton({ repositoryId }: SyncIssuesButtonProps) {
       }
 
       setSyncStatus("success");
-      
+
       // Refresh the page after a short delay to show updated issues
       setTimeout(() => {
         router.refresh();
       }, 1500);
-      
     } catch (error) {
       setSyncStatus("error");
-      setErrorMessage(error instanceof Error ? error.message : "An error occurred");
+      setErrorMessage(
+        error instanceof Error ? error.message : "An error occurred",
+      );
     } finally {
       setIsLoading(false);
     }

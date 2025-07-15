@@ -28,7 +28,7 @@ export interface GitHubInstallation {
   workspace_id: string;
   installation_id: number;
   github_account_name: string;
-  github_account_type: 'User' | 'Organization';
+  github_account_type: "User" | "Organization";
   installed_by: string;
   installed_at: string;
 }
@@ -67,7 +67,7 @@ export interface Issue {
   github_closed_at: string | null;
   created_at: string | null;
   updated_at: string | null;
-  
+
   // Relations
   repository?: Repository;
   workspace?: Workspace;
@@ -91,4 +91,4 @@ export interface SyncStatus {
 }
 
 // Import User type from user.ts
-import type { User } from './user';
+import type { User } from "./user";
