@@ -123,7 +123,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
 
           if (error) throw error;
 
-          let workspaces = memberRecords
+          const workspaces = memberRecords
             ?.map(record => record.workspaces as unknown as Workspace)
             .filter(ws => ws !== null) || [];
 
