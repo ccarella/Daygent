@@ -41,9 +41,26 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         
         try {
           const supabase = createClient();
-          const { data: { user } } = await supabase.auth.getUser();
           
-          console.log("[WorkspaceStore] Auth user:", user?.id);
+          // Add timeout to auth check
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error("Auth timeout")), 5000)
+          );
+          
+          const authPromise = supabase.auth.getUser();
+          
+          let user;
+          try {
+            const authResult = await Promise.race([authPromise, timeoutPromise]) as Awaited<ReturnType<typeof supabase.auth.getUser>>;
+            user = authResult?.data?.user;
+            console.log("[WorkspaceStore] Auth user:", user?.id);
+          } catch (authError) {
+            console.error("[WorkspaceStore] Auth error or timeout:", authError);
+            // Try to get session instead
+            const { data: { session } } = await supabase.auth.getSession();
+            user = session?.user;
+            console.log("[WorkspaceStore] User from session:", user?.id);
+          }
           
           if (!user) {
             console.log("[WorkspaceStore] No user found, clearing workspaces");
@@ -96,6 +113,13 @@ export const useWorkspaceStore = create<WorkspaceState>()(
             error: error instanceof Error ? error.message : "Failed to load workspaces",
             isLoading: false 
           });
+        } finally {
+          // Ensure loading state is always cleared
+          const state = get();
+          if (state.isLoading) {
+            console.log("[WorkspaceStore] Clearing loading state in finally block");
+            set({ isLoading: false });
+          }
         }
       },
 
