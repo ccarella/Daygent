@@ -16,6 +16,7 @@ interface WorkspaceState {
   // Actions
   loadWorkspaces: () => Promise<void>;
   setCurrentWorkspace: (workspace: Workspace | null) => void;
+  setWorkspaceBySlug: (slug: string) => Promise<boolean>;
   createWorkspace: (data: { name: string; slug: string }) => Promise<Workspace>;
   switchWorkspace: (workspaceId: string) => Promise<void>;
   refreshCurrentWorkspace: () => Promise<void>;
@@ -94,6 +95,33 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         } else {
           localStorage.removeItem("currentWorkspaceId");
         }
+      },
+
+      setWorkspaceBySlug: async (slug) => {
+        const { workspaces } = get();
+        
+        // First check if workspace is in current list
+        const workspace = workspaces.find(w => w.slug === slug);
+        if (workspace) {
+          set({ currentWorkspace: workspace });
+          localStorage.setItem("currentWorkspaceId", workspace.id);
+          return true;
+        }
+        
+        // If not found and workspaces aren't loaded, load them
+        if (workspaces.length === 0) {
+          await get().loadWorkspaces();
+          const updatedWorkspaces = get().workspaces;
+          const foundWorkspace = updatedWorkspaces.find(w => w.slug === slug);
+          if (foundWorkspace) {
+            set({ currentWorkspace: foundWorkspace });
+            localStorage.setItem("currentWorkspaceId", foundWorkspace.id);
+            return true;
+          }
+        }
+        
+        // Workspace not found
+        return false;
       },
 
       createWorkspace: async (data) => {
@@ -202,6 +230,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       name: "workspace-store",
       partialize: (state) => ({
         currentWorkspaceId: state.currentWorkspace?.id,
+        currentWorkspaceSlug: state.currentWorkspace?.slug,
       }),
     }
   )
