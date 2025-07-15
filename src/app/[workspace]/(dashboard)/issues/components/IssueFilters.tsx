@@ -15,14 +15,6 @@ import { Badge } from "@/components/ui/badge";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-interface Project {
-  id: string;
-  name: string;
-}
-
-interface IssueFiltersProps {
-  projects: Project[];
-}
 
 const STATUS_OPTIONS = [
   { value: "all", label: "All Statuses" },
@@ -47,7 +39,7 @@ const ASSIGNEE_OPTIONS = [
   { value: "unassigned", label: "Unassigned" },
 ];
 
-export function IssueFilters({ projects }: IssueFiltersProps) {
+export function IssueFilters() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -55,20 +47,20 @@ export function IssueFilters({ projects }: IssueFiltersProps) {
   const updateFilter = useCallback(
     (key: string, value: string | null) => {
       const params = new URLSearchParams(searchParams.toString());
-      
+
       if (value && value !== "all") {
         params.set(key, value);
       } else {
         params.delete(key);
       }
-      
+
       // Reset to page 1 when filters change
       params.delete("page");
-      
+
       const queryString = params.toString();
       router.push(queryString ? `${pathname}?${queryString}` : pathname);
     },
-    [searchParams, router, pathname]
+    [searchParams, router, pathname],
   );
 
   const clearAllFilters = useCallback(() => {
@@ -78,10 +70,12 @@ export function IssueFilters({ projects }: IssueFiltersProps) {
   // Calculate active filter count
   const activeFilterCount = useMemo(() => {
     let count = 0;
-    if (searchParams.get("status") && searchParams.get("status") !== "all") count++;
-    if (searchParams.get("priority") && searchParams.get("priority") !== "all") count++;
-    if (searchParams.get("project")) count++;
-    if (searchParams.get("assignee") && searchParams.get("assignee") !== "all") count++;
+    if (searchParams.get("status") && searchParams.get("status") !== "all")
+      count++;
+    if (searchParams.get("priority") && searchParams.get("priority") !== "all")
+      count++;
+    if (searchParams.get("assignee") && searchParams.get("assignee") !== "all")
+      count++;
     if (searchParams.get("enhanced") === "true") count++;
     return count;
   }, [searchParams]);
@@ -131,29 +125,6 @@ export function IssueFilters({ projects }: IssueFiltersProps) {
           </Select>
         </div>
 
-        {projects.length > 0 && (
-          <div className="space-y-1">
-            <Label htmlFor="project-filter" className="text-xs">
-              Project
-            </Label>
-            <Select
-              value={searchParams.get("project") || "all"}
-              onValueChange={(value) => updateFilter("project", value)}
-            >
-              <SelectTrigger id="project-filter" className="w-[180px]">
-                <SelectValue placeholder="All Projects" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Projects</SelectItem>
-                {projects.map((project) => (
-                  <SelectItem key={project.id} value={project.id}>
-                    {project.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
 
         <div className="space-y-1">
           <Label htmlFor="assignee-filter" className="text-xs">

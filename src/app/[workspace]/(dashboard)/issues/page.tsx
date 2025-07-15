@@ -13,7 +13,6 @@ interface IssuesPageProps {
   searchParams: Promise<{
     status?: string;
     priority?: string;
-    project?: string;
     assignee?: string;
     enhanced?: string;
     sort?: string;
@@ -66,10 +65,7 @@ export default async function IssuesPage({
     .select(
       `
       *,
-      project:projects(id, name),
-      repository:repositories(id, name, full_name),
-      assigned_user:users!issues_assigned_to_fkey(id, name, avatar_url),
-      created_user:users!issues_created_by_fkey(id, name, avatar_url)
+      repository:repositories(id, name, full_name)
     `,
       { count: "exact" },
     )
@@ -87,9 +83,6 @@ export default async function IssuesPage({
     query = query.eq("priority", searchParamsResolved.priority);
   }
 
-  if (searchParamsResolved.project) {
-    query = query.eq("project_id", searchParamsResolved.project);
-  }
 
   if (searchParamsResolved.assignee) {
     if (searchParamsResolved.assignee === "me") {
@@ -125,12 +118,6 @@ export default async function IssuesPage({
     );
   }
 
-  // Get projects for filter dropdown
-  const { data: projects } = await supabase
-    .from("projects")
-    .select("id, name")
-    .eq("workspace_id", workspace.id)
-    .order("name");
 
   const totalPages = Math.ceil((count || 0) / ITEMS_PER_PAGE);
 
@@ -138,7 +125,6 @@ export default async function IssuesPage({
   const hasFilters =
     searchParamsResolved.status ||
     searchParamsResolved.priority ||
-    searchParamsResolved.project ||
     searchParamsResolved.assignee ||
     searchParamsResolved.enhanced === "true";
 
@@ -171,7 +157,7 @@ export default async function IssuesPage({
       ) : (
         <>
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <IssueFilters projects={projects || []} />
+            <IssueFilters />
             <IssueSorting />
           </div>
 
