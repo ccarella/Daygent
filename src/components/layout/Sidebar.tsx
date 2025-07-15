@@ -11,6 +11,7 @@ import {
 import { cn } from "@/lib/utils";
 import { SidebarNav } from "./SidebarNav";
 import { UserMenu } from "./UserMenu";
+import { useWorkspaceStore } from "@/stores/workspace.store";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -19,6 +20,8 @@ interface SidebarProps {
 }
 
 export function Sidebar({ isOpen, onToggle, pathname }: SidebarProps) {
+  const { currentWorkspace } = useWorkspaceStore();
+
   return (
     <aside
       className={cn(
@@ -27,6 +30,18 @@ export function Sidebar({ isOpen, onToggle, pathname }: SidebarProps) {
       )}
     >
       <div className="flex h-full flex-col">
+        {/* Workspace name section */}
+        {currentWorkspace && (
+          <div className="px-4 py-3 border-b">
+            <h2 className={cn(
+              "font-semibold text-sm truncate transition-opacity duration-200",
+              !isOpen && "opacity-0"
+            )}>
+              {currentWorkspace.name}
+            </h2>
+          </div>
+        )}
+        
         <div className="flex h-12 items-center justify-between px-4 border-b">
           {/* Spacer to keep toggle button on the right */}
           <div className="flex-1" />
