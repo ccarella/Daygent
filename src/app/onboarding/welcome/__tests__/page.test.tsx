@@ -1,4 +1,10 @@
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  act,
+} from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import WelcomePage from "../page";
 import { useRouter } from "next/navigation";
@@ -42,9 +48,11 @@ global.fetch = vi.fn();
 describe("WelcomePage", () => {
   const mockPush = vi.fn();
   const mockLoadWorkspaces = vi.fn();
+  const originalConsoleError = console.error;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    console.error = vi.fn();
     (useRouter as any).mockReturnValue({ push: mockPush });
     (useWorkspaceStore as any).mockReturnValue({
       currentWorkspace: { id: "test-workspace-id", slug: "test-workspace" },
@@ -53,33 +61,62 @@ describe("WelcomePage", () => {
     });
   });
 
-  it("renders the first slide correctly", () => {
-    render(<WelcomePage />);
-    
+  afterEach(() => {
+    console.error = originalConsoleError;
+  });
+
+  it("renders the first slide correctly", async () => {
+    await act(async () => {
+      render(<WelcomePage />);
+    });
+
     expect(screen.getByText("Welcome to Daygent")).toBeInTheDocument();
-    expect(screen.getByText(/Daygent is an app to manage Software Engineering Agents/)).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /Daygent is an app to manage Software Engineering Agents/,
+      ),
+    ).toBeInTheDocument();
     expect(screen.getByText("Next")).toBeInTheDocument();
   });
 
-  it("navigates through slides when clicking next", () => {
-    render(<WelcomePage />);
-    
+  it("navigates through slides when clicking next", async () => {
+    await act(async () => {
+      render(<WelcomePage />);
+    });
+
+    // Wait for initial load
+    await waitFor(() => {
+      expect(mockLoadWorkspaces).toHaveBeenCalled();
+    });
+
     const nextButton = screen.getByRole("button", { name: /next/i });
-    
+
     // Click to second slide
-    fireEvent.click(nextButton);
+    await act(async () => {
+      fireEvent.click(nextButton);
+    });
     expect(screen.getByText("AI-Powered Development")).toBeInTheDocument();
-    
+
     // Click to third slide
-    fireEvent.click(nextButton);
+    await act(async () => {
+      fireEvent.click(nextButton);
+    });
     expect(screen.getByText("GitHub Integration")).toBeInTheDocument();
-    expect(screen.getByText("Connect with GitHub")).toBeInTheDocument();
+
+    // Wait for button to be enabled after workspace loads
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", { name: /connect with github/i }),
+      ).toBeEnabled();
+    });
   });
 
   it("initiates GitHub App installation on final slide", async () => {
     (global.fetch as any).mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ install_url: "https://github.com/apps/test-app/installations/new" }),
+      json: async () => ({
+        install_url: "https://github.com/apps/test-app/installations/new",
+      }),
     });
 
     // Mock window.location
@@ -87,24 +124,28 @@ describe("WelcomePage", () => {
     window.location = { href: "" } as any;
 
     render(<WelcomePage />);
-    
+
     // Wait for workspace to load
     await waitFor(() => {
       expect(mockLoadWorkspaces).toHaveBeenCalled();
     });
-    
+
     // Navigate to last slide
     const nextButton = screen.getByRole("button", { name: /next/i });
     fireEvent.click(nextButton);
     fireEvent.click(nextButton);
-    
+
     // Wait for loading to complete
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /connect with github/i })).toBeEnabled();
+      expect(
+        screen.getByRole("button", { name: /connect with github/i }),
+      ).toBeEnabled();
     });
-    
+
     // Click Connect with GitHub
-    const connectButton = screen.getByRole("button", { name: /connect with github/i });
+    const connectButton = screen.getByRole("button", {
+      name: /connect with github/i,
+    });
     fireEvent.click(connectButton);
 
     // Should show loading state
@@ -123,18 +164,21 @@ describe("WelcomePage", () => {
     });
 
     await waitFor(() => {
-      expect(window.location.href).toBe("https://github.com/apps/test-app/installations/new");
+      expect(window.location.href).toBe(
+        "https://github.com/apps/test-app/installations/new",
+      );
     });
   });
 
   it("redirects to workspace creation if no workspace found", async () => {
+    // Mock no workspaces
     (useWorkspaceStore as any).mockReturnValue({
       currentWorkspace: null,
       workspaces: [],
-      loadWorkspaces: mockLoadWorkspaces,
+      loadWorkspaces: mockLoadWorkspaces.mockResolvedValue(undefined),
     });
 
-    // Mock createClient locally for this test
+    // Mock createClient to return no workspace memberships
     const { createClient } = await import("@/lib/supabase/client");
     (createClient as any).mockReturnValue({
       auth: {
@@ -149,6 +193,7 @@ describe("WelcomePage", () => {
               limit: vi.fn(() => ({
                 single: vi.fn().mockResolvedValue({
                   data: null,
+                  error: { message: "No workspace found" },
                 }),
               })),
             })),
@@ -157,48 +202,101 @@ describe("WelcomePage", () => {
       })),
     });
 
-    render(<WelcomePage />);
-    
+    await act(async () => {
+      render(<WelcomePage />);
+    });
+
+    // Wait for initial load
+    await waitFor(() => {
+      expect(mockLoadWorkspaces).toHaveBeenCalled();
+    });
+
     // Navigate to last slide
     const nextButton = screen.getByRole("button", { name: /next/i });
-    fireEvent.click(nextButton);
-    fireEvent.click(nextButton);
-    
-    // Click Connect with GitHub
-    const connectButton = screen.getByRole("button", { name: /connect with github/i });
-    fireEvent.click(connectButton);
+    await act(async () => {
+      fireEvent.click(nextButton);
+      fireEvent.click(nextButton);
+    });
 
+    // Since there's no workspace, on the last slide the button should be enabled
+    // and show "Connect with GitHub"
+    await waitFor(() => {
+      const connectButton = screen.getByRole("button", {
+        name: /connect with github/i,
+      });
+      expect(connectButton).toBeEnabled();
+    });
+
+    // Click the button
+    const connectButton = screen.getByRole("button", {
+      name: /connect with github/i,
+    });
+    await act(async () => {
+      fireEvent.click(connectButton);
+    });
+
+    // Should redirect to workspace creation since no workspace exists
     await waitFor(() => {
       expect(mockPush).toHaveBeenCalledWith("/onboarding/workspace");
     });
   });
 
   it("handles GitHub connection errors gracefully", async () => {
-    (global.fetch as any).mockRejectedValueOnce(new Error("Connection failed"));
+    // Mock API error response
+    (global.fetch as any).mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      json: async () => ({
+        error: "GitHub App is not configured. Please contact support.",
+      }),
+    });
 
-    render(<WelcomePage />);
-    
+    await act(async () => {
+      render(<WelcomePage />);
+    });
+
     // Wait for workspace to load
     await waitFor(() => {
       expect(mockLoadWorkspaces).toHaveBeenCalled();
     });
-    
+
     // Navigate to last slide
     const nextButton = screen.getByRole("button", { name: /next/i });
-    fireEvent.click(nextButton);
-    fireEvent.click(nextButton);
-    
-    // Wait for loading to complete
-    await waitFor(() => {
-      expect(screen.getByRole("button", { name: /connect with github/i })).toBeEnabled();
+    await act(async () => {
+      fireEvent.click(nextButton);
+      fireEvent.click(nextButton);
     });
-    
-    // Click Connect with GitHub
-    const connectButton = screen.getByRole("button", { name: /connect with github/i });
-    fireEvent.click(connectButton);
 
+    // Wait for loading to complete and button to be enabled
+    await waitFor(() => {
+      const button = screen.getByRole("button", {
+        name: /connect with github/i,
+      });
+      expect(button).toBeEnabled();
+    });
+
+    // Click Connect with GitHub
+    const connectButton = screen.getByRole("button", {
+      name: /connect with github/i,
+    });
+    await act(async () => {
+      fireEvent.click(connectButton);
+    });
+
+    // Should show connecting state briefly
+    expect(screen.getByText("Connecting...")).toBeInTheDocument();
+
+    // Since there's an error and we have a workspace, it should redirect to the workspace issues page
     await waitFor(() => {
       expect(mockPush).toHaveBeenCalledWith("/test-workspace/issues");
     });
+
+    // Verify the error was logged
+    expect(console.error).toHaveBeenCalledWith(
+      "GitHub install API error:",
+      expect.objectContaining({
+        error: "GitHub App is not configured. Please contact support.",
+      }),
+    );
   });
 });

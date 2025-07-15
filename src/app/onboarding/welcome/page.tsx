@@ -11,17 +11,20 @@ import { useWorkspaceStore } from "@/stores/workspace.store";
 const slides = [
   {
     title: "Welcome to Daygent",
-    description: "Daygent is an app to manage Software Engineering Agents in your product development process",
+    description:
+      "Daygent is an app to manage Software Engineering Agents in your product development process",
     icon: Code,
   },
   {
     title: "AI-Powered Development",
-    description: "Create issues that are optimized for Claude Code and other AI assistants to implement",
+    description:
+      "Create issues that are optimized for Claude Code and other AI assistants to implement",
     icon: Zap,
   },
   {
     title: "GitHub Integration",
-    description: "Seamlessly sync issues between Daygent and GitHub for complete visibility",
+    description:
+      "Seamlessly sync issues between Daygent and GitHub for complete visibility",
     icon: GitBranch,
   },
 ];
@@ -43,22 +46,23 @@ export default function WelcomePage() {
     loadData();
   }, [loadWorkspaces]);
 
-
   const handleNext = async () => {
     if (currentSlide < slides.length - 1) {
       setCurrentSlide(currentSlide + 1);
     } else {
       // Connect with GitHub
       setIsConnecting(true);
-      
+
+      let workspace = currentWorkspace;
+
       try {
         // Get current workspace if not already loaded
-        let workspace = currentWorkspace;
-        
         if (!workspace) {
           const supabase = createClient();
-          const { data: { user } } = await supabase.auth.getUser();
-          
+          const {
+            data: { user },
+          } = await supabase.auth.getUser();
+
           if (user) {
             // First check if we have workspaces in the store
             if (workspaces && workspaces.length > 0) {
@@ -72,7 +76,7 @@ export default function WelcomePage() {
                 .order("created_at", { ascending: false })
                 .limit(1)
                 .single();
-              
+
               if (memberData?.workspace_id) {
                 // Fetch the workspace directly
                 const { data: workspaceData } = await supabase
@@ -80,7 +84,7 @@ export default function WelcomePage() {
                   .select("*")
                   .eq("id", memberData.workspace_id)
                   .single();
-                
+
                 if (workspaceData) {
                   workspace = workspaceData;
                 }
@@ -107,18 +111,34 @@ export default function WelcomePage() {
         });
 
         if (!response.ok) {
-          throw new Error("Failed to initiate GitHub connection");
+          const errorData = await response
+            .json()
+            .catch(() => ({ error: "Unknown error" }));
+          console.error("GitHub install API error:", errorData);
+          throw new Error(
+            errorData.error || "Failed to initiate GitHub connection",
+          );
         }
 
-        const { install_url } = await response.json();
-        
+        const { install_url, error } = await response.json();
+
+        if (error) {
+          throw new Error(error);
+        }
+
+        if (!install_url) {
+          throw new Error("No installation URL received");
+        }
+
         // Redirect to GitHub App installation page
         window.location.href = install_url;
       } catch (error) {
         console.error("Error connecting GitHub:", error);
         // On error, redirect to the dashboard
-        if (currentWorkspace) {
-          router.push(`/${currentWorkspace.slug}/issues`);
+        // Try to use the workspace we found, or current workspace, or fallback to home
+        const redirectWorkspace = workspace || currentWorkspace;
+        if (redirectWorkspace) {
+          router.push(`/${redirectWorkspace.slug}/issues`);
         } else {
           router.push("/");
         }
@@ -142,9 +162,7 @@ export default function WelcomePage() {
 
         <div className="space-y-3">
           <h1 className="text-3xl font-bold">{slide.title}</h1>
-          <p className="text-gray-600 max-w-md mx-auto">
-            {slide.description}
-          </p>
+          <p className="text-gray-600 max-w-md mx-auto">{slide.description}</p>
         </div>
 
         <div className="flex items-center justify-center space-x-2">
@@ -159,11 +177,15 @@ export default function WelcomePage() {
         </div>
       </Card>
 
-      <Button 
-        onClick={handleNext} 
+      <Button
+        onClick={handleNext}
         className="w-full"
         size="lg"
-        disabled={isConnecting || (currentSlide === slides.length - 1 && (isLoadingWorkspace || (!currentWorkspace && !workspaces?.length)))}
+        disabled={
+          isConnecting ||
+          (currentSlide === slides.length - 1 &&
+            (isLoadingWorkspace || (!currentWorkspace && !workspaces?.length)))
+        }
       >
         {isConnecting ? (
           <>
@@ -175,7 +197,8 @@ export default function WelcomePage() {
             Next
             <ChevronRight className="ml-2 h-4 w-4" />
           </>
-        ) : (currentSlide === slides.length - 1 && (isLoadingWorkspace || (!currentWorkspace && !workspaces?.length))) ? (
+        ) : currentSlide === slides.length - 1 &&
+          (isLoadingWorkspace || (!currentWorkspace && !workspaces?.length)) ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             Loading workspace...
