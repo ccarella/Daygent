@@ -21,6 +21,9 @@ interface SidebarProps {
 
 export function Sidebar({ isOpen, onToggle, pathname }: SidebarProps) {
   const { currentWorkspace } = useWorkspaceStore();
+  
+  console.log("[Sidebar] Current workspace:", currentWorkspace);
+  console.log("[Sidebar] Pathname:", pathname);
 
   return (
     <aside

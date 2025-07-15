@@ -23,8 +23,8 @@ describe("WorkspaceSync", () => {
   const mockWorkspaceStore = {
     setWorkspaceBySlug: vi.fn(),
     loadWorkspaces: vi.fn(),
-    workspaces: [],
-    currentWorkspace: null,
+    workspaces: [] as any[],
+    currentWorkspace: null as any,
   };
 
   beforeEach(() => {
