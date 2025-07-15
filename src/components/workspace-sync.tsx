@@ -28,33 +28,49 @@ export function WorkspaceSync() {
     const syncWorkspace = async () => {
       console.log("[WorkspaceSync] Starting sync process");
       
-      // If no workspaces loaded yet, load them first
-      if (workspaces.length === 0) {
-        console.log("[WorkspaceSync] No workspaces loaded, loading now...");
-        await loadWorkspaces();
-        console.log("[WorkspaceSync] Workspaces loaded");
-      }
-      
-      // Try to set workspace by slug
-      console.log("[WorkspaceSync] Attempting to set workspace by slug:", workspaceSlug);
-      const found = await setWorkspaceBySlug(workspaceSlug);
-      console.log("[WorkspaceSync] Workspace found:", found);
-      
-      // If workspace not found, redirect to first available workspace or login
-      if (!found) {
-        const updatedWorkspaces = useWorkspaceStore.getState().workspaces;
-        console.log("[WorkspaceSync] Workspace not found, updated workspaces:", updatedWorkspaces);
-        
-        if (updatedWorkspaces.length > 0) {
-          // Redirect to first workspace
-          const firstWorkspace = updatedWorkspaces[0];
-          console.log("[WorkspaceSync] Redirecting to first workspace:", firstWorkspace.slug);
-          router.replace(`/${firstWorkspace.slug}/issues`);
-        } else {
-          // No workspaces available, redirect to login
-          console.log("[WorkspaceSync] No workspaces available, redirecting to login");
-          router.replace("/login");
+      try {
+        // If no workspaces loaded yet, load them first
+        if (workspaces.length === 0) {
+          console.log("[WorkspaceSync] No workspaces loaded, loading now...");
+          
+          // Add timeout for workspace loading
+          const loadPromise = loadWorkspaces();
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error("Workspace loading timeout")), 10000)
+          );
+          
+          try {
+            await Promise.race([loadPromise, timeoutPromise]);
+            console.log("[WorkspaceSync] Workspaces loaded");
+          } catch (loadError) {
+            console.error("[WorkspaceSync] Error loading workspaces:", loadError);
+            // Continue anyway - maybe we can still work with cached data
+          }
         }
+        
+        // Try to set workspace by slug
+        console.log("[WorkspaceSync] Attempting to set workspace by slug:", workspaceSlug);
+        const found = await setWorkspaceBySlug(workspaceSlug);
+        console.log("[WorkspaceSync] Workspace found:", found);
+        
+        // If workspace not found, redirect to first available workspace or login
+        if (!found) {
+          const updatedWorkspaces = useWorkspaceStore.getState().workspaces;
+          console.log("[WorkspaceSync] Workspace not found, updated workspaces:", updatedWorkspaces);
+          
+          if (updatedWorkspaces.length > 0) {
+            // Redirect to first workspace
+            const firstWorkspace = updatedWorkspaces[0];
+            console.log("[WorkspaceSync] Redirecting to first workspace:", firstWorkspace.slug);
+            router.replace(`/${firstWorkspace.slug}/issues`);
+          } else {
+            // No workspaces available, redirect to login
+            console.log("[WorkspaceSync] No workspaces available, redirecting to login");
+            router.replace("/login");
+          }
+        }
+      } catch (error) {
+        console.error("[WorkspaceSync] Error in sync process:", error);
       }
     };
 
