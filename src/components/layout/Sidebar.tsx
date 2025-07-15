@@ -31,16 +31,14 @@ export function Sidebar({ isOpen, onToggle, pathname }: SidebarProps) {
     >
       <div className="flex h-full flex-col">
         {/* Workspace name section */}
-        {currentWorkspace && (
-          <div className="px-4 py-3 border-b">
-            <h2 className={cn(
-              "font-semibold text-sm truncate transition-opacity duration-200",
-              !isOpen && "opacity-0"
-            )}>
-              {currentWorkspace.name}
-            </h2>
-          </div>
-        )}
+        <div className="px-4 py-3 border-b">
+          <h2 className={cn(
+            "font-semibold text-sm truncate transition-opacity duration-200",
+            !isOpen && "opacity-0"
+          )}>
+            {currentWorkspace ? currentWorkspace.name : "No Workspace Selected"}
+          </h2>
+        </div>
         
         <div className="flex h-12 items-center justify-between px-4 border-b">
           {/* Spacer to keep toggle button on the right */}
