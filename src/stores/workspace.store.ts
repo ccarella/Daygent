@@ -51,7 +51,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
           
           let user;
           try {
-            const authResult = await Promise.race([authPromise, timeoutPromise]) as any;
+            const authResult = await Promise.race([authPromise, timeoutPromise]) as Awaited<ReturnType<typeof supabase.auth.getUser>>;
             user = authResult?.data?.user;
             console.log("[WorkspaceStore] Auth user:", user?.id);
           } catch (authError) {
