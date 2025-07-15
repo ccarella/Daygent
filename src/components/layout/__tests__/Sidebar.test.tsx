@@ -69,14 +69,26 @@ describe("Sidebar", () => {
     expect(workspaceName).toHaveClass("opacity-0");
   });
 
-  it("does not display workspace section when no workspace is available", () => {
+  it("displays 'No Workspace Selected' when no workspace is available", () => {
     (useWorkspaceStore as any).mockReturnValue({
       currentWorkspace: null,
     });
 
     render(<Sidebar isOpen={true} onToggle={mockToggle} pathname="/issues" />);
 
+    expect(screen.getByText("No Workspace Selected")).toBeInTheDocument();
     expect(screen.queryByText("Test Workspace")).not.toBeInTheDocument();
+  });
+
+  it("hides 'No Workspace Selected' text when sidebar is collapsed", () => {
+    (useWorkspaceStore as any).mockReturnValue({
+      currentWorkspace: null,
+    });
+
+    render(<Sidebar isOpen={false} onToggle={mockToggle} pathname="/issues" />);
+
+    const noWorkspaceText = screen.getByText("No Workspace Selected");
+    expect(noWorkspaceText).toHaveClass("opacity-0");
   });
 
   it("renders navigation and user menu sections", () => {
