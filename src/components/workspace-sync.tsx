@@ -41,11 +41,15 @@ export function WorkspaceSync() {
           
           try {
             await Promise.race([loadPromise, timeoutPromise]);
-            console.log("[WorkspaceSync] Workspaces loaded");
+            console.log("[WorkspaceSync] Workspaces loaded successfully");
           } catch (loadError) {
             console.error("[WorkspaceSync] Error loading workspaces:", loadError);
             // Continue anyway - maybe we can still work with cached data
           }
+          
+          // Check what we have after loading attempt
+          const afterLoadWorkspaces = useWorkspaceStore.getState().workspaces;
+          console.log("[WorkspaceSync] Workspaces after load attempt:", afterLoadWorkspaces);
         }
         
         // Try to set workspace by slug

@@ -57,9 +57,15 @@ export const useWorkspaceStore = create<WorkspaceState>()(
           } catch (authError) {
             console.error("[WorkspaceStore] Auth error or timeout:", authError);
             // Try to get session instead
-            const { data: { session } } = await supabase.auth.getSession();
-            user = session?.user;
-            console.log("[WorkspaceStore] User from session:", user?.id);
+            try {
+              console.log("[WorkspaceStore] Attempting getSession fallback...");
+              const sessionResult = await supabase.auth.getSession();
+              console.log("[WorkspaceStore] Session result:", sessionResult);
+              user = sessionResult?.data?.session?.user;
+              console.log("[WorkspaceStore] User from session:", user?.id);
+            } catch (sessionError) {
+              console.error("[WorkspaceStore] Session fallback also failed:", sessionError);
+            }
           }
           
           if (!user) {
@@ -67,6 +73,8 @@ export const useWorkspaceStore = create<WorkspaceState>()(
             set({ workspaces: [], currentWorkspace: null, isLoading: false });
             return;
           }
+
+          console.log("[WorkspaceStore] User authenticated, loading workspaces for user:", user.id);
 
           // Get user's workspaces
           const { data: memberRecords, error } = await supabase
