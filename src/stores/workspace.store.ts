@@ -36,13 +36,17 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       ...initialState,
 
       loadWorkspaces: async () => {
+        console.log("[WorkspaceStore] loadWorkspaces called");
         set({ isLoading: true, error: null });
         
         try {
           const supabase = createClient();
           const { data: { user } } = await supabase.auth.getUser();
           
+          console.log("[WorkspaceStore] Auth user:", user?.id);
+          
           if (!user) {
+            console.log("[WorkspaceStore] No user found, clearing workspaces");
             set({ workspaces: [], currentWorkspace: null, isLoading: false });
             return;
           }
@@ -63,24 +67,31 @@ export const useWorkspaceStore = create<WorkspaceState>()(
             `)
             .eq("user_id", user.id);
 
+          console.log("[WorkspaceStore] Member records query result:", { memberRecords, error });
+
           if (error) throw error;
 
           const workspaces = memberRecords
             ?.map(record => record.workspaces as unknown as Workspace)
             .filter(ws => ws !== null) || [];
 
+          console.log("[WorkspaceStore] Parsed workspaces:", workspaces);
+
           set({ workspaces, isLoading: false });
 
           // Set current workspace if not set
           const { currentWorkspace } = get();
+          console.log("[WorkspaceStore] Current workspace in store:", currentWorkspace);
+          
           if (!currentWorkspace && workspaces.length > 0) {
             // Try to restore from localStorage or use first workspace
             const savedWorkspaceId = localStorage.getItem("currentWorkspaceId");
             const savedWorkspace = workspaces.find(w => w.id === savedWorkspaceId);
+            console.log("[WorkspaceStore] Auto-selecting workspace:", savedWorkspace || workspaces[0]);
             set({ currentWorkspace: savedWorkspace || workspaces[0] });
           }
         } catch (error) {
-          console.error("Failed to load workspaces:", error);
+          console.error("[WorkspaceStore] Failed to load workspaces:", error);
           set({ 
             error: error instanceof Error ? error.message : "Failed to load workspaces",
             isLoading: false 
@@ -98,28 +109,38 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       },
 
       setWorkspaceBySlug: async (slug) => {
+        console.log("[WorkspaceStore] setWorkspaceBySlug called with slug:", slug);
         const { workspaces } = get();
+        console.log("[WorkspaceStore] Current workspaces in store:", workspaces);
         
         // First check if workspace is in current list
         const workspace = workspaces.find(w => w.slug === slug);
         if (workspace) {
+          console.log("[WorkspaceStore] Found workspace in current list:", workspace);
           set({ currentWorkspace: workspace });
           localStorage.setItem("currentWorkspaceId", workspace.id);
           return true;
         }
         
+        console.log("[WorkspaceStore] Workspace not found in current list");
+        
         // If not found and workspaces aren't loaded, load them
         if (workspaces.length === 0) {
+          console.log("[WorkspaceStore] No workspaces loaded, attempting to load...");
           await get().loadWorkspaces();
           const updatedWorkspaces = get().workspaces;
+          console.log("[WorkspaceStore] Updated workspaces after load:", updatedWorkspaces);
+          
           const foundWorkspace = updatedWorkspaces.find(w => w.slug === slug);
           if (foundWorkspace) {
+            console.log("[WorkspaceStore] Found workspace after loading:", foundWorkspace);
             set({ currentWorkspace: foundWorkspace });
             localStorage.setItem("currentWorkspaceId", foundWorkspace.id);
             return true;
           }
         }
         
+        console.log("[WorkspaceStore] Workspace not found with slug:", slug);
         // Workspace not found
         return false;
       },
