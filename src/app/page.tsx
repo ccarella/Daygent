@@ -23,12 +23,9 @@ export default function LandingPage() {
               Manage Software Engineering Agents in your product development
               process
             </p>
-            <div className="mt-10 flex items-center justify-center gap-4">
+            <div className="mt-10 flex items-center justify-center">
               <Button asChild size="lg">
-                <Link href="/login">Sign In</Link>
-              </Button>
-              <Button asChild variant="outline" size="lg">
-                <Link href="/signup">Sign Up</Link>
+                <Link href="/login">Start Planning</Link>
               </Button>
             </div>
           </div>
@@ -129,12 +126,9 @@ export default function LandingPage() {
             <p className="mt-4 text-lg text-muted-foreground">
               Join developers who are building faster with AI agents
             </p>
-            <div className="mt-10 flex items-center justify-center gap-4">
+            <div className="mt-10 flex items-center justify-center">
               <Button asChild size="lg">
-                <Link href="/signup">Get Started Free</Link>
-              </Button>
-              <Button asChild variant="ghost" size="lg">
-                <Link href="/login">Sign In</Link>
+                <Link href="/login">Start Planning</Link>
               </Button>
             </div>
           </div>
