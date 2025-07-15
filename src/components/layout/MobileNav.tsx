@@ -126,7 +126,9 @@ export function MobileNav({ pathname }: MobileNavProps) {
         </SheetContent>
       </Sheet>
 
-      <div className="ml-2 font-semibold">Daygent</div>
+      <Link href="/issues" className="ml-2 font-semibold">
+        Daygent
+      </Link>
     </div>
   );
 }

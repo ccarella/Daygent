@@ -59,7 +59,7 @@ export function Header() {
       <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Logo and Workspace */}
         <div className="flex items-center gap-4">
-          <Link href="/" className="flex items-center space-x-2">
+          <Link href="/issues" className="flex items-center space-x-2">
             <span className="text-2xl font-bold text-primary">Daygent</span>
           </Link>
           
