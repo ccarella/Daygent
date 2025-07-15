@@ -128,19 +128,6 @@ export const useWorkspaceStore = create<WorkspaceState>()(
             .filter(ws => ws !== null) || [];
 
           console.log("[WorkspaceStore] Parsed workspaces:", workspaces);
-          
-          // TEMPORARY: If no workspaces found but we have a user ID, create a demo workspace
-          if (workspaces.length === 0 && userId) {
-            console.log("[WorkspaceStore] No workspaces found, creating demo workspace");
-            workspaces = [{
-              id: 'demo-workspace',
-              name: 'Daygen',
-              slug: 'daygen',
-              created_by: userId,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            }];
-          }
 
           set({ workspaces, isLoading: false });
 
