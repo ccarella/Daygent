@@ -95,9 +95,8 @@ describe("Header", () => {
     const signOutButton = screen.getByText("Sign out");
     await user.click(signOutButton);
 
-    expect(mockLogout).toHaveBeenCalled();
     await waitFor(() => {
-      expect(mockPush).toHaveBeenCalledWith("/login");
+      expect(mockLogout).toHaveBeenCalled();
     });
   });
 

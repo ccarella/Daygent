@@ -24,17 +24,15 @@ import { useAuthStore } from "@/stores/auth.store";
 import { useWorkspaceStore } from "@/stores/workspace.store";
 import { WorkspaceSwitcher } from "@/components/workspace/WorkspaceSwitcher";
 import { LogOut, Settings, User } from "lucide-react";
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
 
 export function Header() {
-  const router = useRouter();
   const pathname = usePathname();
   const { user, logout } = useAuthStore();
   const { currentWorkspace } = useWorkspaceStore();
 
   const handleSignOut = async () => {
     await logout();
-    router.push("/login");
   };
 
   // Build breadcrumbs from pathname
